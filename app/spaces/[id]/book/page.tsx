@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter, notFound } from "next/navigation";
+import { useRouter, redirect } from "next/navigation";
 import Link from "next/link";
 import Navbar from "@/components/layout/Navbar";
 import { Card } from "@/components/ui/Card";
@@ -33,7 +33,7 @@ type BookingStep = "details" | "confirm" | "success";
 export default function BookSpacePage({ params }: { params: { id: string } }) {
   const router = useRouter();
   const space = getSpaceBySlug(params.id);
-  if (!space) notFound();
+  if (!space) redirect("/spaces");
 
   const [step, setStep] = useState<BookingStep>("details");
   const [loading, setLoading] = useState(false);
