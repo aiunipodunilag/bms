@@ -23,3 +23,13 @@
     text-wrap: balance;
   }
 }
+
+/* Photo strip infinite horizontal scroll — used in PhotoStrip component */
+@keyframes scroll-x {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+.animate-scroll-x {
+  animation: scroll-x 40s linear infinite;
+}
