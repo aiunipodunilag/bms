@@ -7,7 +7,7 @@ import Navbar from "@/components/layout/Navbar";
 import { Card } from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 import Badge from "@/components/ui/Badge";
-import { getSpaceBySlug } from "@/lib/data/spaces";
+import { getSpaceBySlug, SPACE_EQUIPMENT_MAP } from "@/lib/data/spaces";
 import { TIER_LABELS, BOOKING_RULES } from "@/lib/data/tiers";
 import { getBookableDates, formatDate, formatTime, formatCurrency, generateBMSCode } from "@/lib/utils";
 import {
@@ -20,6 +20,7 @@ import {
   Info,
   Plus,
   X,
+  Cpu,
 } from "lucide-react";
 import type { UserTier } from "@/types";
 
@@ -50,8 +51,9 @@ export default function BookSpacePage({ params }: { params: { id: string } }) {
   const [duration, setDuration] = useState<number>(isGroupOnly ? 2 : 1);
   const [justification, setJustification] = useState("");
   const [groupMembers, setGroupMembers] = useState<string[]>(["", "", ""]);
-  const [paymentAccepted, setPaymentAccepted] = useState(false);
-  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [paymentAccepted, setPaymentAccepted]     = useState(false);
+  const [selectedEquipment, setSelectedEquipment] = useState<string[]>([]);
+  const [errors, setErrors]                       = useState<Record<string, string>>({});
 
   const timeSlots = Array.from({ length: 7 }, (_, i) => {
     const h = 10 + i;
@@ -307,6 +309,49 @@ export default function BookSpacePage({ params }: { params: { id: string } }) {
               </Card>
             )}
 
+            {/* Equipment selection — only shown for premium labs */}
+            {SPACE_EQUIPMENT_MAP[space.id] && (
+              <Card>
+                <h2 className="font-semibold text-gray-800 mb-1 flex items-center gap-2">
+                  <Cpu size={16} className="text-brand-500" /> Equipment Request
+                </h2>
+                <p className="text-xs text-gray-400 mb-3">
+                  Select any equipment you plan to use. A one-time access code will be given to you at check-in — you must show it to the space lead to use the equipment.
+                </p>
+                <div className="grid grid-cols-2 gap-2">
+                  {SPACE_EQUIPMENT_MAP[space.id].map((eq) => {
+                    const isSelected = selectedEquipment.includes(eq.type);
+                    return (
+                      <button
+                        key={eq.type}
+                        type="button"
+                        onClick={() =>
+                          setSelectedEquipment((prev) =>
+                            isSelected ? prev.filter((t) => t !== eq.type) : [...prev, eq.type]
+                          )
+                        }
+                        className={`text-left px-3 py-2.5 rounded-xl border text-sm transition-all ${
+                          isSelected
+                            ? "border-brand-500 bg-brand-50 text-brand-700"
+                            : "border-gray-200 text-gray-600 hover:border-brand-200"
+                        }`}
+                      >
+                        <span className="flex items-center gap-2">
+                          {isSelected && <CheckCircle size={12} className="text-brand-500 shrink-0" />}
+                          {eq.label}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+                {selectedEquipment.length > 0 && (
+                  <p className="text-xs text-brand-600 mt-2">
+                    {selectedEquipment.length} equipment item{selectedEquipment.length > 1 ? "s" : ""} selected — access codes will be generated at check-in.
+                  </p>
+                )}
+              </Card>
+            )}
+
             {/* Extra payment */}
             {needsExtraPayment && (
               <Card className="bg-amber-50 border-amber-200">
@@ -373,6 +418,23 @@ export default function BookSpacePage({ params }: { params: { id: string } }) {
                   {space.approvalType === "auto" ? "Instant" : "Manual review"}
                 </Badge>
               </div>
+              {selectedEquipment.length > 0 && (
+                <div className="py-3 border-b border-gray-100">
+                  <div className="flex items-start justify-between">
+                    <span className="text-sm text-gray-500">Equipment requested</span>
+                    <div className="flex flex-col gap-1 text-right">
+                      {selectedEquipment.map((type) => {
+                        const eq = SPACE_EQUIPMENT_MAP[space.id]?.find((e) => e.type === type);
+                        return (
+                          <span key={type} className="text-xs font-medium text-gray-700">
+                            {eq?.label}
+                          </span>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+              )}
               {needsExtraPayment && (
                 <div className="flex items-center justify-between py-3 border-b border-gray-100">
                   <span className="text-sm text-gray-500">Additional fee</span>

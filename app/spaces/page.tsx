@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import Navbar from "@/components/layout/Navbar";
 import { Card } from "@/components/ui/Card";
 import Badge from "@/components/ui/Badge";
@@ -128,7 +129,20 @@ export default function SpacesPage() {
 
               return (
                 <Link key={space.id} href={`/spaces/${space.slug}`}>
-                  <Card hover className="h-full flex flex-col">
+                  <Card hover className="h-full flex flex-col overflow-hidden p-0">
+                    {/* Space photo */}
+                    {space.imageUrl && (
+                      <div className="relative w-full h-36 shrink-0">
+                        <Image
+                          src={space.imageUrl}
+                          alt={space.name}
+                          fill
+                          className="object-cover"
+                          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                        />
+                      </div>
+                    )}
+                    <div className="p-4 flex flex-col flex-1">
                     {/* Top row */}
                     <div className="flex items-center justify-between mb-3">
                       <span
@@ -172,7 +186,7 @@ export default function SpacesPage() {
                     </p>
 
                     {/* Footer */}
-                    <div className="flex items-center justify-between pt-3 border-t border-gray-100">
+                    <div className="flex items-center justify-between pt-3 border-t border-gray-100 mt-auto">
                       <div className="flex items-center gap-1.5 text-sm text-gray-500">
                         <Users size={14} />
                         <span>{space.capacity} seats</span>
@@ -185,6 +199,7 @@ export default function SpacesPage() {
                       ) : (
                         <Badge variant="neutral" size="sm">Access restricted</Badge>
                       )}
+                    </div>
                     </div>
                   </Card>
                 </Link>

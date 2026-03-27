@@ -1,8 +1,10 @@
 import Link from "next/link";
+import Image from "next/image";
 import Navbar from "@/components/layout/Navbar";
 import Button from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import Badge from "@/components/ui/Badge";
+import PhotoStrip from "@/components/ui/PhotoStrip";
 import { getPublicSpaces } from "@/lib/data/spaces";
 import {
   ArrowRight,
@@ -16,6 +18,7 @@ import {
   MapPin,
   Clock,
   Zap,
+  Radio,
 } from "lucide-react";
 
 const spaces = getPublicSpaces();
@@ -80,22 +83,25 @@ export default function LandingPage() {
       <Navbar />
 
       {/* ── HERO ──────────────────────────────────────────────────────────── */}
-      <section className="relative overflow-hidden bg-gradient-to-b from-brand-950 via-brand-900 to-brand-800 text-white">
-        {/* Grid decoration */}
-        <div
-          className="absolute inset-0 opacity-10"
-          style={{
-            backgroundImage: `linear-gradient(rgba(255,255,255,.05) 1px, transparent 1px),
-              linear-gradient(90deg, rgba(255,255,255,.05) 1px, transparent 1px)`,
-            backgroundSize: "40px 40px",
-          }}
-        />
+      <section className="relative overflow-hidden bg-brand-950 text-white">
+        {/* Background photo with dark overlay */}
+        <div className="absolute inset-0">
+          <Image
+            src="/spaces/image4.jpeg"
+            alt="UNIPOD Maker Space"
+            fill
+            className="object-cover opacity-30"
+            priority
+          />
+          <div className="absolute inset-0 bg-gradient-to-b from-brand-950/80 via-brand-900/70 to-brand-800/90" />
+        </div>
 
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 sm:py-28 lg:py-36">
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 sm:pt-28 lg:pt-36 pb-10">
           <div className="max-w-3xl">
-            <Badge variant="info" className="mb-6 bg-brand-700 text-brand-200 border-0">
-              🚀 Now live — University of Lagos · Yaba, Lagos
-            </Badge>
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-brand-700 text-brand-200 text-sm font-medium mb-6">
+              <Radio size={13} />
+              Now live — University of Lagos · Yaba, Lagos
+            </div>
 
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold leading-tight text-balance mb-6">
               Book your space at{" "}
@@ -135,6 +141,9 @@ export default function LandingPage() {
               ))}
             </div>
           </div>
+
+          {/* Horizontal photo strip */}
+          <PhotoStrip />
         </div>
       </section>
 
@@ -184,9 +193,33 @@ export default function LandingPage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
             {spaces.slice(0, 6).map((space) => (
               <Link key={space.id} href={`/spaces/${space.slug}`}>
-                <Card hover className="h-full">
-                  {/* Category tag + availability */}
-                  <div className="flex items-center justify-between mb-3">
+                <Card hover className="h-full overflow-hidden p-0">
+                  {/* Space photo */}
+                  {space.imageUrl && (
+                    <div className="relative w-full h-40 overflow-hidden">
+                      <Image
+                        src={space.imageUrl}
+                        alt={space.name}
+                        fill
+                        className="object-cover"
+                        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                      />
+                      <div className="absolute top-2 right-2">
+                        <span
+                          className={`text-xs font-medium px-2.5 py-1 rounded-full ${
+                            space.availability === "available"
+                              ? "bg-green-100 text-green-700"
+                              : "bg-yellow-100 text-yellow-700"
+                          }`}
+                        >
+                          {space.availability === "available" ? "Available" : "Admin Scheduled"}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="p-4">
+                  <div className="flex items-center justify-between mb-2">
                     <span
                       className={`text-xs font-medium px-2.5 py-1 rounded-full border capitalize ${
                         categoryColors[space.category]
@@ -194,36 +227,23 @@ export default function LandingPage() {
                     >
                       {space.category}
                     </span>
-                    <span
-                      className={`text-xs font-medium px-2.5 py-1 rounded-full ${
-                        space.availability === "available"
-                          ? "bg-green-100 text-green-700"
-                          : space.availability === "full"
-                          ? "bg-red-100 text-red-700"
-                          : "bg-yellow-100 text-yellow-700"
-                      }`}
-                    >
-                      {space.availability === "available"
-                        ? "Available"
-                        : space.availability === "full"
-                        ? "Full"
-                        : "Admin Scheduled"}
-                    </span>
                   </div>
 
-                  {/* Space info */}
                   <h3 className="font-semibold text-gray-900 text-base mb-1.5">{space.name}</h3>
                   <p className="text-sm text-gray-500 line-clamp-2 mb-4">{space.description}</p>
 
-                  {/* Footer */}
                   <div className="flex items-center justify-between pt-3 border-t border-gray-100">
                     <div className="flex items-center gap-1.5 text-sm text-gray-500">
                       <Users size={14} />
-                      <span>{space.capacity} {space.capacityNote ? `(${space.capacityNote})` : "seats"}</span>
+                      <span>
+                        {space.capacity}
+                        {space.capacityNote ? ` (${space.capacityNote})` : " seats"}
+                      </span>
                     </div>
                     <span className="text-xs text-brand-600 font-medium flex items-center gap-1">
                       View details <ChevronRight size={12} />
                     </span>
+                  </div>
                   </div>
                 </Card>
               </Link>

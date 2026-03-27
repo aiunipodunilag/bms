@@ -99,7 +99,7 @@ export default function DashboardPage() {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">
-              Welcome back, {mockUser.name.split(" ")[0]} 👋
+              Welcome back, {mockUser.name.split(" ")[0]}
             </h1>
             <p className="text-gray-500 text-sm mt-0.5">
               Your booking dashboard — AI-UNIPOD UNILAG
@@ -145,7 +145,7 @@ export default function DashboardPage() {
             <p className="text-xs text-gray-500 mb-2 font-medium">No-shows</p>
             <p className="text-2xl font-bold text-gray-900">{mockUser.noShowCount}</p>
             <p className="text-xs text-gray-400 mt-1">
-              {mockUser.noShowCount === 0 ? "Perfect record 🎉" : "Reviewed manually by admin"}
+              {mockUser.noShowCount === 0 ? "Perfect record" : "Reviewed manually by admin"}
             </p>
           </Card>
 

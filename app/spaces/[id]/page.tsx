@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { notFound } from "next/navigation";
 import Navbar from "@/components/layout/Navbar";
 import { Card } from "@/components/ui/Card";
@@ -51,12 +52,22 @@ export default function SpaceDetailPage({ params }: { params: { id: string } }) 
           <div className="lg:col-span-2 space-y-5">
             {/* Hero card */}
             <Card padding="none" className="overflow-hidden">
-              {/* Placeholder image */}
-              <div className="w-full h-48 bg-gradient-to-br from-brand-100 to-brand-200 flex items-center justify-center">
-                <div className="text-center">
-                  <p className="text-brand-400 text-sm font-medium">📷 Space Photo</p>
-                  <p className="text-brand-300 text-xs mt-1">Uploaded via Admin Dashboard</p>
-                </div>
+              {/* Space photo */}
+              <div className="relative w-full h-56">
+                {space.imageUrl ? (
+                  <Image
+                    src={space.imageUrl}
+                    alt={space.name}
+                    fill
+                    className="object-cover"
+                    sizes="(max-width: 1024px) 100vw, 66vw"
+                    priority
+                  />
+                ) : (
+                  <div className="w-full h-full bg-gradient-to-br from-brand-100 to-brand-200 flex items-center justify-center">
+                    <p className="text-brand-400 text-sm font-medium">No photo available</p>
+                  </div>
+                )}
               </div>
 
               <div className="p-6">

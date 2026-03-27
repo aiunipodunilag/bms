@@ -5,114 +5,176 @@ import AdminSidebar from "@/components/layout/AdminSidebar";
 import { Card } from "@/components/ui/Card";
 import Badge from "@/components/ui/Badge";
 import Button from "@/components/ui/Button";
-import { formatDate, formatTime } from "@/lib/utils";
 import {
-  QrCode,
+  ScanLine,
   CheckCircle,
-  XCircle,
-  Search,
-  Users,
+  User,
   Clock,
-  AlertCircle,
+  Calendar,
+  Users,
+  RotateCcw,
+  Cpu,
+  Copy,
+  RefreshCw,
   Building2,
+  AlertCircle,
 } from "lucide-react";
 
-type CheckInResult = {
-  success: boolean;
-  booking?: {
-    bmsCode: string;
-    user: string;
-    tier: string;
-    space: string;
-    date: string;
-    startTime: string;
-    endTime: string;
-    type: "individual" | "group";
-    groupMembers?: string[];
-    paymentRequired?: boolean;
-    paymentAmount?: number;
-  };
-  error?: string;
+// ── Mock booking data ─────────────────────────────────────────────────────────
+
+interface MockBooking {
+  bmsCode: string;
+  userName: string;
+  userTier: string;
+  spaceName: string;
+  date: string;
+  startTime: string;
+  endTime: string;
+  duration: number;
+  type: "individual" | "group";
+  status: "confirmed" | "checked_in";
+  equipmentRequested: { label: string; spaceId: string; spaceName: string; spaceLeadName: string }[];
+  groupMembers?: { name: string; matricNumber: string }[];
+}
+
+interface EquipmentCodeResult {
+  code: string;
+  equipmentLabel: string;
+  spaceName: string;
+  spaceLeadName: string;
+}
+
+const MOCK_BOOKINGS: Record<string, MockBooking> = {
+  "BMS-2025-A7X3K": {
+    bmsCode: "BMS-2025-A7X3K",
+    userName: "Adeola Fashola",
+    userTier: "Product Developer",
+    spaceName: "Maker Space",
+    date: new Date().toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long", year: "numeric" }),
+    startTime: "10:00",
+    endTime: "12:00",
+    duration: 2,
+    type: "individual",
+    status: "confirmed",
+    equipmentRequested: [
+      { label: "3D Printer (Medium)", spaceId: "maker-space", spaceName: "Maker Space", spaceLeadName: "Amaka Eze" },
+      { label: "Laser Cutter",        spaceId: "maker-space", spaceName: "Maker Space", spaceLeadName: "Amaka Eze" },
+    ],
+  },
+  "BMS-2025-B3R1W": {
+    bmsCode: "BMS-2025-B3R1W",
+    userName: "Chukwuemeka Obi",
+    userTier: "Startup Team",
+    spaceName: "AI & Robotics Lab",
+    date: new Date().toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long", year: "numeric" }),
+    startTime: "11:00",
+    endTime: "13:00",
+    duration: 2,
+    type: "group",
+    status: "confirmed",
+    equipmentRequested: [
+      { label: "Robotics Kit",    spaceId: "ai-robotics-lab", spaceName: "AI & Robotics Lab", spaceLeadName: "Segun Balogun" },
+      { label: "GPU Workstation", spaceId: "ai-robotics-lab", spaceName: "AI & Robotics Lab", spaceLeadName: "Segun Balogun" },
+    ],
+    groupMembers: [
+      { name: "Tolu Adeyemi",  matricNumber: "190404012" },
+      { name: "Bola Ogundimu", matricNumber: "200302045" },
+      { name: "Femi Owolabi",  matricNumber: "210102078" },
+    ],
+  },
+  "BMS-2025-C9N5D": {
+    bmsCode: "BMS-2025-C9N5D",
+    userName: "Ngozi Mbeki",
+    userTier: "Lecturer/Staff",
+    spaceName: "Board Room (Main)",
+    date: new Date().toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long", year: "numeric" }),
+    startTime: "14:00",
+    endTime: "16:00",
+    duration: 2,
+    type: "group",
+    status: "confirmed",
+    equipmentRequested: [],
+    groupMembers: [
+      { name: "Dr. Emeka Eze",    matricNumber: "" },
+      { name: "Prof. Bayo Lawal", matricNumber: "" },
+    ],
+  },
 };
 
-const mockLookup = (code: string): CheckInResult => {
-  if (code === "BMS-2025-T4K9P") {
-    return {
-      success: true,
-      booking: {
-        bmsCode: code,
-        user: "Tolu Adeyemi",
-        tier: "Regular Student",
-        space: "Co-working Space",
-        date: "2025-07-17",
-        startTime: "10:00",
-        endTime: "12:00",
-        type: "individual",
-      },
-    };
-  }
-  if (code === "BMS-2025-Z9M2R") {
-    return {
-      success: true,
-      booking: {
-        bmsCode: code,
-        user: "Zara Mohammed",
-        tier: "Regular Student",
-        space: "AI & Robotics Lab",
-        date: "2025-07-17",
-        startTime: "13:00",
-        endTime: "16:00",
-        type: "individual",
-      },
-    };
-  }
-  if (code === "BMS-2025-GRP01") {
-    return {
-      success: true,
-      booking: {
-        bmsCode: code,
-        user: "Amaka Obi (Lead)",
-        tier: "Product Developer",
-        space: "Pitch Garage",
-        date: "2025-07-17",
-        startTime: "14:00",
-        endTime: "16:00",
-        type: "group",
-        groupMembers: ["Seun Fadeyi", "Chidi Eze", "Bimpe Abiodun"],
-      },
-    };
-  }
-  return { success: false, error: "Booking code not found or already checked in." };
-};
+function generateEQCode(): string {
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  let result = "";
+  for (let i = 0; i < 5; i++) result += chars[Math.floor(Math.random() * chars.length)];
+  return `EQ-${new Date().getFullYear()}-${result}`;
+}
 
-export default function CheckInPage() {
-  const [code, setCode] = useState("");
-  const [result, setResult] = useState<CheckInResult | null>(null);
-  const [checkedIn, setCheckedIn] = useState(false);
-  const [loading, setLoading] = useState(false);
+type CheckinStep = "input" | "found" | "checkedin";
 
-  const lookup = async () => {
-    if (!code.trim()) return;
+export default function AdminCheckinPage() {
+  const [code, setCode]                   = useState("");
+  const [step, setStep]                   = useState<CheckinStep>("input");
+  const [booking, setBooking]             = useState<MockBooking | null>(null);
+  const [errorMsg, setErrorMsg]           = useState("");
+  const [loading, setLoading]             = useState(false);
+  const [equipmentCodes, setEquipmentCodes] = useState<EquipmentCodeResult[]>([]);
+  const [copiedIndex, setCopiedIndex]     = useState<number | null>(null);
+
+  const [recentCheckins] = useState([
+    { name: "Kemi Adeyemi",     bmsCode: "BMS-2025-P1Q2R", space: "Co-working Space", time: "09:42 AM" },
+    { name: "Jide Okafor",      bmsCode: "BMS-2025-M5N6T", space: "Maker Space",      time: "09:58 AM" },
+    { name: "Comfort Williams", bmsCode: "BMS-2025-W3X4Y", space: "VR Lab",           time: "10:11 AM" },
+  ]);
+
+  const handleLookup = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrorMsg("");
+    const trimmed = code.trim().toUpperCase();
+    if (!trimmed) return;
     setLoading(true);
-    await new Promise((r) => setTimeout(r, 600)); // mock delay
-    // TODO: Replace with GET /api/checkin/lookup?code={code}
-    setResult(mockLookup(code.toUpperCase()));
-    setCheckedIn(false);
+    // TODO: GET /api/admin/bookings/lookup?code=trimmed
+    await new Promise((r) => setTimeout(r, 700));
     setLoading(false);
+    const found = MOCK_BOOKINGS[trimmed];
+    if (!found) {
+      setErrorMsg("No confirmed booking found for this code. Check the code and try again.");
+      return;
+    }
+    if (found.status === "checked_in") {
+      setErrorMsg("This booking has already been checked in.");
+      return;
+    }
+    setBooking(found);
+    setStep("found");
   };
 
-  const confirmCheckIn = async () => {
+  const handleConfirmCheckin = async () => {
+    if (!booking) return;
     setLoading(true);
+    // TODO: POST /api/admin/bookings/checkin — marks status=checked_in, sets checkedInAt + sessionExpiresAt
     await new Promise((r) => setTimeout(r, 800));
-    // TODO: Replace with POST /api/checkin/confirm with { bmsCode: code }
-    setCheckedIn(true);
+    const generated: EquipmentCodeResult[] = booking.equipmentRequested.map((eq) => ({
+      code: generateEQCode(),
+      equipmentLabel: eq.label,
+      spaceName: eq.spaceName,
+      spaceLeadName: eq.spaceLeadName,
+    }));
+    setEquipmentCodes(generated);
     setLoading(false);
+    setStep("checkedin");
+  };
+
+  const copyCode = (idx: number, val: string) => {
+    navigator.clipboard.writeText(val).catch(() => {});
+    setCopiedIndex(idx);
+    setTimeout(() => setCopiedIndex(null), 1500);
   };
 
   const reset = () => {
     setCode("");
-    setResult(null);
-    setCheckedIn(false);
+    setStep("input");
+    setBooking(null);
+    setErrorMsg("");
+    setEquipmentCodes([]);
   };
 
   return (
@@ -120,173 +182,207 @@ export default function CheckInPage() {
       <AdminSidebar />
 
       <div className="flex-1 overflow-auto">
-        <main className="max-w-2xl mx-auto px-6 py-8 space-y-6">
+        <main className="max-w-5xl mx-auto px-6 py-8 space-y-6">
+          {/* Header */}
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Receptionist Check-in</h1>
+            <h1 className="text-2xl font-bold text-gray-900">Check-in Desk</h1>
             <p className="text-sm text-gray-500 mt-0.5">
-              Scan or manually enter a booking code to check in a user.
+              Confirm arrivals, generate equipment access codes for space leads.
             </p>
           </div>
 
-          {/* Code entry */}
-          <Card>
-            <h2 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
-              <QrCode size={16} className="text-brand-500" />
-              Enter Booking Code
-            </h2>
-            <div className="flex gap-2">
-              <input
-                type="text"
-                placeholder="e.g. BMS-2025-T4K9P"
-                value={code}
-                onChange={(e) => setCode(e.target.value.toUpperCase())}
-                onKeyDown={(e) => e.key === "Enter" && lookup()}
-                className="flex-1 px-4 py-3 rounded-xl border border-gray-300 text-sm font-mono font-medium focus:outline-none focus:ring-2 focus:ring-brand-500 uppercase placeholder:normal-case placeholder:font-normal"
-              />
-              <Button onClick={lookup} loading={loading} disabled={!code.trim()}>
-                <Search size={16} /> Lookup
-              </Button>
-            </div>
-            <p className="text-xs text-gray-400 mt-2">
-              💡 Tip: You can also scan the QR code — it contains the booking code.
-            </p>
-          </Card>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-2 space-y-4">
 
-          {/* Result */}
-          {result && !checkedIn && (
-            <Card
-              className={`border-2 ${
-                result.success ? "border-green-200 bg-green-50" : "border-red-200 bg-red-50"
-              }`}
-            >
-              {result.success && result.booking ? (
-                <>
-                  <div className="flex items-center gap-2 mb-4">
-                    <CheckCircle size={20} className="text-green-600" />
-                    <p className="font-semibold text-green-800">Booking Found</p>
-                    <Badge variant="success" className="ml-auto">{result.booking.bmsCode}</Badge>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4 mb-4">
+              {/* Step 1 — Input code */}
+              {step === "input" && (
+                <Card>
+                  <h2 className="font-semibold text-gray-900 flex items-center gap-2 mb-4">
+                    <ScanLine size={16} className="text-brand-500" /> Enter Booking Code
+                  </h2>
+                  <form onSubmit={handleLookup} className="space-y-3">
                     <div>
-                      <p className="text-xs text-gray-500 font-medium mb-0.5">User</p>
-                      <p className="font-semibold text-gray-900">{result.booking.user}</p>
-                      <p className="text-xs text-gray-500">{result.booking.tier}</p>
+                      <label className="text-xs text-gray-500 font-medium mb-1.5 block">
+                        BMS code from user's confirmation screen or email
+                      </label>
+                      <input
+                        type="text"
+                        value={code}
+                        onChange={(e) => setCode(e.target.value.toUpperCase())}
+                        placeholder="BMS-2025-XXXXX"
+                        autoFocus
+                        className="w-full px-4 py-3 rounded-xl border border-gray-300 text-base font-mono tracking-widest focus:outline-none focus:ring-2 focus:ring-brand-500"
+                      />
                     </div>
-                    <div>
-                      <p className="text-xs text-gray-500 font-medium mb-0.5">Space</p>
-                      <p className="font-semibold text-gray-900 flex items-center gap-1">
-                        <Building2 size={13} /> {result.booking.space}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-gray-500 font-medium mb-0.5">Date</p>
-                      <p className="text-sm font-medium text-gray-800 flex items-center gap-1">
-                        {formatDate(result.booking.date)}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-gray-500 font-medium mb-0.5">Time</p>
-                      <p className="text-sm font-medium text-gray-800 flex items-center gap-1">
-                        <Clock size={13} />
-                        {formatTime(result.booking.startTime)} – {formatTime(result.booking.endTime)}
-                      </p>
-                    </div>
-                  </div>
-
-                  {result.booking.type === "group" && result.booking.groupMembers && (
-                    <div className="mb-4 p-3 bg-white rounded-xl border border-green-200">
-                      <p className="text-xs font-semibold text-gray-700 mb-2 flex items-center gap-1.5">
-                        <Users size={13} /> Group Members
-                      </p>
-                      <ul className="space-y-1">
-                        {result.booking.groupMembers.map((m) => (
-                          <li key={m} className="text-sm text-gray-600 flex items-center gap-2">
-                            <CheckCircle size={12} className="text-green-500" /> {m}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-
-                  {result.booking.paymentRequired && (
-                    <div className="mb-4 p-3 bg-amber-50 rounded-xl border border-amber-200">
-                      <p className="text-sm font-semibold text-amber-700 flex items-center gap-1.5">
-                        <AlertCircle size={14} />
-                        Payment Required: ₦{result.booking.paymentAmount?.toLocaleString()}
-                      </p>
-                      <p className="text-xs text-amber-600 mt-1">
-                        Collect payment before confirming check-in. Log payment below.
-                      </p>
-                    </div>
-                  )}
-
-                  <div className="flex gap-3">
-                    <Button className="flex-1" onClick={confirmCheckIn} loading={loading}>
-                      <CheckCircle size={16} /> Confirm Check-in
+                    {errorMsg && (
+                      <div className="flex items-start gap-2 bg-red-50 border border-red-100 rounded-xl px-3 py-2.5">
+                        <AlertCircle size={14} className="text-red-500 shrink-0 mt-0.5" />
+                        <p className="text-xs text-red-600">{errorMsg}</p>
+                      </div>
+                    )}
+                    <Button type="submit" loading={loading} className="w-full" size="lg">
+                      <ScanLine size={15} /> Look Up Booking
                     </Button>
-                    <Button variant="outline" onClick={reset}>
-                      Cancel
-                    </Button>
-                  </div>
-                </>
-              ) : (
-                <div className="flex items-center gap-3">
-                  <XCircle size={22} className="text-red-500 shrink-0" />
-                  <div>
-                    <p className="font-semibold text-red-700">Booking Not Found</p>
-                    <p className="text-sm text-red-600 mt-0.5">{result.error}</p>
-                  </div>
-                  <Button variant="outline" size="sm" className="ml-auto" onClick={reset}>
-                    Try Again
-                  </Button>
-                </div>
+                  </form>
+                  <p className="text-xs text-gray-400 text-center mt-4">
+                    Try: BMS-2025-A7X3K (with equipment) · BMS-2025-B3R1W (group) · BMS-2025-C9N5D (no equipment)
+                  </p>
+                </Card>
               )}
-            </Card>
-          )}
 
-          {/* Success */}
-          {checkedIn && (
-            <Card className="border-2 border-brand-200 bg-brand-50 text-center py-8">
-              <CheckCircle size={44} className="text-brand-600 mx-auto mb-3" />
-              <p className="text-xl font-bold text-brand-900 mb-1">Access Granted!</p>
-              <p className="text-brand-700 text-sm mb-2">
-                {result?.booking?.user} has been checked in to <strong>{result?.booking?.space}</strong>.
-              </p>
-              <p className="text-xs text-brand-500 mb-5">
-                Check-in time logged: {new Date().toLocaleTimeString("en-NG")}
-              </p>
-              <Button onClick={reset}>
-                Check In Next User
-              </Button>
-            </Card>
-          )}
+              {/* Step 2 — Booking found */}
+              {step === "found" && booking && (
+                <Card>
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="font-semibold text-gray-900 flex items-center gap-2">
+                      <CheckCircle size={16} className="text-green-500" /> Booking Found
+                    </h2>
+                    <button onClick={reset} className="text-gray-400 hover:text-gray-600">
+                      <RotateCcw size={14} />
+                    </button>
+                  </div>
 
-          {/* Recent check-ins */}
-          <Card>
-            <h2 className="font-semibold text-gray-800 mb-3">Recent Check-ins Today</h2>
-            <div className="space-y-2">
-              {[
-                { user: "Bimpe Abiodun", space: "Co-working Space", time: "10:03 AM" },
-                { user: "Kunle Osei", space: "Design Studio", time: "10:22 AM" },
-                { user: "Fatima Yusuf", space: "AI & Robotics Lab", time: "11:05 AM" },
-                { user: "David Anya", space: "Collaboration Space", time: "11:30 AM" },
-              ].map((c) => (
-                <div key={c.user} className="flex items-center justify-between py-2.5 px-3 rounded-xl hover:bg-gray-50 transition-colors">
-                  <div className="flex items-center gap-3">
-                    <div className="w-7 h-7 rounded-full bg-green-100 flex items-center justify-center">
-                      <span className="text-green-700 text-xs font-bold">{c.user[0]}</span>
+                  <div className="bg-gray-50 rounded-2xl p-4 space-y-3 mb-4">
+                    <div className="flex items-center justify-between">
+                      <p className="font-mono text-sm font-bold text-brand-700">{booking.bmsCode}</p>
+                      <Badge variant="success">Confirmed</Badge>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3 text-sm">
+                      <div className="flex items-center gap-2 text-gray-600"><User size={13} className="text-gray-400" />{booking.userName}</div>
+                      <div className="flex items-center gap-2 text-gray-600"><Building2 size={13} className="text-gray-400" />{booking.spaceName}</div>
+                      <div className="flex items-center gap-2 text-gray-600"><Calendar size={13} className="text-gray-400" />{booking.date}</div>
+                      <div className="flex items-center gap-2 text-gray-600"><Clock size={13} className="text-gray-400" />{booking.startTime}–{booking.endTime} ({booking.duration}h)</div>
+                    </div>
+                    {booking.type === "group" && booking.groupMembers && (
+                      <div>
+                        <p className="text-xs text-gray-500 font-medium mb-1.5 flex items-center gap-1"><Users size={11} /> Group members</p>
+                        <div className="flex flex-wrap gap-1.5">
+                          {booking.groupMembers.map((m) => (
+                            <span key={m.name} className="text-xs bg-white border border-gray-200 px-2.5 py-1 rounded-full text-gray-600">{m.name}</span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Equipment requests preview */}
+                  {booking.equipmentRequested.length > 0 && (
+                    <div className="mb-4">
+                      <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2 flex items-center gap-1.5">
+                        <Cpu size={11} /> Equipment requested — codes generated on confirm
+                      </p>
+                      <div className="space-y-2">
+                        {booking.equipmentRequested.map((eq, i) => (
+                          <div key={i} className="flex items-center justify-between bg-orange-50 border border-orange-100 rounded-xl px-3 py-2.5">
+                            <div>
+                              <p className="text-sm font-medium text-gray-800">{eq.label}</p>
+                              <p className="text-xs text-gray-500">{eq.spaceName} · Lead: {eq.spaceLeadName}</p>
+                            </div>
+                            <Badge variant="warning" size="sm">Pending code</Badge>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  <Button onClick={handleConfirmCheckin} className="w-full" size="lg" loading={loading}>
+                    <CheckCircle size={15} /> Confirm Check-in
+                    {booking.equipmentRequested.length > 0
+                      ? ` & Generate ${booking.equipmentRequested.length} Equipment Code${booking.equipmentRequested.length > 1 ? "s" : ""}`
+                      : ""}
+                  </Button>
+                </Card>
+              )}
+
+              {/* Step 3 — Checked in + equipment codes */}
+              {step === "checkedin" && booking && (
+                <Card>
+                  <div className="flex items-center gap-3 mb-5">
+                    <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center">
+                      <CheckCircle size={22} className="text-green-600" />
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-gray-800">{c.user}</p>
-                      <p className="text-xs text-gray-400">{c.space}</p>
+                      <p className="font-bold text-gray-900">Checked in successfully</p>
+                      <p className="text-sm text-gray-500">{booking.userName} · {booking.spaceName} · {booking.startTime}–{booking.endTime}</p>
                     </div>
                   </div>
-                  <span className="text-xs text-gray-400">{c.time}</span>
-                </div>
-              ))}
+
+                  {/* BMS expiry info */}
+                  <div className="flex items-start gap-2 bg-blue-50 border border-blue-100 rounded-xl px-3 py-2.5 mb-4">
+                    <Clock size={13} className="text-blue-500 shrink-0 mt-0.5" />
+                    <p className="text-xs text-blue-700">
+                      Booking code <span className="font-mono font-bold">{booking.bmsCode}</span> is now active and will expire automatically at <strong>{booking.endTime}</strong> when the session ends.
+                    </p>
+                  </div>
+
+                  {/* Equipment access codes */}
+                  {equipmentCodes.length > 0 ? (
+                    <div>
+                      <p className="text-sm font-semibold text-gray-800 mb-3 flex items-center gap-2">
+                        <Cpu size={14} className="text-brand-500" /> Equipment Access Codes — hand these to the user
+                      </p>
+                      <div className="space-y-3">
+                        {equipmentCodes.map((eq, i) => (
+                          <div key={i} className="border border-gray-200 rounded-2xl p-4">
+                            <div className="flex items-start justify-between mb-2">
+                              <div>
+                                <p className="font-mono text-2xl font-bold text-brand-700 tracking-widest">{eq.code}</p>
+                                <p className="text-xs text-gray-400 mt-0.5">One-time use · expires after the space lead verifies it</p>
+                              </div>
+                              <button
+                                onClick={() => copyCode(i, eq.code)}
+                                className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-brand-600 bg-gray-100 hover:bg-brand-50 px-3 py-1.5 rounded-lg transition-colors shrink-0"
+                              >
+                                {copiedIndex === i ? <><CheckCircle size={12} className="text-green-500" /> Copied</> : <><Copy size={12} /> Copy</>}
+                              </button>
+                            </div>
+                            <div className="flex items-center gap-4 text-xs text-gray-500 flex-wrap">
+                              <span className="flex items-center gap-1"><Cpu size={11} /> {eq.equipmentLabel}</span>
+                              <span className="flex items-center gap-1"><Building2 size={11} /> {eq.spaceName}</span>
+                              <span className="flex items-center gap-1"><User size={11} /> Show to: <strong>{eq.spaceLeadName}</strong></span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                      <p className="text-xs text-gray-400 mt-2">
+                        Instruct the user to present each code to the named space lead before using the equipment.
+                      </p>
+                    </div>
+                  ) : (
+                    <p className="text-sm text-gray-500 text-center py-2">No equipment was requested for this booking.</p>
+                  )}
+
+                  <div className="mt-5">
+                    <Button variant="outline" onClick={reset} className="w-full">
+                      <RotateCcw size={13} /> Check in another user
+                    </Button>
+                  </div>
+                </Card>
+              )}
             </div>
-          </Card>
+
+            {/* Recent check-ins */}
+            <div>
+              <Card>
+                <h3 className="font-semibold text-gray-900 text-sm flex items-center gap-2 mb-3">
+                  <RefreshCw size={13} className="text-brand-500" /> Recent Check-ins
+                </h3>
+                <div className="space-y-3">
+                  {recentCheckins.map((c, i) => (
+                    <div key={i} className="flex items-start gap-2">
+                      <CheckCircle size={14} className="text-green-500 shrink-0 mt-0.5" />
+                      <div>
+                        <p className="text-sm font-medium text-gray-800">{c.name}</p>
+                        <p className="text-xs text-gray-400">{c.space}</p>
+                        <p className="text-xs text-gray-400 font-mono">{c.bmsCode}</p>
+                        <p className="text-xs text-gray-300">{c.time}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </Card>
+            </div>
+          </div>
         </main>
       </div>
     </div>

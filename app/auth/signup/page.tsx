@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Button from "@/components/ui/Button";
-import { ArrowLeft, ArrowRight, Eye, EyeOff, CheckCircle, Upload } from "lucide-react";
+import { ArrowLeft, ArrowRight, Eye, EyeOff, CheckCircle, Upload, GraduationCap, Building2, CreditCard } from "lucide-react";
 
 type Step = "class_select" | "internal_form" | "external_form" | "success";
 type UserClass = "internal" | "external";
@@ -121,7 +121,7 @@ export default function SignupPage() {
                 className="group flex items-start gap-4 p-5 rounded-2xl border-2 border-gray-200 hover:border-brand-500 hover:bg-brand-50 transition-all text-left"
               >
                 <div className="w-10 h-10 rounded-xl bg-brand-100 group-hover:bg-brand-200 flex items-center justify-center shrink-0 transition-colors">
-                  <span className="text-brand-600 font-bold text-sm">🎓</span>
+                  <GraduationCap size={18} className="text-brand-600" />
                 </div>
                 <div>
                   <p className="font-semibold text-gray-900">Yes — I&apos;m a UNILAG student or staff</p>
@@ -137,7 +137,7 @@ export default function SignupPage() {
                 className="group flex items-start gap-4 p-5 rounded-2xl border-2 border-gray-200 hover:border-brand-500 hover:bg-brand-50 transition-all text-left"
               >
                 <div className="w-10 h-10 rounded-xl bg-gray-100 group-hover:bg-brand-100 flex items-center justify-center shrink-0 transition-colors">
-                  <span className="text-gray-600 font-bold text-sm">🏢</span>
+                  <Building2 size={18} className="text-gray-600 group-hover:text-brand-600 transition-colors" />
                 </div>
                 <div>
                   <p className="font-semibold text-gray-900">No — I&apos;m an external user</p>
@@ -440,7 +440,7 @@ export default function SignupPage() {
                     onClick={sendOTP}
                     disabled={!externalForm.phone || otpSent}
                   >
-                    {otpSent ? "Sent ✓" : "Send OTP"}
+                    {otpSent ? "Sent" : "Send OTP"}
                   </Button>
                 </div>
 
@@ -502,7 +502,8 @@ export default function SignupPage() {
               </div>
 
               <div className="bg-amber-50 border border-amber-200 text-amber-700 text-xs px-4 py-3 rounded-xl">
-                💳 External users pay <strong>₦3,000</strong> at the front desk per coworking session.
+                <CreditCard size={13} className="inline mr-1 shrink-0" />
+                External users pay <strong>₦3,000</strong> at the front desk per coworking session.
                 Other space pricing is confirmed at booking.
               </div>
 
