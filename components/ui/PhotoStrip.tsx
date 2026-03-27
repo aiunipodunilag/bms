@@ -25,16 +25,14 @@ export default function PhotoStrip() {
 
   return (
     <div className="relative w-full overflow-hidden mt-10">
-      {/* Left + right fade */}
+      {/* Left + right edge fade */}
       <div className="pointer-events-none absolute left-0 top-0 h-full w-20 z-10 bg-gradient-to-r from-brand-950 to-transparent" />
       <div className="pointer-events-none absolute right-0 top-0 h-full w-20 z-10 bg-gradient-to-l from-brand-800 to-transparent" />
 
+      {/* animate-scroll-x is defined in globals.css */}
       <div
-        className="flex gap-3"
-        style={{
-          animation: "scroll-x 40s linear infinite",
-          width: "max-content",
-        }}
+        className="flex gap-3 animate-scroll-x"
+        style={{ width: "max-content" }}
       >
         {doubled.map((photo, i) => (
           <div
@@ -47,7 +45,6 @@ export default function PhotoStrip() {
               fill
               className="object-cover"
               sizes="208px"
-              onError={() => {}}
             />
             <div className="absolute inset-0 bg-brand-900/20" />
             <p className="absolute bottom-2 left-2 text-xs text-white/80 font-medium bg-black/40 px-2 py-0.5 rounded-full">
@@ -56,13 +53,6 @@ export default function PhotoStrip() {
           </div>
         ))}
       </div>
-
-      <style jsx>{`
-        @keyframes scroll-x {
-          0%   { transform: translateX(0); }
-          100% { transform: translateX(-50%); }
-        }
-      `}</style>
     </div>
   );
 }
