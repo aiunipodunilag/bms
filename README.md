@@ -1,5 +1,6 @@
 # AI-UNIPOD UNILAG — Booking Management System (BMS)
 
+> **FullStack Developer:** Usifoh Joshua
 > **Product Manager:** Omotosho Enoch
 > **Version:** 2.0 — Frontend Implementation
 > **Stack:** Next.js 14 · TypeScript · Tailwind CSS · NextAuth.js · Recharts
