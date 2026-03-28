@@ -29,7 +29,7 @@ const features = [
   {
     icon: ShieldCheck,
     title: "Verified Access",
-    description: "UNILAG ID verification for students and staff. External users verified via OTP — every booking tied to a real identity.",
+    description: "UNILAG ID verification for students and staff. External users verified via email confirmation — every booking tied to a real identity.",
   },
   {
     icon: Zap,

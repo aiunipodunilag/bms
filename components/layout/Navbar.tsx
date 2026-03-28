@@ -1,11 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import Button from "@/components/ui/Button";
 import { Menu, X, Bell, ChevronDown, LogOut, User, Settings } from "lucide-react";
+import { createClient } from "@/lib/supabase/client";
 
 interface NavbarProps {
   user?: {
@@ -18,8 +19,19 @@ interface NavbarProps {
 
 export default function Navbar({ user }: NavbarProps) {
   const pathname = usePathname();
+  const router = useRouter();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
+  const [signingOut, setSigningOut] = useState(false);
+
+  const handleSignOut = async () => {
+    setSigningOut(true);
+    setProfileOpen(false);
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    router.push("/");
+    router.refresh();
+  };
 
   const navLinks = user
     ? [
@@ -40,13 +52,11 @@ export default function Navbar({ user }: NavbarProps) {
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <Link href={user ? "/dashboard" : "/"} className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-brand-600 flex items-center justify-center">
-              <span className="text-white font-bold text-sm">U</span>
-            </div>
             <div className="hidden sm:block">
               <span className="font-bold text-gray-900 text-sm">AI-UNIPOD</span>
               <span className="block text-xs text-gray-500 -mt-0.5">UNILAG BMS</span>
             </div>
+            <span className="sm:hidden font-bold text-gray-900 text-sm">AI-UNIPOD</span>
           </Link>
 
           {/* Desktop nav */}
@@ -98,30 +108,30 @@ export default function Navbar({ user }: NavbarProps) {
                   </button>
 
                   {profileOpen && (
-                    <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-gray-200 py-1 z-50">
-                      <Link
-                        href="/dashboard/profile"
-                        className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                    <>
+                      {/* Backdrop */}
+                      <div
+                        className="fixed inset-0 z-40"
                         onClick={() => setProfileOpen(false)}
-                      >
-                        <User size={14} /> Profile
-                      </Link>
-                      <Link
-                        href="/dashboard/settings"
-                        className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
-                        onClick={() => setProfileOpen(false)}
-                      >
-                        <Settings size={14} /> Settings
-                      </Link>
-                      <hr className="my-1 border-gray-100" />
-                      <Link
-                        href="/auth/logout"
-                        className="flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50"
-                        onClick={() => setProfileOpen(false)}
-                      >
-                        <LogOut size={14} /> Sign out
-                      </Link>
-                    </div>
+                      />
+                      <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-gray-200 py-1 z-50">
+                        <Link
+                          href="/dashboard/profile"
+                          className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                          onClick={() => setProfileOpen(false)}
+                        >
+                          <User size={14} /> Profile
+                        </Link>
+                        <hr className="my-1 border-gray-100" />
+                        <button
+                          onClick={handleSignOut}
+                          disabled={signingOut}
+                          className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50 disabled:opacity-50"
+                        >
+                          <LogOut size={14} /> {signingOut ? "Signing out..." : "Sign out"}
+                        </button>
+                      </div>
+                    </>
                   )}
                 </div>
               </>
@@ -164,7 +174,14 @@ export default function Navbar({ user }: NavbarProps) {
                 {link.label}
               </Link>
             ))}
-            {!user && (
+            {user ? (
+              <button
+                onClick={handleSignOut}
+                className="w-full text-left mt-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 rounded-lg"
+              >
+                Sign out
+              </button>
+            ) : (
               <div className="mt-3 flex flex-col gap-2 px-4">
                 <Link href="/auth/signup">
                   <Button className="w-full" size="sm">Sign Up Free</Button>

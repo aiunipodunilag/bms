@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Button from "@/components/ui/Button";
 import { Eye, EyeOff, ArrowLeft } from "lucide-react";
+import { createClient } from "@/lib/supabase/client";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -18,16 +19,25 @@ export default function LoginPage() {
     setError("");
     setLoading(true);
 
-    // TODO: Replace with NextAuth signIn() call
-    // Example:
-    // const result = await signIn("credentials", {
-    //   email: form.email, password: form.password, redirect: false
-    // });
-    // if (result?.error) { setError("Invalid email or password."); } else { router.push("/dashboard"); }
+    const supabase = createClient();
+    const { error: authError } = await supabase.auth.signInWithPassword({
+      email: form.email.trim().toLowerCase(),
+      password: form.password,
+    });
 
-    await new Promise((r) => setTimeout(r, 1000)); // mock delay
+    if (authError) {
+      setError(
+        authError.message === "Invalid login credentials"
+          ? "Incorrect email or password. Please try again."
+          : authError.message
+      );
+      setLoading(false);
+      return;
+    }
+
+    // Refresh to let the server pick up the new session cookie
+    router.refresh();
     router.push("/dashboard");
-    setLoading(false);
   };
 
   return (
@@ -44,9 +54,6 @@ export default function LoginPage() {
         <div className="bg-white rounded-3xl p-8 shadow-2xl">
           {/* Header */}
           <div className="mb-7">
-            <div className="w-10 h-10 rounded-xl bg-brand-100 flex items-center justify-center mb-4">
-              <span className="text-brand-700 font-bold text-lg">U</span>
-            </div>
             <h1 className="text-2xl font-bold text-gray-900">Welcome back</h1>
             <p className="text-gray-500 text-sm mt-1">
               Sign in to your AI-UNIPOD BMS account
@@ -62,6 +69,7 @@ export default function LoginPage() {
               <input
                 type="email"
                 required
+                autoComplete="email"
                 placeholder="you@email.com"
                 value={form.email}
                 onChange={(e) => setForm({ ...form, email: e.target.value })}
@@ -84,6 +92,7 @@ export default function LoginPage() {
                 <input
                   type={showPassword ? "text" : "password"}
                   required
+                  autoComplete="current-password"
                   placeholder="Your password"
                   value={form.password}
                   onChange={(e) => setForm({ ...form, password: e.target.value })}

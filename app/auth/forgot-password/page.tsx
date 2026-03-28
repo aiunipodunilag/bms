@@ -9,13 +9,25 @@ export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
+  const [error, setError] = useState("");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError("");
     setLoading(true);
-    // TODO: POST /api/auth/forgot-password with { email }
-    await new Promise((r) => setTimeout(r, 1000));
-    setSent(true);
+
+    const res = await fetch("/api/auth/forgot-password", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: email.trim().toLowerCase() }),
+    });
+
+    if (!res.ok) {
+      const data = await res.json();
+      setError(data.error ?? "Something went wrong. Please try again.");
+    } else {
+      setSent(true);
+    }
     setLoading(false);
   };
 
@@ -39,6 +51,12 @@ export default function ForgotPasswordPage() {
               <p className="text-gray-500 text-sm mb-6">
                 Enter the email address on your account and we&apos;ll send you a reset link.
               </p>
+
+              {error && (
+                <div className="bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded-xl mb-4">
+                  {error}
+                </div>
+              )}
 
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
@@ -66,8 +84,8 @@ export default function ForgotPasswordPage() {
               </div>
               <h2 className="text-xl font-bold text-gray-900 mb-2">Check your email</h2>
               <p className="text-gray-500 text-sm mb-6">
-                A password reset link has been sent to <strong>{email}</strong>. Check your
-                inbox and follow the instructions to reset your password.
+                If an account exists for <strong>{email}</strong>, a password reset link has
+                been sent. Check your inbox and follow the instructions.
               </p>
               <Link href="/auth/login">
                 <Button className="w-full" variant="secondary">

@@ -4,9 +4,9 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ShieldCheck, Eye, EyeOff, Lock, Mail, AlertCircle } from "lucide-react";
 import Button from "@/components/ui/Button";
+import { createClient } from "@/lib/supabase/client";
 import type { AdminRole } from "@/types";
 
-// Role-to-redirect map — after login, each role goes to their own landing page
 const ROLE_REDIRECTS: Record<AdminRole, string> = {
   super_admin:  "/superadmin",
   admin:        "/admin",
@@ -14,7 +14,6 @@ const ROLE_REDIRECTS: Record<AdminRole, string> = {
   space_lead:   "/admin/space-lead",
 };
 
-// Role labels shown in the "You are logged in as" success message
 const ROLE_LABELS: Record<AdminRole, string> = {
   super_admin:  "Super Admin",
   admin:        "Admin",
@@ -24,11 +23,11 @@ const ROLE_LABELS: Record<AdminRole, string> = {
 
 export default function AdminLoginPage() {
   const router = useRouter();
-  const [email, setEmail]         = useState("");
-  const [password, setPassword]   = useState("");
-  const [showPw, setShowPw]       = useState(false);
-  const [loading, setLoading]     = useState(false);
-  const [error, setError]         = useState("");
+  const [email, setEmail]       = useState("");
+  const [password, setPassword] = useState("");
+  const [showPw, setShowPw]     = useState(false);
+  const [loading, setLoading]   = useState(false);
+  const [error, setError]       = useState("");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -39,18 +38,54 @@ export default function AdminLoginPage() {
     }
 
     setLoading(true);
-    // TODO: POST /api/admin/auth/login
-    // Returns: { admin: AdminAccount, role: AdminRole, token: string }
-    await new Promise((r) => setTimeout(r, 1000));
 
-    // ── Mock role detection (replace with real API response) ──────────────────
-    let mockRole: AdminRole = "admin";
-    if (email.includes("super"))       mockRole = "super_admin";
-    else if (email.includes("recep"))  mockRole = "receptionist";
-    else if (email.includes("lead"))   mockRole = "space_lead";
+    const supabase = createClient();
 
-    setLoading(false);
-    router.push(ROLE_REDIRECTS[mockRole]);
+    // Sign in with Supabase Auth
+    const { data: authData, error: authErr } = await supabase.auth.signInWithPassword({
+      email: email.trim().toLowerCase(),
+      password,
+    });
+
+    if (authErr || !authData.user) {
+      setError(
+        authErr?.message === "Invalid login credentials"
+          ? "Incorrect email or password."
+          : authErr?.message ?? "Login failed"
+      );
+      setLoading(false);
+      return;
+    }
+
+    // Check if user has an admin account
+    const { data: adminAccount, error: adminErr } = await supabase
+      .from("admin_accounts")
+      .select("role, status")
+      .eq("id", authData.user.id)
+      .single();
+
+    if (adminErr || !adminAccount) {
+      await supabase.auth.signOut();
+      setError("Access denied. This portal is for authorised UNIPOD staff only.");
+      setLoading(false);
+      return;
+    }
+
+    if (adminAccount.status !== "active") {
+      await supabase.auth.signOut();
+      setError("Your admin account has been suspended. Contact a super admin.");
+      setLoading(false);
+      return;
+    }
+
+    // Update last login time
+    await supabase
+      .from("admin_accounts")
+      .update({ last_login_at: new Date().toISOString() })
+      .eq("id", authData.user.id);
+
+    router.refresh();
+    router.push(ROLE_REDIRECTS[adminAccount.role as AdminRole]);
   };
 
   return (
@@ -58,9 +93,6 @@ export default function AdminLoginPage() {
       <div className="w-full max-w-sm">
         {/* Logo / brand */}
         <div className="text-center mb-8">
-          <div className="w-14 h-14 rounded-2xl bg-brand-600 flex items-center justify-center mx-auto mb-4 shadow-lg shadow-brand-900/40">
-            <ShieldCheck size={28} className="text-white" />
-          </div>
           <h1 className="text-xl font-bold text-white">UNIPOD Admin Portal</h1>
           <p className="text-sm text-gray-400 mt-1">Sign in with your admin credentials</p>
         </div>
@@ -70,14 +102,9 @@ export default function AdminLoginPage() {
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* Email */}
             <div>
-              <label className="text-xs text-gray-400 font-medium mb-1.5 block">
-                Admin email
-              </label>
+              <label className="text-xs text-gray-400 font-medium mb-1.5 block">Admin email</label>
               <div className="relative">
-                <Mail
-                  size={15}
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500"
-                />
+                <Mail size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
                 <input
                   type="email"
                   autoComplete="email"
@@ -91,14 +118,9 @@ export default function AdminLoginPage() {
 
             {/* Password */}
             <div>
-              <label className="text-xs text-gray-400 font-medium mb-1.5 block">
-                Password
-              </label>
+              <label className="text-xs text-gray-400 font-medium mb-1.5 block">Password</label>
               <div className="relative">
-                <Lock
-                  size={15}
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500"
-                />
+                <Lock size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
                 <input
                   type={showPw ? "text" : "password"}
                   autoComplete="current-password"
@@ -125,11 +147,7 @@ export default function AdminLoginPage() {
               </div>
             )}
 
-            <Button
-              type="submit"
-              className="w-full mt-1"
-              loading={loading}
-            >
+            <Button type="submit" className="w-full mt-1" loading={loading}>
               <ShieldCheck size={15} /> Sign in to Admin Portal
             </Button>
           </form>
