@@ -109,7 +109,7 @@ export const OPERATING_HOURS = {
 
 // Rules
 export const BOOKING_RULES = {
-  maxAdvanceDays: 4,
+  maxAdvanceDays: 14,
   noShowGracePeriod: 20,          // minutes
   groupSessionMinHours: 2,
   groupSessionMaxHours: 3,
