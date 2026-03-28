@@ -1,7 +1,13 @@
 /**
- * fix-css.js  —  Runs before `npm run build` on Vercel.
- * Rewrites source files to apply the light/clean theme and fix build errors.
- * Files patched: globals.css, Navbar, Card, Button, Badge, AdminSidebar
+ * fix-css.js — Runs before `npm run build` on Vercel.
+ * Writes:
+ *   1. tailwind.config.ts  — brand = deep blue, clean tokens
+ *   2. app/globals.css     — light theme, Space Grotesk + Orbitron
+ *   3. Navbar.tsx          — blue, mobile hamburger, Equipment link, sign-out routing
+ *   4. Card.tsx            — clean white card with hover option
+ *   5. Button.tsx          — blue primary
+ *   6. Badge.tsx           — blue default
+ *   7. AdminSidebar.tsx    — mobile hamburger drawer, sign-out → /admin/login
  */
 
 const fs   = require("fs");
@@ -15,9 +21,71 @@ function write(rel, content) {
   console.log(`✓ ${rel}`);
 }
 
-// ─── 1. globals.css ───────────────────────────────────────────────────────────
-write("app/globals.css", `
-@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@700;800;900&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+// ─── 1. tailwind.config.ts — brand = deep blue ───────────────────────────────
+write("tailwind.config.ts", `import type { Config } from "tailwindcss";
+import plugin from "tailwindcss/plugin";
+
+const config: Config = {
+  content: [
+    "./pages/**/*.{js,ts,jsx,tsx,mdx}",
+    "./components/**/*.{js,ts,jsx,tsx,mdx}",
+    "./app/**/*.{js,ts,jsx,tsx,mdx}",
+  ],
+  theme: {
+    extend: {
+      colors: {
+        brand: {
+          50:  "#eff6ff",
+          100: "#dbeafe",
+          200: "#bfdbfe",
+          300: "#93c5fd",
+          400: "#60a5fa",
+          500: "#3b82f6",
+          600: "#2563eb",
+          700: "#1d4ed8",
+          800: "#1e40af",
+          900: "#1e3a8a",
+          950: "#172554",
+        },
+      },
+      fontFamily: {
+        sans:    ["Space Grotesk", "system-ui", "sans-serif"],
+        display: ["Orbitron", "monospace"],
+      },
+      animation: {
+        "scroll-x": "scroll-x 40s linear infinite",
+      },
+      keyframes: {
+        "scroll-x": {
+          "0%":   { transform: "translateX(0)" },
+          "100%": { transform: "translateX(-50%)" },
+        },
+      },
+    },
+  },
+  plugins: [
+    plugin(function ({ addUtilities }) {
+      addUtilities({
+        ".scrollbar-none": {
+          "-ms-overflow-style": "none",
+          "scrollbar-width":    "none",
+        },
+        ".scrollbar-none::-webkit-scrollbar": {
+          display: "none",
+        },
+        ".font-display": {
+          "font-family": '"Orbitron", monospace',
+        },
+      });
+    }),
+  ],
+};
+
+export default config;
+`);
+
+// ─── 2. globals.css — light theme ────────────────────────────────────────────
+write("app/globals.css", `@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Space+Grotesk:wght@300;400;500;600;700&display=swap');
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -29,398 +97,479 @@ body {
   background-color: #f8fafc;
   color: #0f172a;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
   font-family: 'Space Grotesk', system-ui, sans-serif;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Space Grotesk', system-ui, sans-serif;
+  font-weight: 700;
+  line-height: 1.2;
 }
 
 .font-display { font-family: 'Orbitron', monospace; }
 
-/* ── Scrollbar ── */
+/* Scrollbar */
 ::-webkit-scrollbar              { width: 4px; height: 4px; }
 ::-webkit-scrollbar-track        { background: transparent; }
-::-webkit-scrollbar-thumb        { background: rgba(124,58,237,0.4); border-radius: 99px; }
-
-/* ── Scrollbar hide utility ── */
-.scrollbar-none { scrollbar-width: none; }
+::-webkit-scrollbar-thumb        { background: rgba(37,99,235,0.35); border-radius: 99px; }
+.scrollbar-none                  { scrollbar-width: none; }
 .scrollbar-none::-webkit-scrollbar { display: none; }
 
-/* ── Photo strip animation ── */
+/* Scroll animation */
 @keyframes scroll-x {
   0%   { transform: translateX(0); }
   100% { transform: translateX(-50%); }
 }
 .animate-scroll-x { animation: scroll-x 40s linear infinite; }
-`.trimStart());
+`);
 
-// ─── 2. Navbar — light theme ──────────────────────────────────────────────────
+// ─── 3. Navbar.tsx — mobile hamburger, blue, sign-out routing ─────────────────
 write("components/layout/Navbar.tsx", `"use client";
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
-import { cn } from "@/lib/utils";
-import Button from "@/components/ui/Button";
-import { Menu, X, Bell, ChevronDown, LogOut, User, Settings } from "lucide-react";
+import { Menu, X, LogOut } from "lucide-react";
+import type { UserTier } from "@/types";
 
+interface NavUser {
+  name: string;
+  tier: UserTier;
+  tierLabel: string;
+}
 interface NavbarProps {
-  user?: { name: string; tier: string; tierLabel: string } | null;
+  user?: NavUser | null;
 }
 
-export default function Navbar({ user }: NavbarProps) {
-  const pathname      = usePathname();
-  const [mob, setMob] = useState(false);
-  const [prof, setProf] = useState(false);
+const NAV_LINKS = [
+  { href: "/spaces",           label: "Spaces"       },
+  { href: "/bookings",         label: "My Bookings"  },
+  { href: "/resource-request", label: "Equipment"    },
+  { href: "/dashboard",        label: "Dashboard"    },
+];
 
-  const navLinks = user
-    ? [
-        { href: "/dashboard",        label: "Dashboard" },
-        { href: "/spaces",           label: "Spaces" },
-        { href: "/bookings",         label: "My Bookings" },
-        { href: "/resource-request", label: "Resources" },
-      ]
-    : [
-        { href: "/#spaces", label: "Spaces" },
-        { href: "/#about",  label: "About" },
-      ];
+export default function Navbar({ user }: NavbarProps) {
+  const pathname = usePathname();
+  const [open, setOpen] = useState(false);
+
+  const active = (href: string) =>
+    href === "/" ? pathname === "/" : pathname.startsWith(href);
 
   return (
-    <header className="sticky top-0 z-50 w-full bg-white border-b border-gray-200">
-      <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
+    <header className="sticky top-0 z-30 bg-white border-b border-gray-200">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6">
+        <div className="flex items-center justify-between h-14">
 
-          {/* ── Logo ── */}
-          <Link href={user ? "/dashboard" : "/"} className="flex items-center gap-1.5 group">
-            <span className="font-display font-black text-base tracking-widest text-violet-600 group-hover:text-violet-700 transition-colors">
-              AI-UNIPOD
-            </span>
-            <span className="text-[10px] text-gray-400 tracking-[0.15em] uppercase hidden sm:inline self-end mb-0.5">
-              · BMS
-            </span>
+          {/* Logo */}
+          <Link href="/" className="font-bold text-blue-600 text-sm tracking-wide shrink-0 font-mono">
+            AI-UNIPOD <span className="text-gray-300 font-sans">·</span> BMS
           </Link>
 
-          {/* ── Desktop nav ── */}
-          <div className="hidden md:flex items-center gap-1">
-            {navLinks.map((link) => (
-              <Link key={link.href} href={link.href}
-                className={cn(
-                  "px-4 py-2 rounded-xl text-sm font-medium transition-colors",
-                  pathname === link.href
-                    ? "bg-violet-50 text-violet-700"
+          {/* Desktop nav */}
+          <nav className="hidden md:flex items-center gap-0.5">
+            {NAV_LINKS.map(({ href, label }) => (
+              <Link
+                key={href}
+                href={href}
+                className={\`px-3 py-1.5 rounded-lg text-sm font-medium transition-all \${
+                  active(href)
+                    ? "bg-blue-50 text-blue-700"
                     : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
-                )}>
-                {link.label}
+                }\`}
+              >
+                {label}
               </Link>
             ))}
-          </div>
+          </nav>
 
-          {/* ── Right ── */}
-          <div className="flex items-center gap-2">
+          {/* Desktop user */}
+          <div className="hidden md:flex items-center gap-3">
             {user ? (
               <>
-                <button className="relative p-2 rounded-xl text-gray-500 hover:text-gray-900 hover:bg-gray-50 transition-colors">
-                  <Bell size={18} />
-                  <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full" />
-                </button>
-                <div className="relative">
-                  <button onClick={() => setProf(!prof)}
-                    className="flex items-center gap-2 pl-2 pr-3 py-1.5 rounded-xl hover:bg-gray-50 border border-transparent hover:border-gray-200 transition-all">
-                    <div className="w-7 h-7 rounded-full bg-gradient-to-br from-violet-600 to-violet-400 flex items-center justify-center">
-                      <span className="text-white text-xs font-bold">{user.name.charAt(0).toUpperCase()}</span>
-                    </div>
-                    <div className="hidden sm:block text-left">
-                      <p className="text-xs font-semibold text-gray-900 leading-tight">{user.name.split(" ")[0]}</p>
-                      <p className="text-[10px] text-gray-400 leading-tight">{user.tierLabel}</p>
-                    </div>
-                    <ChevronDown size={14} className="text-gray-400" />
-                  </button>
-                  {prof && (
-                    <div className="absolute right-0 mt-2 w-52 bg-white rounded-xl shadow-lg border border-gray-100 py-1 z-50">
-                      <Link href="/dashboard/profile" onClick={() => setProf(false)}
-                        className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-gray-700 hover:text-gray-900 hover:bg-gray-50 transition-colors">
-                        <User size={14} className="text-violet-500" /> Profile
-                      </Link>
-                      <Link href="/dashboard/settings" onClick={() => setProf(false)}
-                        className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-gray-700 hover:text-gray-900 hover:bg-gray-50 transition-colors">
-                        <Settings size={14} className="text-violet-500" /> Settings
-                      </Link>
-                      <div className="my-1 border-t border-gray-100" />
-                      <Link href="/auth/logout" onClick={() => setProf(false)}
-                        className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-red-500 hover:text-red-600 hover:bg-red-50 transition-colors">
-                        <LogOut size={14} /> Sign out
-                      </Link>
-                    </div>
-                  )}
-                </div>
+                <Link
+                  href="/dashboard/profile"
+                  className="flex items-center gap-2 text-sm text-gray-700 hover:text-gray-900 transition-colors"
+                >
+                  <div className="w-7 h-7 rounded-full bg-blue-100 flex items-center justify-center shrink-0">
+                    <span className="text-blue-700 font-bold text-xs">
+                      {user.name.charAt(0)}
+                    </span>
+                  </div>
+                  <span className="font-medium">{user.name.split(" ")[0]}</span>
+                </Link>
+                <Link
+                  href="/auth/login"
+                  className="text-xs text-gray-400 hover:text-red-600 flex items-center gap-1 transition-colors"
+                >
+                  <LogOut size={13} /> Sign out
+                </Link>
               </>
             ) : (
               <>
-                <Link href="/auth/login">
-                  <Button variant="outline" size="sm">Sign In</Button>
+                <Link
+                  href="/auth/login"
+                  className="text-sm text-gray-600 hover:text-gray-900 font-medium transition-colors"
+                >
+                  Sign in
                 </Link>
-                <Link href="/auth/signup" className="hidden sm:block">
-                  <Button size="sm">Get Access</Button>
+                <Link
+                  href="/auth/signup"
+                  className="bg-blue-600 text-white text-sm font-medium px-4 py-1.5 rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  Sign up
                 </Link>
               </>
             )}
-            <button className="md:hidden p-2 rounded-xl text-gray-500 hover:text-gray-900 hover:bg-gray-50 transition-colors"
-              onClick={() => setMob(!mob)}>
-              {mob ? <X size={20} /> : <Menu size={20} />}
-            </button>
           </div>
-        </div>
 
-        {/* ── Mobile menu ── */}
-        {mob && (
-          <div className="md:hidden pb-4 pt-2 border-t border-gray-100 mt-2">
-            {navLinks.map((link) => (
-              <Link key={link.href} href={link.href} onClick={() => setMob(false)}
-                className={cn(
-                  "block px-4 py-2.5 rounded-xl text-sm font-medium transition-colors",
-                  pathname === link.href
-                    ? "bg-violet-50 text-violet-700"
-                    : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
-                )}>
-                {link.label}
+          {/* Mobile hamburger */}
+          <button
+            onClick={() => setOpen(!open)}
+            className="md:hidden p-2 text-gray-500 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+            aria-label="Toggle menu"
+          >
+            {open ? <X size={20} /> : <Menu size={20} />}
+          </button>
+        </div>
+      </div>
+
+      {/* Mobile dropdown */}
+      {open && (
+        <div className="md:hidden border-t border-gray-100 bg-white shadow-sm">
+          <nav className="px-4 py-3 space-y-1">
+            {NAV_LINKS.map(({ href, label }) => (
+              <Link
+                key={href}
+                href={href}
+                onClick={() => setOpen(false)}
+                className={\`flex items-center px-3 py-2.5 rounded-xl text-sm font-medium transition-all \${
+                  active(href)
+                    ? "bg-blue-50 text-blue-700"
+                    : "text-gray-700 hover:bg-gray-50"
+                }\`}
+              >
+                {label}
               </Link>
             ))}
-            {!user && (
-              <div className="mt-3 px-4">
-                <Link href="/auth/signup"><Button className="w-full" size="sm">Get Access</Button></Link>
+          </nav>
+          <div className="border-t border-gray-100 px-4 py-3">
+            {user ? (
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
+                    <span className="text-blue-700 font-bold text-xs">{user.name.charAt(0)}</span>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-900">{user.name}</p>
+                    <p className="text-xs text-gray-400">{user.tierLabel}</p>
+                  </div>
+                </div>
+                <Link
+                  href="/auth/login"
+                  onClick={() => setOpen(false)}
+                  className="text-xs text-gray-400 hover:text-red-600 flex items-center gap-1 transition-colors"
+                >
+                  <LogOut size={13} /> Sign out
+                </Link>
+              </div>
+            ) : (
+              <div className="flex gap-3">
+                <Link
+                  href="/auth/login"
+                  onClick={() => setOpen(false)}
+                  className="flex-1 text-center text-sm font-medium text-gray-700 border border-gray-300 py-2 rounded-xl hover:bg-gray-50 transition-colors"
+                >
+                  Sign in
+                </Link>
+                <Link
+                  href="/auth/signup"
+                  onClick={() => setOpen(false)}
+                  className="flex-1 text-center text-sm font-medium text-white bg-blue-600 py-2 rounded-xl hover:bg-blue-700 transition-colors"
+                >
+                  Sign up
+                </Link>
               </div>
             )}
           </div>
-        )}
-      </nav>
+        </div>
+      )}
     </header>
   );
 }
 `);
 
-// ─── 3. Card — light theme ────────────────────────────────────────────────────
+// ─── 4. Card.tsx ──────────────────────────────────────────────────────────────
 write("components/ui/Card.tsx", `import { cn } from "@/lib/utils";
+import type { ReactNode } from "react";
 
 interface CardProps {
-  children: React.ReactNode;
+  children: ReactNode;
   className?: string;
   padding?: "none" | "sm" | "md" | "lg";
   hover?: boolean;
 }
 
+const paddingMap = { none: "", sm: "p-4", md: "p-5", lg: "p-6" };
+
 export function Card({ children, className, padding = "md", hover = false }: CardProps) {
-  const paddings = { none: "", sm: "p-4", md: "p-5", lg: "p-6" };
   return (
-    <div className={cn(
-      "bg-white rounded-2xl border border-gray-100 shadow-sm",
-      paddings[padding],
-      hover && "hover:-translate-y-0.5 hover:shadow-md transition-all duration-200 cursor-pointer",
-      className
-    )}>
+    <div
+      className={cn(
+        "bg-white rounded-2xl border border-gray-100 shadow-sm",
+        paddingMap[padding],
+        hover && "hover:shadow-md hover:-translate-y-0.5 transition-all duration-200",
+        className
+      )}
+    >
       {children}
     </div>
   );
 }
-
-export function CardHeader({ children, className }: { children: React.ReactNode; className?: string }) {
-  return <div className={cn("mb-4", className)}>{children}</div>;
-}
-
-export function CardTitle({ children, className }: { children: React.ReactNode; className?: string }) {
-  return <h3 className={cn("text-base font-semibold text-gray-900", className)}>{children}</h3>;
-}
-
-export function CardContent({ children, className }: { children: React.ReactNode; className?: string }) {
-  return <div className={cn(className)}>{children}</div>;
-}
 `);
 
-// ─── 4. Button — light theme ──────────────────────────────────────────────────
-write("components/ui/Button.tsx", `"use client";
-import { cn } from "@/lib/utils";
-import { type ButtonHTMLAttributes, forwardRef } from "react";
+// ─── 5. Button.tsx — blue primary ────────────────────────────────────────────
+write("components/ui/Button.tsx", `import { cn } from "@/lib/utils";
+import type { ButtonHTMLAttributes, ReactNode } from "react";
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: "primary" | "secondary" | "outline" | "ghost" | "danger";
-  size?: "sm" | "md" | "lg";
+  size?: "xs" | "sm" | "md" | "lg";
   loading?: boolean;
+  children: ReactNode;
 }
 
-const Button = forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, variant = "primary", size = "md", loading, disabled, children, ...props }, ref) => {
-    const base =
-      "inline-flex items-center justify-center font-medium rounded-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-white disabled:opacity-50 disabled:cursor-not-allowed";
+const variants = {
+  primary:   "bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500 shadow-sm active:bg-blue-800",
+  secondary: "bg-blue-50 text-blue-700 hover:bg-blue-100 focus:ring-blue-500",
+  outline:   "border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 focus:ring-blue-500",
+  ghost:     "bg-transparent text-gray-600 hover:bg-gray-100 focus:ring-blue-500",
+  danger:    "bg-red-600 text-white hover:bg-red-700 focus:ring-red-500 shadow-sm",
+};
 
-    const variants = {
-      primary:
-        "bg-violet-600 hover:bg-violet-700 text-white shadow-sm focus:ring-violet-500",
-      secondary:
-        "bg-violet-50 text-violet-700 hover:bg-violet-100 border border-violet-200 focus:ring-violet-400",
-      outline:
-        "border border-gray-300 bg-white hover:bg-gray-50 text-gray-700 hover:border-gray-400 focus:ring-violet-400",
-      ghost:
-        "hover:bg-gray-100 text-gray-600 hover:text-gray-900 focus:ring-gray-400",
-      danger:
-        "bg-red-600 hover:bg-red-700 text-white shadow-sm focus:ring-red-500",
-    };
+const sizes = {
+  xs: "text-xs px-2.5 py-1.5 rounded-lg gap-1",
+  sm: "text-xs px-3 py-2 rounded-xl gap-1.5",
+  md: "text-sm px-4 py-2.5 rounded-xl gap-2",
+  lg: "text-sm px-5 py-3 rounded-xl gap-2 font-semibold",
+};
 
-    const sizes = {
-      sm: "px-3 py-1.5 text-sm gap-1.5",
-      md: "px-4 py-2.5 text-sm gap-2",
-      lg: "px-6 py-3 text-base gap-2.5",
-    };
-
-    return (
-      <button
-        ref={ref}
-        className={cn(base, variants[variant], sizes[size], className)}
-        disabled={disabled || loading}
-        {...props}
-      >
-        {loading && (
-          <svg className="animate-spin -ml-1 h-4 w-4" fill="none" viewBox="0 0 24 24">
+export default function Button({
+  variant = "primary",
+  size = "md",
+  loading = false,
+  className,
+  disabled,
+  children,
+  ...props
+}: ButtonProps) {
+  return (
+    <button
+      {...props}
+      disabled={disabled || loading}
+      className={cn(
+        "inline-flex items-center justify-center font-medium transition-all duration-150",
+        "focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-white",
+        "disabled:opacity-50 disabled:cursor-not-allowed",
+        variants[variant],
+        sizes[size],
+        className
+      )}
+    >
+      {loading ? (
+        <>
+          <svg className="animate-spin h-3.5 w-3.5" fill="none" viewBox="0 0 24 24">
             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
           </svg>
-        )}
-        {children}
-      </button>
-    );
-  }
-);
-Button.displayName = "Button";
-export default Button;
+          Loading…
+        </>
+      ) : children}
+    </button>
+  );
+}
 `);
 
-// ─── 5. Badge — light theme ───────────────────────────────────────────────────
+// ─── 6. Badge.tsx — blue default ─────────────────────────────────────────────
 write("components/ui/Badge.tsx", `import { cn } from "@/lib/utils";
+import type { ReactNode } from "react";
 
 interface BadgeProps {
-  children: React.ReactNode;
+  children: ReactNode;
   variant?: "default" | "success" | "warning" | "danger" | "info" | "neutral";
   size?: "sm" | "md";
   className?: string;
 }
 
+const variants = {
+  default: "bg-blue-50 text-blue-700 border border-blue-200",
+  success: "bg-green-50 text-green-700 border border-green-200",
+  warning: "bg-amber-50 text-amber-700 border border-amber-200",
+  danger:  "bg-red-50 text-red-700 border border-red-200",
+  info:    "bg-sky-50 text-sky-700 border border-sky-200",
+  neutral: "bg-gray-100 text-gray-600 border border-gray-200",
+};
+
+const sizes = {
+  sm: "text-xs px-2 py-0.5 rounded-md",
+  md: "text-xs px-2.5 py-1 rounded-lg",
+};
+
 export default function Badge({ children, variant = "default", size = "md", className }: BadgeProps) {
-  const variants = {
-    default: "bg-violet-50 text-violet-700 border border-violet-200",
-    success: "bg-emerald-50 text-emerald-700 border border-emerald-200",
-    warning: "bg-amber-50 text-amber-700 border border-amber-200",
-    danger:  "bg-red-50 text-red-700 border border-red-200",
-    info:    "bg-cyan-50 text-cyan-700 border border-cyan-200",
-    neutral: "bg-gray-100 text-gray-600 border border-gray-200",
-  };
-  const sizes = { sm: "px-2 py-0.5 text-xs", md: "px-2.5 py-1 text-xs" };
   return (
-    <span className={cn("inline-flex items-center font-medium rounded-full", variants[variant], sizes[size], className)}>
+    <span className={cn("inline-flex items-center gap-1 font-medium", variants[variant], sizes[size], className)}>
       {children}
     </span>
   );
 }
 `);
 
-// ─── 6. AdminSidebar ──────────────────────────────────────────────────────────
-// Admin sidebar stays white/light to match the light admin pages
+// ─── 7. AdminSidebar.tsx — mobile drawer + hamburger ─────────────────────────
 write("components/layout/AdminSidebar.tsx", `"use client";
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { cn } from "@/lib/utils";
+import { useState } from "react";
 import {
-  LayoutDashboard, Users, CalendarDays, Building2,
-  Megaphone, Settings, ChevronRight, LogOut,
-  ShieldCheck, UserCog, ClipboardCheck, type LucideIcon,
+  LayoutDashboard, CalendarDays, Users, Settings, Building2,
+  CheckCircle, Megaphone, LogOut, Menu, X, Wrench,
 } from "lucide-react";
 
-type AdminRole = "super_admin" | "admin" | "receptionist" | "space_lead";
-interface NavLink { href: string; label: string; icon: LucideIcon; badge?: number; }
+interface NavLink {
+  href: string;
+  label: string;
+  icon: React.ElementType;
+  badge?: number;
+}
 
-const ADMIN_LINKS: NavLink[] = [
-  { href: "/admin",           label: "Overview",             icon: LayoutDashboard },
-  { href: "/admin/bookings",  label: "Bookings & Approvals", icon: CalendarDays, badge: 5 },
-  { href: "/admin/users",     label: "User Management",      icon: Users, badge: 3 },
-  { href: "/admin/spaces",    label: "Spaces",               icon: Building2 },
-  { href: "/admin/checkin",   label: "Check-in",             icon: ClipboardCheck },
-  { href: "/admin/broadcast", label: "Broadcast",            icon: Megaphone },
-  { href: "/admin/settings",  label: "Settings",             icon: Settings },
+const NAV_LINKS: NavLink[] = [
+  { href: "/admin",            label: "Overview",   icon: LayoutDashboard },
+  { href: "/admin/bookings",   label: "Bookings",   icon: CalendarDays,  badge: 3 },
+  { href: "/admin/users",      label: "Users",      icon: Users },
+  { href: "/admin/spaces",     label: "Spaces",     icon: Building2 },
+  { href: "/admin/checkin",    label: "Check-in",   icon: CheckCircle },
+  { href: "/admin/space-lead", label: "Space Lead", icon: Wrench },
+  { href: "/admin/broadcast",  label: "Broadcast",  icon: Megaphone },
+  { href: "/admin/settings",   label: "Settings",   icon: Settings },
 ];
 
-const SUPER_ADMIN_LINKS: NavLink[] = [
-  { href: "/superadmin",        label: "Super Admin Panel", icon: ShieldCheck },
-  { href: "/superadmin/admins", label: "Manage Admins",     icon: UserCog },
-  ...ADMIN_LINKS,
-];
-
-const RECEPTIONIST_LINKS: NavLink[] = [
-  { href: "/admin/checkin", label: "Check-in Desk", icon: ClipboardCheck },
-];
-
-const SPACE_LEAD_LINKS: NavLink[] = [
-  { href: "/admin/space-lead", label: "Equipment Verification", icon: ShieldCheck },
-];
-
-interface Props { role?: AdminRole; }
-
-export default function AdminSidebar({ role = "admin" }: Props) {
+export default function AdminSidebar() {
   const pathname = usePathname();
-  const links =
-    role === "super_admin"  ? SUPER_ADMIN_LINKS :
-    role === "receptionist" ? RECEPTIONIST_LINKS :
-    role === "space_lead"   ? SPACE_LEAD_LINKS :
-    ADMIN_LINKS;
+  const [mobileOpen, setMobileOpen] = useState(false);
 
-  const roleLabel: Record<AdminRole, string> = {
-    super_admin: "Super Admin", admin: "Admin",
-    receptionist: "Receptionist", space_lead: "Space Lead",
-  };
+  const isActive = (href: string) =>
+    href === "/admin" ? pathname === "/admin" : pathname.startsWith(href);
+
+  const linkCls = (href: string) =>
+    \`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all \${
+      isActive(href)
+        ? "bg-blue-50 text-blue-700"
+        : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+    }\`;
+
+  const iconCls = (href: string) =>
+    isActive(href) ? "text-blue-600" : "text-gray-400";
+
+  // JSX variable (not a component) so it shares outer scope without remounting issues
+  const logo = (
+    <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
+      <div>
+        <p className="font-bold text-blue-600 text-sm tracking-wide font-mono">AI-UNIPOD</p>
+        <p className="text-xs text-gray-400 tracking-widest uppercase mt-0.5">Admin Portal</p>
+      </div>
+      <button
+        className="lg:hidden p-1 text-gray-400 hover:text-gray-700 rounded-lg hover:bg-gray-100"
+        onClick={() => setMobileOpen(false)}
+        aria-label="Close menu"
+      >
+        <X size={18} />
+      </button>
+    </div>
+  );
+
+  const nav = (
+    <nav className="flex-1 px-3 py-3 space-y-0.5 overflow-y-auto">
+      {NAV_LINKS.map(({ href, label, icon: Icon, badge }) => (
+        <Link
+          key={href}
+          href={href}
+          onClick={() => setMobileOpen(false)}
+          className={linkCls(href)}
+        >
+          <Icon size={17} className={iconCls(href)} />
+          <span className="flex-1">{label}</span>
+          {badge && (
+            <span className="text-xs font-semibold bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-full">
+              {badge}
+            </span>
+          )}
+        </Link>
+      ))}
+    </nav>
+  );
+
+  const footer = (
+    <div className="p-4 border-t border-gray-100">
+      <div className="flex items-center gap-3 mb-3 min-w-0">
+        <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center shrink-0">
+          <span className="text-blue-700 font-bold text-xs">A</span>
+        </div>
+        <div className="min-w-0">
+          <p className="text-xs font-semibold text-gray-800 truncate">Admin User</p>
+          <p className="text-xs text-gray-400 truncate">admin@unipod.unilag.edu.ng</p>
+        </div>
+      </div>
+      <Link
+        href="/admin/login"
+        onClick={() => setMobileOpen(false)}
+        className="flex items-center gap-2 text-xs text-gray-500 hover:text-red-600 px-2 py-1.5 rounded-lg hover:bg-red-50 transition-colors w-full"
+      >
+        <LogOut size={13} /> Sign out
+      </Link>
+    </div>
+  );
 
   return (
-    <aside className="w-60 min-h-screen flex flex-col shrink-0 bg-white border-r border-gray-200">
-      {/* Logo */}
-      <div className="px-5 py-5 border-b border-gray-200">
-        <Link href={role === "super_admin" ? "/superadmin" : "/admin"} className="flex flex-col">
-          <span className="font-display font-black text-sm tracking-widest text-violet-600">AI-UNIPOD</span>
-          <span className="text-[10px] text-gray-400 tracking-widest uppercase mt-0.5">{roleLabel[role]}</span>
-        </Link>
+    <>
+      {/* ── Mobile fixed top bar ── */}
+      <div className="lg:hidden fixed top-0 left-0 right-0 z-40 bg-white border-b border-gray-200 px-4 h-14 flex items-center justify-between">
+        <div>
+          <p className="font-bold text-blue-600 text-sm font-mono">AI-UNIPOD</p>
+          <p className="text-xs text-gray-400 leading-none">Admin Portal</p>
+        </div>
+        <button
+          onClick={() => setMobileOpen(true)}
+          className="p-2 text-gray-500 hover:text-gray-900 hover:bg-gray-100 rounded-xl transition-colors"
+          aria-label="Open menu"
+        >
+          <Menu size={20} />
+        </button>
       </div>
 
-      {/* Nav */}
-      <nav className="flex-1 px-3 py-4 space-y-0.5">
-        {links.map(({ href, label, icon: Icon, badge }) => {
-          const active = pathname === href ||
-            (href !== "/admin" && href !== "/superadmin" && pathname.startsWith(href));
-          return (
-            <Link key={href} href={href}
-              className={cn(
-                "flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors",
-                active
-                  ? "bg-violet-50 text-violet-700"
-                  : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
-              )}>
-              <div className="flex items-center gap-3">
-                <Icon size={15} className={active ? "text-violet-600" : "text-gray-400"} />
-                {label}
-              </div>
-              {badge ? (
-                <span className="bg-violet-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center">
-                  {badge}
-                </span>
-              ) : active ? (
-                <ChevronRight size={13} className="text-violet-400" />
-              ) : null}
-            </Link>
-          );
-        })}
-      </nav>
+      {/* ── Mobile backdrop ── */}
+      {mobileOpen && (
+        <div
+          className="lg:hidden fixed inset-0 z-40 bg-black/30 backdrop-blur-sm"
+          onClick={() => setMobileOpen(false)}
+        />
+      )}
 
-      {/* Footer */}
-      <div className="px-3 pb-5 pt-4 border-t border-gray-200">
-        <Link href="/admin/login"
-          className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-gray-500 hover:text-red-600 hover:bg-red-50 transition-colors">
-          <LogOut size={15} /> Sign out
-        </Link>
+      {/* ── Mobile drawer ── */}
+      <div
+        className={\`lg:hidden fixed top-0 left-0 z-50 h-full w-64 bg-white shadow-2xl flex flex-col transition-transform duration-300 ease-in-out \${
+          mobileOpen ? "translate-x-0" : "-translate-x-full"
+        }\`}
+      >
+        {logo}{nav}{footer}
       </div>
-    </aside>
+
+      {/* ── Desktop sidebar ── */}
+      <div className="hidden lg:flex flex-col w-56 shrink-0 bg-white border-r border-gray-200 min-h-screen">
+        {logo}{nav}{footer}
+      </div>
+    </>
   );
 }
 `);
 
-console.log("\n✅ All files patched. Build can proceed.");
+console.log("\n✅ fix-css.js complete.");
