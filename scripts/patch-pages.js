@@ -2770,18 +2770,18 @@ export default function BookingDetailPage() {
 }
 `);
 
-// ─── 17. Landing page — no gradients, no cylinder badges, solid blue only ─────
+// ─── 17. Landing page — LIGHT theme, no Admin Login, no dark bg, blue accents ──
 write("app/page.tsx", `import Link from "next/link";
 import Image from "next/image";
 import Navbar from "@/components/layout/Navbar";
 import Button from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
-import Badge from "@/components/ui/Badge";
 import PhotoStrip from "@/components/ui/PhotoStrip";
 import { getPublicSpaces } from "@/lib/data/spaces";
 import {
   ArrowRight, Cpu, Users, Calendar,
   ShieldCheck, ChevronRight, Clock, Zap, Radio,
+  CheckCircle,
 } from "lucide-react";
 
 const spaces = getPublicSpaces();
@@ -2802,15 +2802,6 @@ const features = [
   { icon: Radio,       title: "Admin Broadcast",        description: "Admins can push real-time announcements to all users — policy changes, scheduled maintenance, or special events." },
 ];
 
-// Solid borders per category — no gradients
-const categoryBorder: Record<string, string> = {
-  lab:           "border-blue-500/25",
-  collaboration: "border-cyan-500/25",
-  event:         "border-amber-500/25",
-  work:          "border-emerald-500/25",
-  meeting:       "border-blue-500/25",
-};
-
 const categoryBadge: Record<string, "info" | "default" | "warning" | "success" | "neutral"> = {
   lab:           "default",
   collaboration: "info",
@@ -2821,70 +2812,81 @@ const categoryBadge: Record<string, "info" | "default" | "warning" | "success" |
 
 export default function LandingPage() {
   return (
-    <div className="min-h-screen" style={{ background: "#09090f" }}>
+    <div className="min-h-screen bg-white">
       <Navbar />
 
       {/* ── HERO ──────────────────────────────────────────────────────────────── */}
-      <section className="relative min-h-[92vh] flex items-center overflow-hidden">
-        <div className="absolute inset-0">
-          <Image
-            src="/spaces/image14.jpeg"
-            alt="AI-UNIPOD workspace"
-            fill
-            className="object-cover opacity-25"
-            priority
-          />
-          {/* Dark overlay — functional, keeps text readable */}
-          <div className="absolute inset-0" style={{
-            background: "linear-gradient(135deg, rgba(9,9,15,0.95) 0%, rgba(9,9,15,0.7) 50%, rgba(9,9,15,0.9) 100%)"
-          }} />
-        </div>
-        <div className="absolute inset-0 grid-bg opacity-50" />
+      <section className="bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center py-16 lg:py-24">
 
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24 w-full">
-          <div className="max-w-3xl">
-            <h1 className="text-5xl sm:text-6xl lg:text-7xl font-display font-bold leading-[1.05] mb-6">
-              <span className="text-slate-100">Book Your</span>
-              <br />
-              <span className="text-blue-400">AI Workspace.</span>
-            </h1>
-            <p className="text-lg text-slate-400 leading-relaxed mb-10 max-w-xl">
-              Africa&apos;s most advanced student innovation hub. Reserve labs, studios, and
-              collaboration spaces at UNILAG&apos;s AI-UNIPOD — in seconds.
-            </p>
-            <div className="flex flex-wrap items-center gap-3">
-              <Link href="/auth/signup">
-                <Button size="lg">
-                  Get Access <ArrowRight size={16} />
-                </Button>
-              </Link>
-              <Link href="/spaces">
-                <Button variant="outline" size="lg">
-                  Explore Spaces <ChevronRight size={16} />
-                </Button>
-              </Link>
-              <Link href="/admin/login">
-                <Button variant="ghost" size="lg" className="text-slate-500 hover:text-slate-300">
-                  Admin Login
-                </Button>
-              </Link>
+            {/* Left: text */}
+            <div>
+              <p className="text-xs font-semibold text-blue-600 uppercase tracking-widest mb-4">
+                AI-UNIPOD · University of Lagos
+              </p>
+              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-display font-bold text-gray-900 leading-[1.1] mb-6">
+                Book Your<br />
+                <span className="text-blue-600">AI Workspace.</span>
+              </h1>
+              <p className="text-lg text-gray-500 leading-relaxed mb-8 max-w-lg">
+                Africa&apos;s most advanced student innovation hub. Reserve labs, studios, and
+                collaboration spaces at UNILAG&apos;s AI-UNIPOD — in seconds.
+              </p>
+
+              <div className="flex flex-wrap items-center gap-3 mb-10">
+                <Link href="/auth/signup">
+                  <Button size="lg">
+                    Get Access <ArrowRight size={16} />
+                  </Button>
+                </Link>
+                <Link href="/spaces">
+                  <Button variant="outline" size="lg">
+                    Explore Spaces <ChevronRight size={16} />
+                  </Button>
+                </Link>
+              </div>
+
+              {/* Trust indicators */}
+              <div className="flex flex-wrap items-center gap-6 text-sm text-gray-400">
+                <span className="flex items-center gap-1.5">
+                  <CheckCircle size={14} className="text-blue-500" />
+                  Free for UNILAG members
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <CheckCircle size={14} className="text-blue-500" />
+                  Instant booking codes
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <CheckCircle size={14} className="text-blue-500" />
+                  12 spaces available
+                </span>
+              </div>
+            </div>
+
+            {/* Right: workspace photo */}
+            <div className="relative rounded-3xl overflow-hidden h-80 lg:h-[520px] shadow-xl">
+              <Image
+                src="/spaces/image14.jpeg"
+                alt="AI-UNIPOD workspace"
+                fill
+                className="object-cover"
+                priority
+              />
             </div>
           </div>
         </div>
-        {/* Bottom fade — keeps section transition clean */}
-        <div className="absolute bottom-0 inset-x-0 h-32 pointer-events-none"
-          style={{ background: "linear-gradient(to top, #09090f, transparent)" }} />
       </section>
 
       {/* ── STATS ─────────────────────────────────────────────────────────────── */}
-      <section className="relative py-12 border-y border-white/[0.06]">
+      <section className="bg-blue-600 py-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
             {stats.map((stat) => (
               <div key={stat.label} className="text-center">
-                <p className="text-4xl font-display font-bold text-blue-400 mb-1">{stat.value}</p>
-                <p className="text-sm font-semibold text-slate-200">{stat.label}</p>
-                <p className="text-xs text-slate-500 mt-0.5">{stat.sub}</p>
+                <p className="text-4xl font-display font-bold text-white mb-1">{stat.value}</p>
+                <p className="text-sm font-semibold text-blue-100">{stat.label}</p>
+                <p className="text-xs text-blue-200 mt-0.5">{stat.sub}</p>
               </div>
             ))}
           </div>
@@ -2892,19 +2894,18 @@ export default function LandingPage() {
       </section>
 
       {/* ── PHOTO STRIP ───────────────────────────────────────────────────────── */}
-      <section className="py-8 overflow-hidden border-b border-white/[0.04]">
+      <section className="py-8 overflow-hidden border-b border-gray-100 bg-gray-50">
         <PhotoStrip />
       </section>
 
       {/* ── SPACES ────────────────────────────────────────────────────────────── */}
-      <section id="spaces" className="py-24">
+      <section id="spaces" className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="mb-12">
-            <h2 className="text-3xl sm:text-4xl font-display font-bold text-slate-100 mb-3">
-              Your Innovation<br />
-              <span className="text-blue-400">Command Center</span>
+          <div className="mb-10">
+            <h2 className="text-3xl sm:text-4xl font-display font-bold text-gray-900 mb-3">
+              Spaces to Build In
             </h2>
-            <p className="text-slate-400 max-w-xl">
+            <p className="text-gray-500 max-w-xl">
               From AI labs and maker spaces to pitch arenas — every corner of AI-UNIPOD is purpose-built for builders.
             </p>
           </div>
@@ -2912,43 +2913,39 @@ export default function LandingPage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
             {spaces.map((space) => (
               <Link key={space.id} href={\`/spaces/\${space.slug}\`} className="group block">
-                <div className={\`relative rounded-2xl overflow-hidden border bg-white/[0.03] \${categoryBorder[space.category] ?? "border-white/10"} transition-all duration-300 group-hover:-translate-y-1 group-hover:shadow-glow\`}>
+                <div className="rounded-2xl overflow-hidden border border-gray-200 bg-white shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-0.5">
                   {space.imageUrl && (
-                    <div className="relative h-52 overflow-hidden">
+                    <div className="relative h-48 overflow-hidden">
                       <Image
                         src={space.imageUrl}
                         alt={space.name}
                         fill
-                        className="object-cover group-hover:scale-105 transition-transform duration-500 brightness-75"
+                        className="object-cover group-hover:scale-105 transition-transform duration-500"
                       />
-                      <div className="absolute inset-0" style={{ background: "linear-gradient(to top, rgba(9,9,15,0.8) 0%, transparent 60%)" }} />
                       <div className="absolute top-3 right-3">
-                        <span className={\`inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-[10px] font-medium glass border border-white/10 \${space.availability === "available" ? "text-emerald-300" : "text-amber-300"}\`}>
-                          <span className={\`w-1.5 h-1.5 rounded-full \${space.availability === "available" ? "bg-emerald-400" : "bg-amber-400"} animate-pulse\`} />
+                        <span className={\`inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-[10px] font-medium bg-white/90 border border-gray-200 \${space.availability === "available" ? "text-emerald-700" : "text-amber-700"}\`}>
+                          <span className={\`w-1.5 h-1.5 rounded-full \${space.availability === "available" ? "bg-emerald-500" : "bg-amber-400"}\`} />
                           {space.availability === "available" ? "Open" : "Limited"}
                         </span>
                       </div>
                     </div>
                   )}
                   <div className="p-4">
-                    <div className="flex items-start justify-between gap-2 mb-2">
-                      <h3 className="font-semibold text-slate-100 text-sm leading-tight">
+                    <div className="flex items-start justify-between gap-2 mb-1.5">
+                      <h3 className="font-semibold text-gray-900 text-sm leading-tight">
                         {space.name}
                       </h3>
-                      <Badge variant={categoryBadge[space.category]} size="sm" className="shrink-0 capitalize">
-                        {space.category}
-                      </Badge>
                     </div>
-                    <p className="text-xs text-slate-500 leading-relaxed mb-3 line-clamp-2">
+                    <p className="text-xs text-gray-500 leading-relaxed mb-3 line-clamp-2">
                       {space.description}
                     </p>
-                    <div className="flex items-center justify-between text-xs text-slate-500">
+                    <div className="flex items-center justify-between text-xs text-gray-400">
                       <span className="flex items-center gap-1">
-                        <Users size={11} className="text-blue-400" />
+                        <Users size={11} className="text-blue-500" />
                         {space.capacity} capacity
                       </span>
                       <span className="flex items-center gap-1">
-                        <Clock size={11} className="text-cyan-400" />
+                        <Clock size={11} />
                         {space.approvalType === "auto" ? "Instant" : space.approvalType === "manual" ? "Needs approval" : "Admin only"}
                       </span>
                     </div>
@@ -2969,22 +2966,24 @@ export default function LandingPage() {
       </section>
 
       {/* ── FEATURES ──────────────────────────────────────────────────────────── */}
-      <section id="about" className="py-24 border-t border-white/[0.04]">
+      <section id="about" className="py-20 bg-gray-50 border-t border-gray-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="mb-12">
-            <h2 className="text-3xl sm:text-4xl font-display font-bold text-slate-100 mb-3">
-              Built for Builders.<br />
-              <span className="text-blue-400">Powered by AI-UNIPOD.</span>
+          <div className="mb-10">
+            <h2 className="text-3xl sm:text-4xl font-display font-bold text-gray-900 mb-3">
+              Built for Builders.
             </h2>
+            <p className="text-gray-500 max-w-xl">
+              Every feature in BMS is designed around how UNILAG innovators actually work.
+            </p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
             {features.map(({ icon: Icon, title, description }) => (
-              <Card key={title} className="group hover:shadow-glow transition-all duration-300 border border-white/[0.06]">
-                <div className="w-10 h-10 rounded-xl bg-blue-600/20 border border-blue-500/30 flex items-center justify-center mb-4">
-                  <Icon size={18} className="text-blue-300" />
+              <Card key={title} className="bg-white hover:shadow-md transition-shadow duration-300">
+                <div className="w-10 h-10 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center mb-4">
+                  <Icon size={18} className="text-blue-600" />
                 </div>
-                <h3 className="font-display font-semibold text-sm text-slate-100 mb-2 tracking-wide">{title}</h3>
-                <p className="text-xs text-slate-500 leading-relaxed">{description}</p>
+                <h3 className="font-semibold text-gray-900 text-sm mb-2">{title}</h3>
+                <p className="text-xs text-gray-500 leading-relaxed">{description}</p>
               </Card>
             ))}
           </div>
@@ -2992,48 +2991,44 @@ export default function LandingPage() {
       </section>
 
       {/* ── CTA ───────────────────────────────────────────────────────────────── */}
-      <section className="py-24 border-t border-white/[0.04]">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="relative rounded-3xl overflow-hidden p-12 text-center glass border border-blue-500/20">
-            <div className="absolute inset-0 grid-bg opacity-40" />
-            <div className="relative">
-              <h2 className="text-4xl sm:text-5xl font-display font-bold text-slate-100 mb-4">
-                Ready to Build<br />
-                <span className="text-blue-400">Something Great?</span>
-              </h2>
-              <p className="text-slate-400 mb-8 max-w-md mx-auto">
-                Sign up with your UNILAG email and start booking AI-UNIPOD spaces today. Free for registered members.
-              </p>
-              <div className="flex flex-wrap items-center justify-center gap-3">
-                <Link href="/auth/signup">
-                  <Button size="lg">
-                    Create Account <ArrowRight size={16} />
-                  </Button>
-                </Link>
-                <Link href="/auth/login">
-                  <Button variant="outline" size="lg">Already a member? Sign in</Button>
-                </Link>
-              </div>
-            </div>
+      <section className="py-20 bg-blue-600">
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 text-center">
+          <h2 className="text-3xl sm:text-4xl font-display font-bold text-white mb-4">
+            Ready to Get Started?
+          </h2>
+          <p className="text-blue-100 mb-8 text-lg">
+            Sign up with your UNILAG email and start booking AI-UNIPOD spaces today. Free for all registered members.
+          </p>
+          <div className="flex flex-wrap items-center justify-center gap-3">
+            <Link href="/auth/signup">
+              <Button size="lg" className="bg-white text-blue-600 hover:bg-blue-50 border-0">
+                Create Account <ArrowRight size={16} />
+              </Button>
+            </Link>
+            <Link href="/auth/login">
+              <Button size="lg" className="bg-transparent border border-blue-300 text-white hover:bg-blue-700">
+                Sign In
+              </Button>
+            </Link>
           </div>
         </div>
       </section>
 
       {/* ── FOOTER ────────────────────────────────────────────────────────────── */}
-      <footer className="py-10 border-t border-white/[0.04]">
+      <footer className="py-8 bg-white border-t border-gray-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <div className="w-7 h-7 rounded-lg bg-blue-600 flex items-center justify-center">
-              <span className="text-white font-display font-bold text-xs">U</span>
+              <span className="text-white font-bold text-xs">U</span>
             </div>
-            <span className="font-display font-bold text-xs tracking-widest text-blue-400">AI-UNIPOD</span>
+            <span className="font-bold text-sm text-gray-900">AI-UNIPOD BMS</span>
           </div>
-          <p className="text-xs text-slate-600">
-            © {new Date().getFullYear()} AI-UNIPOD UNILAG. Booking Management System.
+          <p className="text-xs text-gray-400">
+            © {new Date().getFullYear()} AI-UNIPOD UNILAG. All rights reserved.
           </p>
-          <div className="flex items-center gap-4 text-xs text-slate-600">
-            <Link href="/admin/login" className="hover:text-slate-400 transition-colors">Admin</Link>
-            <Link href="/auth/login" className="hover:text-slate-400 transition-colors">Sign In</Link>
+          <div className="flex items-center gap-4 text-xs text-gray-400">
+            <Link href="/auth/login" className="hover:text-gray-700 transition-colors">Sign In</Link>
+            <Link href="/auth/signup" className="hover:text-gray-700 transition-colors">Sign Up</Link>
           </div>
         </div>
       </footer>
