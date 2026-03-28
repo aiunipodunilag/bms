@@ -1,6 +1,6 @@
 /**
  * fix-css.js  —  Runs before `npm run build` on Vercel.
- * Rewrites source files that either have build errors or need the dark-glass redesign applied.
+ * Rewrites source files to apply the light/clean theme and fix build errors.
  * Files patched: globals.css, Navbar, Card, Button, Badge, AdminSidebar
  */
 
@@ -17,7 +17,7 @@ function write(rel, content) {
 
 // ─── 1. globals.css ───────────────────────────────────────────────────────────
 write("app/globals.css", `
-@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Space+Grotesk:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@700;800;900&family=Space+Grotesk:wght@400;500;600;700&display=swap');
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -26,42 +26,32 @@ html { scroll-behavior: smooth; }
 *, *::before, *::after { box-sizing: border-box; }
 
 body {
-  background-color: #09090f;
-  color: #f1f5f9;
+  background-color: #f8fafc;
+  color: #0f172a;
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
   font-family: 'Space Grotesk', system-ui, sans-serif;
 }
 
 .font-display { font-family: 'Orbitron', monospace; }
-.text-balance  { text-wrap: balance; }
 
 /* ── Scrollbar ── */
 ::-webkit-scrollbar              { width: 4px; height: 4px; }
 ::-webkit-scrollbar-track        { background: transparent; }
-::-webkit-scrollbar-thumb        { background: rgba(124,58,237,0.5); border-radius: 99px; }
+::-webkit-scrollbar-thumb        { background: rgba(124,58,237,0.4); border-radius: 99px; }
 
-/* ── Animations ── */
+/* ── Scrollbar hide utility ── */
+.scrollbar-none { scrollbar-width: none; }
+.scrollbar-none::-webkit-scrollbar { display: none; }
+
+/* ── Photo strip animation ── */
 @keyframes scroll-x {
   0%   { transform: translateX(0); }
   100% { transform: translateX(-50%); }
 }
 .animate-scroll-x { animation: scroll-x 40s linear infinite; }
-
-@keyframes pulse-glow {
-  0%, 100% { box-shadow: 0 0 20px rgba(124,58,237,0.3); }
-  50%       { box-shadow: 0 0 40px rgba(124,58,237,0.6), 0 0 60px rgba(6,182,212,0.2); }
-}
-.animate-pulse-glow { animation: pulse-glow 3s ease-in-out infinite; }
-
-@keyframes float {
-  0%, 100% { transform: translateY(0px); }
-  50%       { transform: translateY(-8px); }
-}
-.animate-float { animation: float 4s ease-in-out infinite; }
 `.trimStart());
 
-// ─── 2. Navbar ────────────────────────────────────────────────────────────────
+// ─── 2. Navbar — light theme ──────────────────────────────────────────────────
 write("components/layout/Navbar.tsx", `"use client";
 
 import Link from "next/link";
@@ -72,7 +62,7 @@ import Button from "@/components/ui/Button";
 import { Menu, X, Bell, ChevronDown, LogOut, User, Settings } from "lucide-react";
 
 interface NavbarProps {
-  user?: { name: string; tier: string; tierLabel: string; avatar?: string } | null;
+  user?: { name: string; tier: string; tierLabel: string } | null;
 }
 
 export default function Navbar({ user }: NavbarProps) {
@@ -93,16 +83,16 @@ export default function Navbar({ user }: NavbarProps) {
       ];
 
   return (
-    <header className="sticky top-0 z-50 w-full glass border-b border-white/[0.07]">
+    <header className="sticky top-0 z-50 w-full bg-white border-b border-gray-200">
       <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
 
           {/* ── Logo ── */}
           <Link href={user ? "/dashboard" : "/"} className="flex items-center gap-1.5 group">
-            <span className="font-display font-bold text-base tracking-widest gradient-text group-hover:opacity-80 transition-opacity">
+            <span className="font-display font-black text-base tracking-widest text-violet-600 group-hover:text-violet-700 transition-colors">
               AI-UNIPOD
             </span>
-            <span className="text-[10px] text-slate-500 tracking-[0.15em] uppercase hidden sm:inline self-end mb-0.5">
+            <span className="text-[10px] text-gray-400 tracking-[0.15em] uppercase hidden sm:inline self-end mb-0.5">
               · BMS
             </span>
           </Link>
@@ -110,16 +100,13 @@ export default function Navbar({ user }: NavbarProps) {
           {/* ── Desktop nav ── */}
           <div className="hidden md:flex items-center gap-1">
             {navLinks.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
+              <Link key={link.href} href={link.href}
                 className={cn(
-                  "px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200",
+                  "px-4 py-2 rounded-xl text-sm font-medium transition-colors",
                   pathname === link.href
-                    ? "bg-violet-500/20 text-violet-300 border border-violet-500/30"
-                    : "text-slate-400 hover:text-slate-100 hover:bg-white/[0.06]"
-                )}
-              >
+                    ? "bg-violet-50 text-violet-700"
+                    : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
+                )}>
                 {link.label}
               </Link>
             ))}
@@ -129,37 +116,35 @@ export default function Navbar({ user }: NavbarProps) {
           <div className="flex items-center gap-2">
             {user ? (
               <>
-                <button className="relative p-2 rounded-xl text-slate-400 hover:text-slate-100 hover:bg-white/[0.06] transition-colors">
+                <button className="relative p-2 rounded-xl text-gray-500 hover:text-gray-900 hover:bg-gray-50 transition-colors">
                   <Bell size={18} />
-                  <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full animate-pulse" />
+                  <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full" />
                 </button>
                 <div className="relative">
-                  <button
-                    onClick={() => setProf(!prof)}
-                    className="flex items-center gap-2 pl-2 pr-3 py-1.5 rounded-xl hover:bg-white/[0.06] border border-transparent hover:border-white/[0.08] transition-all"
-                  >
-                    <div className="w-7 h-7 rounded-full bg-gradient-to-br from-violet-600 to-cyan-500 flex items-center justify-center">
+                  <button onClick={() => setProf(!prof)}
+                    className="flex items-center gap-2 pl-2 pr-3 py-1.5 rounded-xl hover:bg-gray-50 border border-transparent hover:border-gray-200 transition-all">
+                    <div className="w-7 h-7 rounded-full bg-gradient-to-br from-violet-600 to-violet-400 flex items-center justify-center">
                       <span className="text-white text-xs font-bold">{user.name.charAt(0).toUpperCase()}</span>
                     </div>
                     <div className="hidden sm:block text-left">
-                      <p className="text-xs font-semibold text-slate-100 leading-tight">{user.name.split(" ")[0]}</p>
-                      <p className="text-[10px] text-slate-400 leading-tight">{user.tierLabel}</p>
+                      <p className="text-xs font-semibold text-gray-900 leading-tight">{user.name.split(" ")[0]}</p>
+                      <p className="text-[10px] text-gray-400 leading-tight">{user.tierLabel}</p>
                     </div>
-                    <ChevronDown size={14} className="text-slate-400" />
+                    <ChevronDown size={14} className="text-gray-400" />
                   </button>
                   {prof && (
-                    <div className="absolute right-0 mt-2 w-52 glass rounded-xl shadow-glass border border-white/[0.08] py-1 z-50">
+                    <div className="absolute right-0 mt-2 w-52 bg-white rounded-xl shadow-lg border border-gray-100 py-1 z-50">
                       <Link href="/dashboard/profile" onClick={() => setProf(false)}
-                        className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-slate-300 hover:text-slate-100 hover:bg-white/[0.06] transition-colors">
-                        <User size={14} className="text-violet-400" /> Profile
+                        className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-gray-700 hover:text-gray-900 hover:bg-gray-50 transition-colors">
+                        <User size={14} className="text-violet-500" /> Profile
                       </Link>
                       <Link href="/dashboard/settings" onClick={() => setProf(false)}
-                        className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-slate-300 hover:text-slate-100 hover:bg-white/[0.06] transition-colors">
-                        <Settings size={14} className="text-violet-400" /> Settings
+                        className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-gray-700 hover:text-gray-900 hover:bg-gray-50 transition-colors">
+                        <Settings size={14} className="text-violet-500" /> Settings
                       </Link>
-                      <div className="my-1 border-t border-white/[0.06]" />
+                      <div className="my-1 border-t border-gray-100" />
                       <Link href="/auth/logout" onClick={() => setProf(false)}
-                        className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-colors">
+                        className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-red-500 hover:text-red-600 hover:bg-red-50 transition-colors">
                         <LogOut size={14} /> Sign out
                       </Link>
                     </div>
@@ -176,7 +161,7 @@ export default function Navbar({ user }: NavbarProps) {
                 </Link>
               </>
             )}
-            <button className="md:hidden p-2 rounded-xl text-slate-400 hover:text-slate-100 hover:bg-white/[0.06] transition-colors"
+            <button className="md:hidden p-2 rounded-xl text-gray-500 hover:text-gray-900 hover:bg-gray-50 transition-colors"
               onClick={() => setMob(!mob)}>
               {mob ? <X size={20} /> : <Menu size={20} />}
             </button>
@@ -185,14 +170,14 @@ export default function Navbar({ user }: NavbarProps) {
 
         {/* ── Mobile menu ── */}
         {mob && (
-          <div className="md:hidden pb-4 pt-2 border-t border-white/[0.06] mt-2">
+          <div className="md:hidden pb-4 pt-2 border-t border-gray-100 mt-2">
             {navLinks.map((link) => (
               <Link key={link.href} href={link.href} onClick={() => setMob(false)}
                 className={cn(
                   "block px-4 py-2.5 rounded-xl text-sm font-medium transition-colors",
                   pathname === link.href
-                    ? "bg-violet-500/20 text-violet-300"
-                    : "text-slate-400 hover:text-slate-100 hover:bg-white/[0.06]"
+                    ? "bg-violet-50 text-violet-700"
+                    : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
                 )}>
                 {link.label}
               </Link>
@@ -210,7 +195,7 @@ export default function Navbar({ user }: NavbarProps) {
 }
 `);
 
-// ─── 3. Card ──────────────────────────────────────────────────────────────────
+// ─── 3. Card — light theme ────────────────────────────────────────────────────
 write("components/ui/Card.tsx", `import { cn } from "@/lib/utils";
 
 interface CardProps {
@@ -218,17 +203,15 @@ interface CardProps {
   className?: string;
   padding?: "none" | "sm" | "md" | "lg";
   hover?: boolean;
-  glow?: boolean;
 }
 
-export function Card({ children, className, padding = "md", hover = false, glow = false }: CardProps) {
+export function Card({ children, className, padding = "md", hover = false }: CardProps) {
   const paddings = { none: "", sm: "p-4", md: "p-5", lg: "p-6" };
   return (
     <div className={cn(
-      "glass rounded-2xl shadow-glass",
+      "bg-white rounded-2xl border border-gray-100 shadow-sm",
       paddings[padding],
-      hover && "hover:bg-white/[0.07] hover:-translate-y-0.5 transition-all duration-200 cursor-pointer",
-      glow && "shadow-glow",
+      hover && "hover:-translate-y-0.5 hover:shadow-md transition-all duration-200 cursor-pointer",
       className
     )}>
       {children}
@@ -241,7 +224,7 @@ export function CardHeader({ children, className }: { children: React.ReactNode;
 }
 
 export function CardTitle({ children, className }: { children: React.ReactNode; className?: string }) {
-  return <h3 className={cn("text-base font-semibold text-slate-100", className)}>{children}</h3>;
+  return <h3 className={cn("text-base font-semibold text-gray-900", className)}>{children}</h3>;
 }
 
 export function CardContent({ children, className }: { children: React.ReactNode; className?: string }) {
@@ -249,7 +232,7 @@ export function CardContent({ children, className }: { children: React.ReactNode
 }
 `);
 
-// ─── 4. Button ────────────────────────────────────────────────────────────────
+// ─── 4. Button — light theme ──────────────────────────────────────────────────
 write("components/ui/Button.tsx", `"use client";
 import { cn } from "@/lib/utils";
 import { type ButtonHTMLAttributes, forwardRef } from "react";
@@ -263,19 +246,19 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 const Button = forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, variant = "primary", size = "md", loading, disabled, children, ...props }, ref) => {
     const base =
-      "inline-flex items-center justify-center font-medium rounded-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-[#09090f] disabled:opacity-50 disabled:cursor-not-allowed";
+      "inline-flex items-center justify-center font-medium rounded-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-white disabled:opacity-50 disabled:cursor-not-allowed";
 
     const variants = {
       primary:
-        "bg-gradient-to-r from-violet-600 to-cyan-500 hover:from-violet-500 hover:to-cyan-400 text-white shadow-glow-sm hover:shadow-glow focus:ring-violet-500",
+        "bg-violet-600 hover:bg-violet-700 text-white shadow-sm focus:ring-violet-500",
       secondary:
-        "glass text-violet-300 hover:bg-white/[0.08] border-violet-500/30 focus:ring-violet-400",
+        "bg-violet-50 text-violet-700 hover:bg-violet-100 border border-violet-200 focus:ring-violet-400",
       outline:
-        "border border-white/10 bg-transparent hover:bg-white/[0.06] text-slate-200 hover:border-white/20 focus:ring-violet-400",
+        "border border-gray-300 bg-white hover:bg-gray-50 text-gray-700 hover:border-gray-400 focus:ring-violet-400",
       ghost:
-        "hover:bg-white/[0.06] text-slate-300 focus:ring-slate-400",
+        "hover:bg-gray-100 text-gray-600 hover:text-gray-900 focus:ring-gray-400",
       danger:
-        "bg-red-600/90 hover:bg-red-500 text-white focus:ring-red-500 shadow-sm",
+        "bg-red-600 hover:bg-red-700 text-white shadow-sm focus:ring-red-500",
     };
 
     const sizes = {
@@ -306,7 +289,7 @@ Button.displayName = "Button";
 export default Button;
 `);
 
-// ─── 5. Badge ─────────────────────────────────────────────────────────────────
+// ─── 5. Badge — light theme ───────────────────────────────────────────────────
 write("components/ui/Badge.tsx", `import { cn } from "@/lib/utils";
 
 interface BadgeProps {
@@ -318,12 +301,12 @@ interface BadgeProps {
 
 export default function Badge({ children, variant = "default", size = "md", className }: BadgeProps) {
   const variants = {
-    default: "bg-violet-500/20 text-violet-300 border border-violet-500/30",
-    success: "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30",
-    warning: "bg-amber-500/20 text-amber-300 border border-amber-500/30",
-    danger:  "bg-red-500/20 text-red-300 border border-red-500/30",
-    info:    "bg-cyan-500/20 text-cyan-300 border border-cyan-500/30",
-    neutral: "bg-white/10 text-slate-300 border border-white/10",
+    default: "bg-violet-50 text-violet-700 border border-violet-200",
+    success: "bg-emerald-50 text-emerald-700 border border-emerald-200",
+    warning: "bg-amber-50 text-amber-700 border border-amber-200",
+    danger:  "bg-red-50 text-red-700 border border-red-200",
+    info:    "bg-cyan-50 text-cyan-700 border border-cyan-200",
+    neutral: "bg-gray-100 text-gray-600 border border-gray-200",
   };
   const sizes = { sm: "px-2 py-0.5 text-xs", md: "px-2.5 py-1 text-xs" };
   return (
@@ -335,6 +318,7 @@ export default function Badge({ children, variant = "default", size = "md", clas
 `);
 
 // ─── 6. AdminSidebar ──────────────────────────────────────────────────────────
+// Admin sidebar stays white/light to match the light admin pages
 write("components/layout/AdminSidebar.tsx", `"use client";
 
 import Link from "next/link";
@@ -347,7 +331,6 @@ import {
 } from "lucide-react";
 
 type AdminRole = "super_admin" | "admin" | "receptionist" | "space_lead";
-
 interface NavLink { href: string; label: string; icon: LucideIcon; badge?: number; }
 
 const ADMIN_LINKS: NavLink[] = [
@@ -390,18 +373,12 @@ export default function AdminSidebar({ role = "admin" }: Props) {
   };
 
   return (
-    <aside className="w-60 min-h-screen flex flex-col shrink-0" style={{ background: "#06060e", borderRight: "1px solid rgba(255,255,255,0.06)" }}>
+    <aside className="w-60 min-h-screen flex flex-col shrink-0 bg-white border-r border-gray-200">
       {/* Logo */}
-      <div className="px-5 py-5" style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
-        <Link href={role === "super_admin" ? "/superadmin" : "/admin"} className="flex items-center gap-3 group">
-          <div className="relative w-8 h-8 flex items-center justify-center">
-            <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-violet-600 to-cyan-500" />
-            <span className="relative text-white font-display font-bold text-sm">U</span>
-          </div>
-          <div>
-            <p className="font-display font-bold text-xs tracking-widest gradient-text">AI-UNIPOD</p>
-            <p className="text-[10px] text-slate-500 tracking-widest uppercase">{roleLabel[role]}</p>
-          </div>
+      <div className="px-5 py-5 border-b border-gray-200">
+        <Link href={role === "super_admin" ? "/superadmin" : "/admin"} className="flex flex-col">
+          <span className="font-display font-black text-sm tracking-widest text-violet-600">AI-UNIPOD</span>
+          <span className="text-[10px] text-gray-400 tracking-widest uppercase mt-0.5">{roleLabel[role]}</span>
         </Link>
       </div>
 
@@ -413,21 +390,21 @@ export default function AdminSidebar({ role = "admin" }: Props) {
           return (
             <Link key={href} href={href}
               className={cn(
-                "flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150",
+                "flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors",
                 active
-                  ? "bg-violet-500/20 text-violet-300 border border-violet-500/25"
-                  : "text-slate-400 hover:text-slate-200 hover:bg-white/[0.05]"
+                  ? "bg-violet-50 text-violet-700"
+                  : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
               )}>
               <div className="flex items-center gap-3">
-                <Icon size={15} className={active ? "text-violet-400" : "text-slate-500"} />
+                <Icon size={15} className={active ? "text-violet-600" : "text-gray-400"} />
                 {label}
               </div>
               {badge ? (
-                <span className="bg-gradient-to-r from-violet-600 to-cyan-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center">
+                <span className="bg-violet-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center">
                   {badge}
                 </span>
               ) : active ? (
-                <ChevronRight size={13} className="text-violet-400 opacity-60" />
+                <ChevronRight size={13} className="text-violet-400" />
               ) : null}
             </Link>
           );
@@ -435,9 +412,9 @@ export default function AdminSidebar({ role = "admin" }: Props) {
       </nav>
 
       {/* Footer */}
-      <div className="px-3 pb-5 pt-4" style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+      <div className="px-3 pb-5 pt-4 border-t border-gray-200">
         <Link href="/admin/login"
-          className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-slate-500 hover:text-red-400 hover:bg-red-500/10 transition-all">
+          className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-gray-500 hover:text-red-600 hover:bg-red-50 transition-colors">
           <LogOut size={15} /> Sign out
         </Link>
       </div>
