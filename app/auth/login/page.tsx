@@ -19,25 +19,55 @@ export default function LoginPage() {
     setError("");
     setLoading(true);
 
-    const supabase = createClient();
-    const { error: authError } = await supabase.auth.signInWithPassword({
-      email: form.email.trim().toLowerCase(),
-      password: form.password,
-    });
+    try {
+      const supabase = createClient();
 
-    if (authError) {
-      setError(
-        authError.message === "Invalid login credentials"
-          ? "Incorrect email or password. Please try again."
-          : authError.message
-      );
+      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+        email: form.email.trim().toLowerCase(),
+        password: form.password,
+      });
+
+      if (authError || !authData.user) {
+        setError(
+          authError?.message === "Invalid login credentials"
+            ? "Incorrect email or password. Please try again."
+            : authError?.message ?? "Login failed. Please try again."
+        );
+        setLoading(false);
+        return;
+      }
+
+      // Check profile status before letting them in
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("status")
+        .eq("id", authData.user.id)
+        .single();
+
+      if (profile?.status === "pending") {
+        await supabase.auth.signOut();
+        setError(
+          "Your account is pending admin verification. You'll be notified by email once it's approved — usually within 24 hours."
+        );
+        setLoading(false);
+        return;
+      }
+
+      if (profile?.status === "rejected") {
+        await supabase.auth.signOut();
+        setError(
+          "Your account application was not approved. Contact UNIPOD staff for more information."
+        );
+        setLoading(false);
+        return;
+      }
+
+      router.push("/dashboard");
+    } catch (err) {
+      console.error("[login]", err);
+      setError("Something went wrong. Check your connection and try again.");
       setLoading(false);
-      return;
     }
-
-    // Refresh to let the server pick up the new session cookie
-    router.refresh();
-    router.push("/dashboard");
   };
 
   return (
