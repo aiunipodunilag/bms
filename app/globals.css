@@ -1,30 +1,29 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-@layer base {
-  html {
-    scroll-behavior: smooth;
-  }
-
-  body {
-    @apply bg-gray-50 text-gray-900 antialiased;
-    font-family: 'Inter', system-ui, sans-serif;
-  }
-
-  * {
-    box-sizing: border-box;
-  }
+html {
+  scroll-behavior: smooth;
 }
 
-@layer utilities {
-  .text-balance {
-    text-wrap: balance;
-  }
+*, *::before, *::after {
+  box-sizing: border-box;
 }
 
-/* Photo strip infinite horizontal scroll — used in PhotoStrip component */
+body {
+  background-color: #f9fafb;
+  color: #111827;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-family: 'Inter', system-ui, sans-serif;
+}
+
+.text-balance {
+  text-wrap: balance;
+}
+
 @keyframes scroll-x {
   0%   { transform: translateX(0); }
   100% { transform: translateX(-50%); }
