@@ -15,10 +15,11 @@ import {
   LogOut,
   ShieldCheck,
   UserCog,
+  type LucideIcon,
 } from "lucide-react";
 
 // Full admin nav — shown to super_admin and admin
-const ADMIN_LINKS = [
+const ADMIN_LINKS: NavLink[] = [
   { href: "/admin",            label: "Overview",            icon: LayoutDashboard },
   { href: "/admin/bookings",   label: "Bookings & Approvals", icon: CalendarDays, badge: 5 },
   { href: "/admin/users",      label: "User Management",     icon: Users, badge: 3 },
@@ -29,23 +30,30 @@ const ADMIN_LINKS = [
 ];
 
 // Super admin gets an extra link to their control panel
-const SUPER_ADMIN_LINKS = [
+const SUPER_ADMIN_LINKS: NavLink[] = [
   { href: "/superadmin",         label: "Super Admin Panel",  icon: ShieldCheck },
   { href: "/superadmin/admins",  label: "Manage Admins",      icon: UserCog },
   ...ADMIN_LINKS,
 ];
 
 // Receptionist: check-in desk only
-const RECEPTIONIST_LINKS = [
+const RECEPTIONIST_LINKS: NavLink[] = [
   { href: "/admin/checkin",  label: "Check-in Desk", icon: QrCode },
 ];
 
 // Space lead: their verification dashboard only
-const SPACE_LEAD_LINKS = [
+const SPACE_LEAD_LINKS: NavLink[] = [
   { href: "/admin/space-lead", label: "Equipment Verification", icon: ShieldCheck },
 ];
 
 type AdminRole = "super_admin" | "admin" | "receptionist" | "space_lead";
+
+interface NavLink {
+  href: string;
+  label: string;
+  icon: LucideIcon;
+  badge?: number;
+}
 
 interface Props {
   // TODO: Replace with real role from session/auth context
