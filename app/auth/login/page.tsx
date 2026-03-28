@@ -14,7 +14,7 @@ export default function LoginPage() {
   useEffect(() => {
     const supabase = createClient();
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) router.replace("/dashboard");
+      if (session) window.location.href = "/dashboard";
     });
   }, [router]);
 
@@ -56,7 +56,7 @@ export default function LoginPage() {
       if (profile?.status === "pending") {
         await supabase.auth.signOut();
         setError(
-          "Your account is pending admin verification. You'll be notified by email once it's approved — usually within 24 hours."
+          "Your account is pending admin verification. You'll be notified by email once it's approved \u2014 usually within 24 hours."
         );
         setLoading(false);
         return;
@@ -71,7 +71,7 @@ export default function LoginPage() {
         return;
       }
 
-      router.push("/dashboard");
+      window.location.href = "/dashboard";
     } catch (err) {
       console.error("[login]", err);
       setError("Something went wrong. Check your connection and try again.");

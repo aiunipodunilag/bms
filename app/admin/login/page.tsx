@@ -39,7 +39,7 @@ export default function AdminLoginPage() {
         .select("role")
         .eq("id", session.user.id)
         .single();
-      if (data?.role) router.replace(ROLE_REDIRECTS[data.role as AdminRole]);
+      if (data?.role) window.location.href = ROLE_REDIRECTS[data.role as AdminRole];
     });
   }, [router]);
 
@@ -100,7 +100,9 @@ export default function AdminLoginPage() {
         .eq("id", authData.user.id)
         .then(() => {});
 
-      router.push(ROLE_REDIRECTS[adminAccount.role as AdminRole]);
+      // Full page reload so the browser sends fresh session cookies
+      // to the middleware \u2014 router.push() misses them on first navigation
+      window.location.href = ROLE_REDIRECTS[adminAccount.role as AdminRole];
     } catch (err) {
       console.error("[admin-login]", err);
       setError("Something went wrong. Check your connection and try again.");
@@ -144,7 +146,7 @@ export default function AdminLoginPage() {
                 <input
                   type={showPw ? "text" : "password"}
                   autoComplete="current-password"
-                  placeholder="••••••••••"
+                  placeholder="\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className="w-full bg-gray-800 border border-gray-700 text-white placeholder-gray-600 text-sm rounded-xl pl-9 pr-10 py-2.5 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
@@ -191,7 +193,7 @@ export default function AdminLoginPage() {
                 <span className="w-1.5 h-1.5 rounded-full bg-brand-500 shrink-0" />
                 <span className="text-xs text-gray-500">
                   <span className="text-gray-300">{label}</span>
-                  {" → "}
+                  {" \u2192 "}
                   {ROLE_REDIRECTS[role]}
                 </span>
               </div>
