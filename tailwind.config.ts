@@ -1,4 +1,5 @@
 import type { Config } from "tailwindcss";
+import plugin from "tailwindcss/plugin";
 
 const config: Config = {
   content: [
@@ -22,8 +23,7 @@ const config: Config = {
           900: "#252b89",
           950: "#161851",
         },
-        accent: "#f97316",
-        // ShadCN-compatible aliases — makes @apply border-border / bg-background / text-foreground valid
+        accent:     "#f97316",
         border:     "#e5e7eb",
         background: "#f9fafb",
         foreground: "#111827",
@@ -35,7 +35,31 @@ const config: Config = {
       },
     },
   },
-  plugins: [],
+  // Force JIT to always generate these classes even if they only appear
+  // inside @apply in globals.css (JIT doesn't scan CSS files for class names)
+  safelist: [
+    "border-border",
+    "bg-background",
+    "text-foreground",
+    "bg-foreground",
+    "text-background",
+    "ring-ring",
+    "border-input",
+  ],
+  plugins: [
+    // Explicitly register the ShadCN-style utility classes so @apply works
+    plugin(function ({ addUtilities }) {
+      addUtilities({
+        ".border-border":  { "border-color":      "#e5e7eb" },
+        ".bg-background":  { "background-color":  "#f9fafb" },
+        ".text-foreground":{ "color":             "#111827" },
+        ".bg-foreground":  { "background-color":  "#111827" },
+        ".text-background":{ "color":             "#f9fafb" },
+        ".ring-ring":      { "--tw-ring-color":   "#4f5fff" },
+        ".border-input":   { "border-color":      "#e5e7eb" },
+      });
+    }),
+  ],
 };
 
 export default config;
