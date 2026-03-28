@@ -48,9 +48,9 @@ patch("lib/data/spaces.ts", [
   ['imageUrl: "/spaces/image21.jpeg"', 'imageUrl: "/spaces/image4.jpeg"'],   // AI Robotics Lab → circuit board mural
 ]);
 
-// ─── 3. Landing page — remove Admin Login button ─────────────────────────────
-// Admin login should only be accessible via /admin/login, not from the public landing page
+// ─── 3. Landing page patches ─────────────────────────────────────────────────
 patch("app/page.tsx", [
+  // Remove Admin Login button — not for public landing page
   [
     `<Link href="/admin/login">
                 <Button variant="ghost" size="lg" className="text-slate-500 hover:text-slate-300">
@@ -59,6 +59,10 @@ patch("app/page.tsx", [
               </Link>`,
     ``,
   ],
+  // Remove dark background from outer div
+  [`style={{ background: "#09090f" }}`, ``],
+  // Lighten overlay on hero image (less dark)
+  [`from-[#09090f]/80 via-[#09090f]/60 to-[#09090f]`, `from-slate-900/60 via-slate-900/30 to-transparent`],
 ]);
 
 // ─── 4. Booking page — bank transfer + equipment photos + scrollable calendar ─
@@ -158,16 +162,16 @@ export default function BookSpacePage({ params }: { params: { id: string } }) {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const inputCls = "w-full bg-white/[0.05] border border-white/10 rounded-xl px-4 py-2.5 text-sm text-slate-200 placeholder-slate-600 focus:outline-none focus:border-violet-500/50 focus:ring-1 focus:ring-violet-500/30 transition-colors";
+  const inputCls = "w-full bg-white border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-violet-400 focus:ring-1 focus:ring-violet-300 transition-colors";
   const steps = ["details", "confirm", "success"] as const;
 
   return (
-    <div className="min-h-screen" style={{ background: "#09090f" }}>
+    <div className="min-h-screen bg-slate-50">
       <Navbar user={{ name: "Tolu Adeyemi", tier: currentUserTier, tierLabel: TIER_LABELS[currentUserTier] }} />
 
       <main className="max-w-2xl mx-auto px-4 sm:px-6 py-8">
         {/* Back */}
-        <Link href={\`/spaces/\${space.slug}\`} className="inline-flex items-center gap-2 text-slate-500 hover:text-slate-300 text-sm mb-6 transition-colors">
+        <Link href={\`/spaces/\${space.slug}\`} className="inline-flex items-center gap-2 text-gray-400 hover:text-gray-700 text-sm mb-6 transition-colors">
           <ChevronLeft size={16} /> Back to {space.name}
         </Link>
 
@@ -180,7 +184,7 @@ export default function BookSpacePage({ params }: { params: { id: string } }) {
                   ? "bg-gradient-to-br from-violet-600 to-cyan-500 text-white"
                   : i < steps.indexOf(step)
                   ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
-                  : "bg-white/[0.05] text-slate-500 border border-white/10"
+                  : "bg-gray-100 text-gray-400 border border-gray-200"
               }\`}>
                 {i < steps.indexOf(step) ? <CheckCircle size={14} /> : i + 1}
               </div>
@@ -193,11 +197,11 @@ export default function BookSpacePage({ params }: { params: { id: string } }) {
         {step === "details" && (
           <div className="space-y-5">
             {/* Space info */}
-            <div className="glass rounded-2xl p-5 border border-white/[0.06]">
+            <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm">
               <div className="flex items-start justify-between gap-4">
                 <div>
-                  <h1 className="font-display font-bold text-xl text-slate-100">{space.name}</h1>
-                  <p className="text-slate-400 text-sm mt-1">{space.description}</p>
+                  <h1 className="font-display font-bold text-xl text-gray-900">{space.name}</h1>
+                  <p className="text-gray-600 text-sm mt-1">{space.description}</p>
                 </div>
                 <Badge variant={space.approvalType === "auto" ? "success" : "warning"} size="sm">
                   {space.approvalType === "auto" ? "Instant" : "Manual review"}
@@ -206,7 +210,7 @@ export default function BookSpacePage({ params }: { params: { id: string } }) {
             </div>
 
             {isGroupOnly && (
-              <div className="glass rounded-2xl p-4 border border-cyan-500/20">
+              <div className="bg-cyan-50 rounded-2xl p-4 border border-cyan-200">
                 <p className="text-sm text-cyan-300 flex items-center gap-2">
                   <Info size={14} /> This space requires a group booking (min {space.minGroupSize ?? 2} members).
                 </p>
@@ -214,9 +218,9 @@ export default function BookSpacePage({ params }: { params: { id: string } }) {
             )}
 
             {/* Date selection — horizontal scrollable strip */}
-            <div className="glass rounded-2xl p-5 border border-white/[0.06]">
-              <h2 className="font-semibold text-slate-100 mb-4 flex items-center gap-2">
-                <Calendar size={16} className="text-violet-400" /> Select Date
+            <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm">
+              <h2 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                <Calendar size={16} className="text-violet-600" /> Select Date
               </h2>
               <div className="flex gap-2 overflow-x-auto pb-2 -mx-1 px-1 scrollbar-none">
                 {dates.map((date) => {
@@ -227,11 +231,11 @@ export default function BookSpacePage({ params }: { params: { id: string } }) {
                       className={\`flex-none flex flex-col items-center justify-center w-[64px] h-[80px] rounded-xl border transition-all \${
                         sel
                           ? "bg-gradient-to-b from-violet-600 to-violet-800 text-white border-violet-500"
-                          : "glass text-slate-400 border-white/[0.07] hover:border-violet-500/40 hover:text-slate-200"
+                          : "bg-white text-gray-600 border-gray-200 hover:border-violet-400 hover:text-gray-900"
                       }\`}>
-                      <p className="text-[10px] opacity-70">{date.toLocaleDateString("en-NG", { weekday: "short" })}</p>
+                      <p className="text-[10px] text-gray-500">{date.toLocaleDateString("en-NG", { weekday: "short" })}</p>
                       <p className="font-bold text-xl leading-tight">{date.toLocaleDateString("en-NG", { day: "numeric" })}</p>
-                      <p className="text-[10px] opacity-70">{date.toLocaleDateString("en-NG", { month: "short" })}</p>
+                      <p className="text-[10px] text-gray-500">{date.toLocaleDateString("en-NG", { month: "short" })}</p>
                     </button>
                   );
                 })}
@@ -240,20 +244,20 @@ export default function BookSpacePage({ params }: { params: { id: string } }) {
             </div>
 
             {/* Time & duration */}
-            <div className="glass rounded-2xl p-5 border border-white/[0.06]">
-              <h2 className="font-semibold text-slate-100 mb-4 flex items-center gap-2">
-                <Clock size={16} className="text-violet-400" /> Start Time & Duration
+            <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm">
+              <h2 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                <Clock size={16} className="text-violet-600" /> Start Time & Duration
               </h2>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="text-xs text-slate-500 mb-2 block">Start time</label>
+                  <label className="text-xs text-gray-500 mb-2 block">Start time</label>
                   <div className="flex flex-wrap gap-1.5">
                     {timeSlots.map((t) => (
                       <button key={t} onClick={() => setSelectedStartTime(t)}
                         className={\`px-3 py-1.5 rounded-xl text-xs font-medium border transition-all \${
                           selectedStartTime === t
                             ? "bg-violet-600/80 text-white border-violet-500"
-                            : "glass text-slate-400 border-white/[0.07] hover:border-violet-500/40"
+                            : "bg-white text-gray-600 border-gray-200 hover:border-violet-400"
                         }\`}>
                         {formatTime(t)}
                       </button>
@@ -261,15 +265,15 @@ export default function BookSpacePage({ params }: { params: { id: string } }) {
                   </div>
                 </div>
                 <div>
-                  <label className="text-xs text-slate-500 mb-2 block">Duration (hours)</label>
+                  <label className="text-xs text-gray-500 mb-2 block">Duration (hours)</label>
                   <div className="flex items-center gap-3">
                     <button onClick={() => setDuration(Math.max(1, duration - 1))}
-                      className="w-8 h-8 glass rounded-xl flex items-center justify-center text-slate-300 hover:text-white border border-white/[0.07] transition-colors">
+                      className="w-8 h-8 bg-white rounded-xl flex items-center justify-center text-gray-500 hover:text-gray-900 border border-gray-200 hover:border-violet-400 transition-colors">
                       <X size={14} />
                     </button>
-                    <span className="font-display text-2xl font-bold gradient-text w-8 text-center">{duration}</span>
+                    <span className="font-display text-2xl font-bold text-violet-600 w-8 text-center">{duration}</span>
                     <button onClick={() => setDuration(Math.min(space.maxHoursPerDay ?? 4, duration + 1))}
-                      className="w-8 h-8 glass rounded-xl flex items-center justify-center text-slate-300 hover:text-white border border-white/[0.07] transition-colors">
+                      className="w-8 h-8 bg-white rounded-xl flex items-center justify-center text-gray-500 hover:text-gray-900 border border-gray-200 hover:border-violet-400 transition-colors">
                       <Plus size={14} />
                     </button>
                   </div>
@@ -283,11 +287,11 @@ export default function BookSpacePage({ params }: { params: { id: string } }) {
 
             {/* Equipment selection with photos */}
             {SPACE_EQUIPMENT_MAP[space.id] && (
-              <div className="glass rounded-2xl p-5 border border-white/[0.06]">
-                <h2 className="font-semibold text-slate-100 mb-1 flex items-center gap-2">
-                  <Cpu size={16} className="text-violet-400" /> Equipment Access
+              <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm">
+                <h2 className="font-semibold text-gray-900 mb-1 flex items-center gap-2">
+                  <Cpu size={16} className="text-violet-600" /> Equipment Access
                 </h2>
-                <p className="text-xs text-slate-500 mb-4">Select equipment you need — access codes are issued at check-in.</p>
+                <p className="text-xs text-gray-500 mb-4">Select equipment you need — access codes are issued at check-in.</p>
                 <div className="grid grid-cols-2 gap-3">
                   {SPACE_EQUIPMENT_MAP[space.id].map((eq) => {
                     const isSelected = selectedEquipment.includes(eq.type);
@@ -320,7 +324,7 @@ export default function BookSpacePage({ params }: { params: { id: string } }) {
                   })}
                 </div>
                 {selectedEquipment.length > 0 && (
-                  <p className="text-xs text-violet-400 mt-3 flex items-center gap-1">
+                  <p className="text-xs text-violet-600 mt-3 flex items-center gap-1">
                     <CheckCircle size={11} /> {selectedEquipment.length} item{selectedEquipment.length > 1 ? "s" : ""} selected — EQ codes issued at check-in
                   </p>
                 )}
@@ -329,11 +333,11 @@ export default function BookSpacePage({ params }: { params: { id: string } }) {
 
             {/* Group members */}
             {(isGroupOnly || space.bookingType === "both") && (
-              <div className="glass rounded-2xl p-5 border border-white/[0.06]">
-                <h2 className="font-semibold text-slate-100 mb-1 flex items-center gap-2">
-                  <Users size={16} className="text-violet-400" /> Group Members
+              <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm">
+                <h2 className="font-semibold text-gray-900 mb-1 flex items-center gap-2">
+                  <Users size={16} className="text-violet-600" /> Group Members
                 </h2>
-                <p className="text-xs text-slate-500 mb-4">Enter matric numbers or emails of your group members.</p>
+                <p className="text-xs text-gray-500 mb-4">Enter matric numbers or emails of your group members.</p>
                 <div className="space-y-2">
                   {groupMembers.map((m, idx) => (
                     <input key={idx} value={m}
@@ -357,9 +361,9 @@ export default function BookSpacePage({ params }: { params: { id: string } }) {
 
             {/* Justification */}
             {space.requiresJustification && (
-              <div className="glass rounded-2xl p-5 border border-white/[0.06]">
-                <h2 className="font-semibold text-slate-100 mb-1">Purpose of Booking</h2>
-                <p className="text-xs text-slate-500 mb-3">Briefly explain how you plan to use this space.</p>
+              <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm">
+                <h2 className="font-semibold text-gray-900 mb-1">Purpose of Booking</h2>
+                <p className="text-xs text-gray-500 mb-3">Briefly explain how you plan to use this space.</p>
                 <textarea value={justification} onChange={(e) => setJustification(e.target.value)}
                   rows={3} placeholder="e.g. Final year project — training a computer vision model on the GPU workstation"
                   className={inputCls + " resize-none"} />
@@ -369,7 +373,7 @@ export default function BookSpacePage({ params }: { params: { id: string } }) {
 
             {/* Bank transfer notice — only shown when a fee applies */}
             {needsFee && (
-              <div className="glass rounded-2xl p-5 border border-amber-500/25">
+              <div className="bg-white rounded-2xl p-5 border border-amber-200 shadow-sm">
                 <div className="flex items-start gap-3 mb-4">
                   <div className="w-9 h-9 rounded-xl bg-amber-500/20 flex items-center justify-center shrink-0">
                     <Banknote size={17} className="text-amber-400" />
@@ -378,19 +382,19 @@ export default function BookSpacePage({ params }: { params: { id: string } }) {
                     <p className="font-semibold text-amber-300 text-sm">Additional Fee Required</p>
                     <p className="text-slate-400 text-xs mt-0.5 leading-relaxed">
                       This is your 4th booking this week. A fee of{" "}
-                      <span className="text-amber-300 font-semibold">{formatCurrency(BOOKING_RULES.extraBookingFee)}</span>{" "}
+                      <span className="text-amber-600 font-semibold">{formatCurrency(BOOKING_RULES.extraBookingFee)}</span>{" "}
                       applies. Transfer to the account below before arriving — show your receipt at reception.
                     </p>
                   </div>
                 </div>
-                <div className="bg-white/[0.04] rounded-xl p-4 space-y-2.5 border border-white/[0.05]">
+                <div className="bg-amber-50 rounded-xl p-4 space-y-2.5 border border-amber-100">
                   {[
                     ["Bank",           "First Bank Nigeria"],
                     ["Account Name",   "AI-UNIPOD UNILAG"],
                     ["Account Number", "0123456789"],
                   ].map(([label, value]) => (
                     <div key={label} className="flex justify-between items-center text-sm">
-                      <span className="text-slate-500">{label}</span>
+                      <span className="text-gray-500">{label}</span>
                       <span className={\`text-slate-200 font-semibold \${label === "Account Number" ? "font-mono tracking-wider" : ""}\`}>{value}</span>
                     </div>
                   ))}
@@ -406,10 +410,10 @@ export default function BookSpacePage({ params }: { params: { id: string } }) {
 
         {/* ── STEP: CONFIRM ────────────────────────────────────────────────── */}
         {step === "confirm" && (
-          <div className="glass rounded-2xl p-6 border border-white/[0.06]">
-            <h1 className="font-display font-bold text-xl text-slate-100 mb-6">Confirm Booking</h1>
+          <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
+            <h1 className="font-display font-bold text-xl text-gray-900 mb-6">Confirm Booking</h1>
 
-            <div className="divide-y divide-white/[0.05] mb-6">
+            <div className="divide-y divide-gray-100 mb-6">
               {[
                 ["Space",    space.name],
                 ["Date",     selectedDate ? formatDate(selectedDate) : "-"],
@@ -418,8 +422,8 @@ export default function BookSpacePage({ params }: { params: { id: string } }) {
                 ["Type",     isGroupOnly ? "Group" : "Individual"],
               ].map(([label, value]) => (
                 <div key={label as string} className="flex items-center justify-between py-3">
-                  <span className="text-sm text-slate-500">{label}</span>
-                  <span className="text-sm font-semibold text-slate-200">{value}</span>
+                  <span className="text-sm text-gray-500">{label}</span>
+                  <span className="text-sm font-semibold text-gray-900">{value}</span>
                 </div>
               ))}
               <div className="flex items-center justify-between py-3">
@@ -442,17 +446,17 @@ export default function BookSpacePage({ params }: { params: { id: string } }) {
               {needsFee && (
                 <div className="flex items-center justify-between py-3">
                   <span className="text-sm text-slate-500">Additional fee</span>
-                  <span className="text-sm font-semibold text-amber-400">{formatCurrency(BOOKING_RULES.extraBookingFee)} — pay on arrival</span>
+                  <span className="text-sm font-semibold text-amber-600">{formatCurrency(BOOKING_RULES.extraBookingFee)} — pay on arrival</span>
                 </div>
               )}
             </div>
 
-            <div className="glass rounded-xl p-4 mb-6 border border-white/[0.05]">
-              <p className="text-xs text-slate-400 flex items-start gap-2">
+            <div className="bg-amber-50 rounded-xl p-4 mb-6 border border-amber-100">
+              <p className="text-xs text-gray-600 flex items-start gap-2">
                 <Info size={13} className="text-amber-400 shrink-0 mt-0.5" />
                 <span>
-                  <strong className="text-slate-300">No-show policy:</strong> Check in within{" "}
-                  <strong className="text-slate-300">{BOOKING_RULES.noShowGracePeriod} minutes</strong> of your slot start time.
+                  <strong className="text-gray-800">No-show policy:</strong> Check in within{" "}
+                  <strong className="text-gray-800">{BOOKING_RULES.noShowGracePeriod} minutes</strong> of your slot start time.
                   Late arrivals release the booking and add a flag to your profile.
                 </span>
               </p>
@@ -478,26 +482,26 @@ export default function BookSpacePage({ params }: { params: { id: string } }) {
             </div>
 
             <div>
-              <h2 className="font-display text-2xl font-bold text-slate-100">Booking Confirmed</h2>
-              <p className="text-slate-400 mt-2 text-sm">
+              <h2 className="font-display text-2xl font-bold text-gray-900">Booking Confirmed</h2>
+              <p className="text-gray-500 mt-2 text-sm">
                 {space.approvalType === "auto"
                   ? "Your booking is confirmed. Show the code below at reception."
                   : "Request submitted. You will be notified once an admin approves it."}
               </p>
             </div>
 
-            <div className="glass rounded-2xl p-6 border border-violet-500/25 mx-auto max-w-xs">
-              <p className="text-xs text-slate-500 uppercase tracking-widest mb-3">Your Booking Code</p>
-              <p className="font-display text-3xl font-black gradient-text tracking-widest mb-4">{bmsCode}</p>
+            <div className="bg-white rounded-2xl p-6 border border-violet-200 shadow-sm mx-auto max-w-xs">
+              <p className="text-xs text-gray-400 uppercase tracking-widest mb-3">Your Booking Code</p>
+              <p className="font-display text-3xl font-black text-violet-600 tracking-widest mb-4">{bmsCode}</p>
               <button onClick={copyCode}
-                className="flex items-center gap-2 mx-auto text-sm text-slate-400 hover:text-slate-200 transition-colors glass px-4 py-2 rounded-xl border border-white/[0.07]">
+                className="flex items-center gap-2 mx-auto text-sm text-gray-500 hover:text-gray-800 transition-colors bg-gray-50 px-4 py-2 rounded-xl border border-gray-200 hover:bg-gray-100">
                 {copied ? <Check size={14} className="text-emerald-400" /> : <Copy size={14} />}
                 {copied ? "Copied!" : "Copy code"}
               </button>
             </div>
 
             {needsFee && (
-              <div className="glass rounded-2xl p-5 border border-amber-500/25 text-left">
+              <div className="bg-white rounded-2xl p-5 border border-amber-200 shadow-sm text-left">
                 <p className="text-sm font-semibold text-amber-300 mb-3 flex items-center gap-2">
                   <Banknote size={15} /> Remember to transfer before arriving
                 </p>
