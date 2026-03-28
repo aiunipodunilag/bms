@@ -84,7 +84,7 @@ const config: Config = {
 export default config;
 `);
 
-// ─── 2. globals.css — light theme ────────────────────────────────────────────
+// ─── 2. globals.css — light theme + landing utilities ────────────────────────
 write("app/globals.css", `@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Space+Grotesk:wght@300;400;500;600;700&display=swap');
 @tailwind base;
 @tailwind components;
@@ -109,19 +109,60 @@ h1, h2, h3, h4, h5, h6 {
 
 .font-display { font-family: 'Orbitron', monospace; }
 
-/* Scrollbar */
+/* ── No-zoom on input focus (iOS Safari) ─────────────────────────────────── */
+input, select, textarea {
+  font-size: max(16px, 1em);
+}
+
+/* ── No double-tap zoom on buttons & links ───────────────────────────────── */
+button, a, [role="button"] {
+  touch-action: manipulation;
+}
+
+/* ── Scrollbar ───────────────────────────────────────────────────────────── */
 ::-webkit-scrollbar              { width: 4px; height: 4px; }
 ::-webkit-scrollbar-track        { background: transparent; }
 ::-webkit-scrollbar-thumb        { background: rgba(37,99,235,0.35); border-radius: 99px; }
 .scrollbar-none                  { scrollbar-width: none; }
 .scrollbar-none::-webkit-scrollbar { display: none; }
 
-/* Scroll animation */
+/* ── Photo strip animation ───────────────────────────────────────────────── */
 @keyframes scroll-x {
   0%   { transform: translateX(0); }
   100% { transform: translateX(-50%); }
 }
 .animate-scroll-x { animation: scroll-x 40s linear infinite; }
+
+/* ── Landing page utilities ──────────────────────────────────────────────── */
+
+/* Glassmorphism panel (dark landing page) */
+.glass {
+  background: rgba(255,255,255,0.04);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+/* Subtle dot-grid background */
+.grid-bg {
+  background-image:
+    linear-gradient(rgba(59,130,246,0.07) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(59,130,246,0.07) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+
+/* Blue glow shadows */
+.shadow-glow    { box-shadow: 0 0 24px rgba(59,130,246,0.18); }
+.shadow-glow-sm { box-shadow: 0 0 12px rgba(59,130,246,0.14); }
+
+/* Accent blue text (replaces old violet gradient-text) */
+.gradient-text { color: #3b82f6; }
+
+/* Pulsing button glow */
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 8px rgba(37,99,235,0.4); }
+  50%       { box-shadow: 0 0 22px rgba(37,99,235,0.7); }
+}
+.animate-pulse-glow { animation: pulse-glow 2s ease-in-out infinite; }
 `);
 
 // ─── 3. Navbar.tsx — mobile hamburger, blue, sign-out routing ─────────────────
@@ -568,6 +609,41 @@ export default function AdminSidebar() {
         {logo}{nav}{footer}
       </div>
     </>
+  );
+}
+`);
+
+// ─── 8. layout.tsx — add viewport export to prevent all page zoom ─────────────
+write("app/layout.tsx", `import type { Metadata, Viewport } from "next";
+import "./globals.css";
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+};
+
+export const metadata: Metadata = {
+  title: {
+    template: "%s | AI-UNIPOD BMS",
+    default: "AI-UNIPOD UNILAG — Booking Management System",
+  },
+  description:
+    "Book spaces and resources at the AI & Advanced Computing Pod, University of Lagos.",
+  keywords: ["UNILAG", "AI-UNIPOD", "booking", "maker space", "innovation hub"],
+  openGraph: {
+    title: "AI-UNIPOD UNILAG BMS",
+    description: "Book spaces and resources at the AI & Advanced Computing Pod, UNILAG.",
+    type: "website",
+  },
+};
+
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <html lang="en">
+      <body>{children}</body>
+    </html>
   );
 }
 `);
