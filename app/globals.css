@@ -4,19 +4,33 @@
 @tailwind components;
 @tailwind utilities;
 
-html { scroll-behavior: smooth; }
+/* ── Base styles — NO @apply used here, plain CSS only ────────────────────── */
 
-*, *::before, *::after { box-sizing: border-box; }
+html {
+  scroll-behavior: smooth;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
 
 body {
-  background-color: #f9fafb;
-  color: #111827;
+  background-color: #f9fafb; /* gray-50 */
+  color: #111827;            /* gray-900 */
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   font-family: 'Inter', system-ui, sans-serif;
 }
 
-.text-balance { text-wrap: balance; }
+/* ── Utility ───────────────────────────────────────────────────────────────── */
+
+.text-balance {
+  text-wrap: balance;
+}
+
+/* ── Photo strip animation (PhotoStrip component) ─────────────────────────── */
 
 @keyframes scroll-x {
   0%   { transform: translateX(0); }
