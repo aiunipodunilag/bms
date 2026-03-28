@@ -39,53 +39,59 @@ export default function AdminLoginPage() {
 
     setLoading(true);
 
-    const supabase = createClient();
+    try {
+      const supabase = createClient();
 
-    // Sign in with Supabase Auth
-    const { data: authData, error: authErr } = await supabase.auth.signInWithPassword({
-      email: email.trim().toLowerCase(),
-      password,
-    });
+      // Sign in with Supabase Auth
+      const { data: authData, error: authErr } = await supabase.auth.signInWithPassword({
+        email: email.trim().toLowerCase(),
+        password,
+      });
 
-    if (authErr || !authData.user) {
-      setError(
-        authErr?.message === "Invalid login credentials"
-          ? "Incorrect email or password."
-          : authErr?.message ?? "Login failed"
-      );
+      if (authErr || !authData.user) {
+        setError(
+          authErr?.message === "Invalid login credentials"
+            ? "Incorrect email or password."
+            : authErr?.message ?? "Login failed"
+        );
+        setLoading(false);
+        return;
+      }
+
+      // Check if user has an admin account
+      const { data: adminAccount, error: adminErr } = await supabase
+        .from("admin_accounts")
+        .select("role, status")
+        .eq("id", authData.user.id)
+        .single();
+
+      if (adminErr || !adminAccount) {
+        await supabase.auth.signOut();
+        setError("Access denied. This portal is for authorised UNIPOD staff only.");
+        setLoading(false);
+        return;
+      }
+
+      if (adminAccount.status !== "active") {
+        await supabase.auth.signOut();
+        setError("Your admin account has been suspended. Contact a super admin.");
+        setLoading(false);
+        return;
+      }
+
+      // Update last login time (fire and forget)
+      supabase
+        .from("admin_accounts")
+        .update({ last_login_at: new Date().toISOString() })
+        .eq("id", authData.user.id)
+        .then(() => {});
+
+      router.push(ROLE_REDIRECTS[adminAccount.role as AdminRole]);
+    } catch (err) {
+      console.error("[admin-login]", err);
+      setError("Something went wrong. Check your connection and try again.");
       setLoading(false);
-      return;
     }
-
-    // Check if user has an admin account
-    const { data: adminAccount, error: adminErr } = await supabase
-      .from("admin_accounts")
-      .select("role, status")
-      .eq("id", authData.user.id)
-      .single();
-
-    if (adminErr || !adminAccount) {
-      await supabase.auth.signOut();
-      setError("Access denied. This portal is for authorised UNIPOD staff only.");
-      setLoading(false);
-      return;
-    }
-
-    if (adminAccount.status !== "active") {
-      await supabase.auth.signOut();
-      setError("Your admin account has been suspended. Contact a super admin.");
-      setLoading(false);
-      return;
-    }
-
-    // Update last login time
-    await supabase
-      .from("admin_accounts")
-      .update({ last_login_at: new Date().toISOString() })
-      .eq("id", authData.user.id);
-
-    router.refresh();
-    router.push(ROLE_REDIRECTS[adminAccount.role as AdminRole]);
   };
 
   return (
