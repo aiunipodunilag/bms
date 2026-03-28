@@ -23,6 +23,12 @@ const config: Config = {
           950: "#161851",
         },
         accent: "#f97316",
+        // ShadCN-compatible aliases — makes @apply border-border / bg-background / text-foreground valid
+        border:     "#e5e7eb",
+        background: "#f9fafb",
+        foreground: "#111827",
+        input:      "#e5e7eb",
+        ring:       "#4f5fff",
       },
       fontFamily: {
         sans: ["Inter", "system-ui", "sans-serif"],
