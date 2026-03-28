@@ -91,8 +91,6 @@ Every API call in the frontend is marked with a `// TODO:` comment. Here's what 
 | Endpoint | Method | Description |
 |---|---|---|
 | `/api/auth/signup` | POST | Create internal or external user, upload document |
-| `/api/auth/send-otp` | POST | Send OTP via Termii to external user phone |
-| `/api/auth/verify-otp` | POST | Verify OTP, activate external user account |
 | `/api/spaces` | GET | List all public spaces with live availability |
 | `/api/spaces/[id]/slots` | GET | Available time slots for a given space + date |
 | `/api/bookings` | POST | Create a booking (individual or group) |
@@ -116,8 +114,7 @@ Every API call in the frontend is marked with a `// TODO:` comment. Here's what 
 | Forms | React Hook Form + Zod |
 | Backend (Phase 2) | Node.js + Express |
 | Database (Phase 2) | PostgreSQL |
-| Email | Gmail SMTP via Nodemailer |
-| OTP | Termii or Twilio |
+| Email | Supabase Auth (built-in email confirmation) |
 | Hosting | Vercel (FE) · Railway or Render (BE) |
 
 ---

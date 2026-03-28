@@ -27,10 +27,6 @@ export default function SignupPage() {
   const [userClass, setUserClass] = useState<UserClass | null>(null);
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [otpSent, setOtpSent] = useState(false);
-  const [otpSending, setOtpSending] = useState(false);
-  const [otpVerified, setOtpVerified] = useState(false);
-  const [otpVerifying, setOtpVerifying] = useState(false);
 
   const [internalForm, setInternalForm] = useState({
     fullName: "",
@@ -52,7 +48,6 @@ export default function SignupPage() {
     purposeOfVisit: "",
     password: "",
     confirmPassword: "",
-    otp: "",
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -61,52 +56,6 @@ export default function SignupPage() {
   const handleClassSelect = (cls: UserClass) => {
     setUserClass(cls);
     setStep(cls === "internal" ? "internal_form" : "external_form");
-  };
-
-  const sendOTP = async () => {
-    if (!externalForm.phone) {
-      setErrors({ phone: "Phone number is required" });
-      return;
-    }
-    setOtpSending(true);
-    setErrors({});
-
-    const res = await fetch("/api/auth/send-otp", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ phone: externalForm.phone }),
-    });
-
-    const data = await res.json();
-    if (!res.ok) {
-      setErrors({ phone: data.error ?? "Failed to send OTP" });
-    } else {
-      setOtpSent(true);
-    }
-    setOtpSending(false);
-  };
-
-  const verifyOTP = async () => {
-    if (!externalForm.otp) {
-      setErrors({ otp: "Please enter the OTP" });
-      return;
-    }
-    setOtpVerifying(true);
-    setErrors({});
-
-    const res = await fetch("/api/auth/send-otp", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ phone: externalForm.phone, otp: externalForm.otp }),
-    });
-
-    const data = await res.json();
-    if (!res.ok) {
-      setErrors({ otp: data.error ?? "Invalid OTP" });
-    } else {
-      setOtpVerified(true);
-    }
-    setOtpVerifying(false);
   };
 
   const handleInternalSubmit = async (e: React.FormEvent) => {
@@ -200,10 +149,6 @@ export default function SignupPage() {
     setErrors({});
     setGlobalError("");
 
-    if (!otpVerified) {
-      setErrors({ otp: "Please verify your phone number first." });
-      return;
-    }
     if (externalForm.password !== externalForm.confirmPassword) {
       setErrors({ confirmPassword: "Passwords do not match." });
       return;
@@ -307,7 +252,7 @@ export default function SignupPage() {
                 <div>
                   <p className="font-semibold text-gray-900">No — I&apos;m an external user</p>
                   <p className="text-sm text-gray-500 mt-1">
-                    Individual, organisation, or freelancer from outside UNILAG. Phone OTP required. ₦3,000/session at front desk.
+                    Individual, organisation, or freelancer from outside UNILAG. Email confirmation required. ₦3,000/session at front desk.
                   </p>
                 </div>
                 <ArrowRight size={18} className="text-gray-400 group-hover:text-brand-500 mt-1 shrink-0 transition-colors" />
@@ -516,7 +461,7 @@ export default function SignupPage() {
             <div className="mb-6">
               <h1 className="text-2xl font-bold text-gray-900">External User</h1>
               <p className="text-sm text-gray-500 mt-1">
-                No UNILAG affiliation required. Verify your phone number to activate your account instantly.
+                No UNILAG affiliation required. A confirmation email will be sent to verify your address.
               </p>
             </div>
 
@@ -576,61 +521,16 @@ export default function SignupPage() {
                 />
               </div>
 
-              {/* Phone + OTP */}
+              {/* Phone */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                  Phone number <span className="text-gray-400 font-normal">(OTP required)</span>
-                </label>
-                <div className="flex gap-2">
-                  <input
-                    type="tel"
-                    required
-                    placeholder="+234 800 000 0000"
-                    value={externalForm.phone}
-                    onChange={(e) => setExternalForm({ ...externalForm, phone: e.target.value })}
-                    disabled={otpVerified}
-                    className="flex-1 px-4 py-2.5 rounded-xl border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 disabled:bg-gray-50"
-                  />
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    size="sm"
-                    onClick={sendOTP}
-                    loading={otpSending}
-                    disabled={!externalForm.phone || otpSent || otpVerified}
-                  >
-                    {otpSent ? "Resend" : "Send OTP"}
-                  </Button>
-                </div>
-                {errors.phone && <p className="text-xs text-red-500 mt-1">{errors.phone}</p>}
-
-                {otpSent && !otpVerified && (
-                  <div className="mt-2 flex gap-2">
-                    <input
-                      type="text"
-                      placeholder="Enter 6-digit OTP"
-                      maxLength={6}
-                      value={externalForm.otp}
-                      onChange={(e) => setExternalForm({ ...externalForm, otp: e.target.value })}
-                      className="flex-1 px-4 py-2.5 rounded-xl border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 tracking-widest font-mono"
-                    />
-                    <Button
-                      type="button"
-                      variant="secondary"
-                      size="sm"
-                      onClick={verifyOTP}
-                      loading={otpVerifying}
-                    >
-                      Verify
-                    </Button>
-                  </div>
-                )}
-                {otpVerified && (
-                  <p className="text-sm text-green-600 flex items-center gap-1 mt-1.5">
-                    <CheckCircle size={14} /> Phone number verified
-                  </p>
-                )}
-                {errors.otp && <p className="text-xs text-red-500 mt-1">{errors.otp}</p>}
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Phone number</label>
+                <input
+                  type="tel"
+                  placeholder="+234 800 000 0000"
+                  value={externalForm.phone}
+                  onChange={(e) => setExternalForm({ ...externalForm, phone: e.target.value })}
+                  className="w-full px-4 py-2.5 rounded-xl border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+                />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
@@ -685,7 +585,7 @@ export default function SignupPage() {
               <CheckCircle size={32} className="text-green-600" />
             </div>
             <h2 className="text-2xl font-bold text-gray-900 mb-2">
-              {userClass === "internal" ? "Account submitted!" : "Welcome aboard!"}
+              {userClass === "internal" ? "Account submitted!" : "Check your email!"}
             </h2>
             {userClass === "internal" ? (
               <p className="text-gray-500 text-sm leading-relaxed mb-6">
@@ -695,8 +595,9 @@ export default function SignupPage() {
               </p>
             ) : (
               <p className="text-gray-500 text-sm leading-relaxed mb-6">
-                Your account is <strong>active</strong>! You can now log in and start booking
-                available spaces. Remember to pay ₦3,000 at the front desk for coworking access.
+                Almost there! Check your inbox for a <strong>confirmation email</strong> and click
+                the link to verify your address. Once confirmed, you can sign in and start booking.
+                Remember to pay ₦3,000 at the front desk for coworking access.
               </p>
             )}
             <Button className="w-full" size="lg" onClick={() => router.push("/auth/login")}>

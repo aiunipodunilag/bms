@@ -51,17 +51,6 @@ create table if not exists public.admin_accounts (
   last_login_at         timestamptz
 );
 
--- ─── phone_verifications ─────────────────────────────────────────────────────
--- Temporary OTP store for external user phone verification during signup.
-create table if not exists public.phone_verifications (
-  id          uuid primary key default gen_random_uuid(),
-  phone       text not null,
-  otp_hash    text not null,   -- bcrypt hash of the OTP
-  verified    boolean not null default false,
-  expires_at  timestamptz not null,
-  created_at  timestamptz not null default now()
-);
-
 -- ─── bookings ────────────────────────────────────────────────────────────────
 create table if not exists public.bookings (
   id                    uuid primary key default gen_random_uuid(),
@@ -154,7 +143,6 @@ create table if not exists public.broadcast_messages (
 
 alter table public.profiles              enable row level security;
 alter table public.admin_accounts        enable row level security;
-alter table public.phone_verifications   enable row level security;
 alter table public.bookings              enable row level security;
 alter table public.resource_requests     enable row level security;
 alter table public.equipment_access_codes enable row level security;
@@ -304,15 +292,6 @@ create policy "Users can read own notifications"
 create policy "Users can update own notifications (mark read)"
   on public.notifications for update
   using (auth.uid() = user_id);
-
--- ── phone_verifications RLS ──────────────────────────────────────────────────
-create policy "Anyone can insert phone verifications"
-  on public.phone_verifications for insert
-  with check (true);
-
-create policy "Anyone can read their own phone verification"
-  on public.phone_verifications for select
-  using (true);  -- filtered by phone in application code
 
 -- ============================================================================
 -- Indexes
