@@ -2567,4 +2567,487 @@ export default function SuperAdminAdminsPage() {
 }
 `);
 
+// ─── 16. Booking detail page — create /bookings/[id] so View Details works ────
+write("app/bookings/[id]/page.tsx", `
+"use client";
+
+import { useParams } from "next/navigation";
+import Link from "next/link";
+import Navbar from "@/components/layout/Navbar";
+import { Card } from "@/components/ui/Card";
+import Badge from "@/components/ui/Badge";
+import Button from "@/components/ui/Button";
+import { TIER_LABELS } from "@/lib/data/tiers";
+import { formatDate, formatTime } from "@/lib/utils";
+import {
+  CalendarDays, Clock, Building2, ChevronLeft,
+  ShieldCheck, CheckCircle, XCircle, AlertCircle,
+  User, Layers, Hash,
+} from "lucide-react";
+import type { UserTier } from "@/types";
+
+const currentUserTier: UserTier = "regular_student";
+
+// Mock booking store — keyed by id
+const MOCK_BOOKINGS: Record<string, {
+  id: string; bmsCode: string; space: string; spaceId: string;
+  date: string; startTime: string; endTime: string;
+  status: string; type: string; members?: string[];
+  requestedEquipment?: string;
+}> = {
+  "bk-001": { id: "bk-001", bmsCode: "BMS-2025-T4K9P", space: "Co-working Space",    spaceId: "coworking",      date: "2025-07-17", startTime: "10:00", endTime: "12:00", status: "confirmed",  type: "individual" },
+  "bk-00a": { id: "bk-00a", bmsCode: "BMS-2025-A1B2C", space: "Design Studio",       spaceId: "design-studio",  date: "2025-07-14", startTime: "13:00", endTime: "15:00", status: "completed",  type: "individual" },
+  "bk-00b": { id: "bk-00b", bmsCode: "BMS-2025-D3E4F", space: "AI & Robotics Lab",   spaceId: "ai-robotics-lab",date: "2025-07-10", startTime: "10:00", endTime: "13:00", status: "no_show",    type: "individual", requestedEquipment: "GPU Workstation" },
+  "bk-00c": { id: "bk-00c", bmsCode: "BMS-2025-G5H6I", space: "Pitch Garage",        spaceId: "pitch-garage",   date: "2025-07-07", startTime: "14:00", endTime: "16:00", status: "completed",  type: "group",      members: ["Adeola Fashola", "Chuka Obi", "Temi Sule"] },
+  "bk-00d": { id: "bk-00d", bmsCode: "BMS-2025-J7K8L", space: "Collaboration Space", spaceId: "collaboration",  date: "2025-07-03", startTime: "11:00", endTime: "13:00", status: "cancelled",  type: "group" },
+  // Active booking used on dashboard
+  "bk-active": { id: "bk-active", bmsCode: "BMS-2025-X9Y0Z", space: "Maker Space",   spaceId: "maker-space",    date: "2025-07-18", startTime: "14:00", endTime: "17:00", status: "confirmed",  type: "individual", requestedEquipment: "3D Printer (Medium)" },
+};
+
+const statusConfig: Record<string, { label: string; variant: "success" | "danger" | "neutral" | "warning" | "info"; icon: typeof CheckCircle }> = {
+  confirmed:  { label: "Confirmed",        variant: "info",    icon: ShieldCheck },
+  checked_in: { label: "Checked In",       variant: "success", icon: CheckCircle },
+  completed:  { label: "Completed",        variant: "success", icon: CheckCircle },
+  cancelled:  { label: "Cancelled",        variant: "neutral", icon: XCircle },
+  no_show:    { label: "No Show",          variant: "danger",  icon: XCircle },
+  pending:    { label: "Pending Approval", variant: "warning", icon: AlertCircle },
+  rejected:   { label: "Rejected",         variant: "danger",  icon: XCircle },
+};
+
+export default function BookingDetailPage() {
+  const params   = useParams();
+  const bookingId = Array.isArray(params.id) ? params.id[0] : params.id;
+  const booking  = MOCK_BOOKINGS[bookingId as string];
+
+  if (!booking) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <Navbar user={{ name: "Tolu Adeyemi", tier: currentUserTier, tierLabel: TIER_LABELS[currentUserTier] }} />
+        <main className="max-w-2xl mx-auto px-4 py-16 text-center">
+          <div className="w-14 h-14 rounded-full bg-red-50 flex items-center justify-center mx-auto mb-4">
+            <XCircle size={28} className="text-red-500" />
+          </div>
+          <h1 className="text-xl font-bold text-gray-900 mb-2">Booking not found</h1>
+          <p className="text-gray-500 text-sm mb-6">This booking ID doesn&apos;t exist or you don&apos;t have access.</p>
+          <Link href="/bookings"><Button variant="outline">Back to My Bookings</Button></Link>
+        </main>
+      </div>
+    );
+  }
+
+  const s        = statusConfig[booking.status] ?? statusConfig["pending"];
+  const StatusIcon = s.icon;
+  const canCancel = booking.status === "confirmed" || booking.status === "pending";
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <Navbar user={{ name: "Tolu Adeyemi", tier: currentUserTier, tierLabel: TIER_LABELS[currentUserTier] }} />
+
+      <main className="max-w-2xl mx-auto px-4 sm:px-6 py-8">
+        {/* Back */}
+        <Link href="/bookings" className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-900 mb-6 transition-colors">
+          <ChevronLeft size={16} /> Back to My Bookings
+        </Link>
+
+        {/* Status header */}
+        <div className="flex items-center gap-3 mb-6">
+          <div className={\`w-11 h-11 rounded-full flex items-center justify-center \${
+            s.variant === "success" ? "bg-green-50" :
+            s.variant === "danger"  ? "bg-red-50"   :
+            s.variant === "warning" ? "bg-yellow-50":
+            s.variant === "info"    ? "bg-blue-50"  : "bg-gray-100"
+          }\`}>
+            <StatusIcon size={22} className={\`\${
+              s.variant === "success" ? "text-green-600" :
+              s.variant === "danger"  ? "text-red-500"   :
+              s.variant === "warning" ? "text-yellow-600":
+              s.variant === "info"    ? "text-blue-600"  : "text-gray-500"
+            }\`} />
+          </div>
+          <div>
+            <h1 className="text-xl font-bold text-gray-900">{booking.space}</h1>
+            <Badge variant={s.variant} size="sm">{s.label}</Badge>
+          </div>
+        </div>
+
+        <div className="space-y-4">
+          {/* Date & time */}
+          <Card>
+            <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Date & Time</h2>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="flex items-center gap-2">
+                <CalendarDays size={15} className="text-brand-500" />
+                <div>
+                  <p className="text-xs text-gray-400">Date</p>
+                  <p className="text-sm font-semibold text-gray-900">{formatDate(booking.date)}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <Clock size={15} className="text-brand-500" />
+                <div>
+                  <p className="text-xs text-gray-400">Time</p>
+                  <p className="text-sm font-semibold text-gray-900">{formatTime(booking.startTime)} – {formatTime(booking.endTime)}</p>
+                </div>
+              </div>
+            </div>
+          </Card>
+
+          {/* Space & booking info */}
+          <Card>
+            <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Booking Info</h2>
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <Building2 size={15} className="text-gray-400" />
+                <div>
+                  <p className="text-xs text-gray-400">Space</p>
+                  <p className="text-sm font-medium text-gray-900">{booking.space}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <Layers size={15} className="text-gray-400" />
+                <div>
+                  <p className="text-xs text-gray-400">Session type</p>
+                  <p className="text-sm font-medium text-gray-900 capitalize">{booking.type}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <Hash size={15} className="text-gray-400" />
+                <div>
+                  <p className="text-xs text-gray-400">Booking ID</p>
+                  <p className="text-xs font-mono text-gray-600">{booking.id}</p>
+                </div>
+              </div>
+            </div>
+          </Card>
+
+          {/* BMS code */}
+          {(booking.status === "confirmed" || booking.status === "checked_in") && (
+            <Card className="bg-blue-50 border-blue-100">
+              <p className="text-xs font-semibold text-blue-700 mb-1">Your Check-in Code</p>
+              <p className="text-2xl font-mono font-bold text-blue-600 tracking-widest mb-1">{booking.bmsCode}</p>
+              <p className="text-xs text-blue-500">Show this code to the receptionist when you arrive.</p>
+            </Card>
+          )}
+
+          {/* Equipment */}
+          {booking.requestedEquipment && (
+            <Card>
+              <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Requested Equipment</h2>
+              <p className="text-sm font-medium text-gray-900">{booking.requestedEquipment}</p>
+            </Card>
+          )}
+
+          {/* Group members */}
+          {booking.type === "group" && booking.members && (
+            <Card>
+              <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Group Members</h2>
+              <div className="space-y-2">
+                {booking.members.map((m) => (
+                  <div key={m} className="flex items-center gap-2">
+                    <User size={13} className="text-gray-400" />
+                    <p className="text-sm text-gray-700">{m}</p>
+                  </div>
+                ))}
+              </div>
+            </Card>
+          )}
+
+          {/* Actions */}
+          <div className="flex gap-3 pt-1">
+            {canCancel && (
+              <Button variant="danger" className="flex-1" onClick={() => alert("Cancel booking — connect to API")}>
+                Cancel Booking
+              </Button>
+            )}
+            <Link href="/spaces" className="flex-1">
+              <Button variant="outline" className="w-full">Book Another Space</Button>
+            </Link>
+          </div>
+        </div>
+      </main>
+    </div>
+  );
+}
+`);
+
+// ─── 17. Landing page — no gradients, no cylinder badges, solid blue only ─────
+write("app/page.tsx", `import Link from "next/link";
+import Image from "next/image";
+import Navbar from "@/components/layout/Navbar";
+import Button from "@/components/ui/Button";
+import { Card } from "@/components/ui/Card";
+import Badge from "@/components/ui/Badge";
+import PhotoStrip from "@/components/ui/PhotoStrip";
+import { getPublicSpaces } from "@/lib/data/spaces";
+import {
+  ArrowRight, Cpu, Users, Calendar,
+  ShieldCheck, ChevronRight, Clock, Zap, Radio,
+} from "lucide-react";
+
+const spaces = getPublicSpaces();
+
+const stats = [
+  { label: "Bookable Spaces", value: "12",    sub: "Labs + Studios" },
+  { label: "Daily Hours",     value: "9hrs",  sub: "10 AM – 7 PM" },
+  { label: "Access System",   value: "Codes", sub: "Instant check-in" },
+  { label: "Members Served",  value: "500+",  sub: "& growing" },
+];
+
+const features = [
+  { icon: Calendar,    title: "Smart Booking Engine",   description: "Book up to 14 days ahead. Real-time availability, tier-based access control, and instant booking codes." },
+  { icon: ShieldCheck, title: "Verified Access",        description: "UNILAG ID verification for students and staff. External users verified via OTP — every booking tied to a real identity." },
+  { icon: Zap,         title: "Instant Check-in Codes", description: "Receive a unique BMS code with every confirmed booking. Show it at reception in seconds. No-show grace period of 20 minutes." },
+  { icon: Cpu,         title: "Equipment Access",       description: "Request premium equipment — GPU workstations, 3D printers, VR headsets, robotics kits — through a managed approval flow." },
+  { icon: Users,       title: "Group Sessions",         description: "Lead collaborative sessions with group booking codes. Add members by matric number, get one shared booking reference." },
+  { icon: Radio,       title: "Admin Broadcast",        description: "Admins can push real-time announcements to all users — policy changes, scheduled maintenance, or special events." },
+];
+
+// Solid borders per category — no gradients
+const categoryBorder: Record<string, string> = {
+  lab:           "border-blue-500/25",
+  collaboration: "border-cyan-500/25",
+  event:         "border-amber-500/25",
+  work:          "border-emerald-500/25",
+  meeting:       "border-blue-500/25",
+};
+
+const categoryBadge: Record<string, "info" | "default" | "warning" | "success" | "neutral"> = {
+  lab:           "default",
+  collaboration: "info",
+  event:         "warning",
+  work:          "success",
+  meeting:       "neutral",
+};
+
+export default function LandingPage() {
+  return (
+    <div className="min-h-screen" style={{ background: "#09090f" }}>
+      <Navbar />
+
+      {/* ── HERO ──────────────────────────────────────────────────────────────── */}
+      <section className="relative min-h-[92vh] flex items-center overflow-hidden">
+        <div className="absolute inset-0">
+          <Image
+            src="/spaces/image14.jpeg"
+            alt="AI-UNIPOD workspace"
+            fill
+            className="object-cover opacity-25"
+            priority
+          />
+          {/* Dark overlay — functional, keeps text readable */}
+          <div className="absolute inset-0" style={{
+            background: "linear-gradient(135deg, rgba(9,9,15,0.95) 0%, rgba(9,9,15,0.7) 50%, rgba(9,9,15,0.9) 100%)"
+          }} />
+        </div>
+        <div className="absolute inset-0 grid-bg opacity-50" />
+
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24 w-full">
+          <div className="max-w-3xl">
+            <h1 className="text-5xl sm:text-6xl lg:text-7xl font-display font-bold leading-[1.05] mb-6">
+              <span className="text-slate-100">Book Your</span>
+              <br />
+              <span className="text-blue-400">AI Workspace.</span>
+            </h1>
+            <p className="text-lg text-slate-400 leading-relaxed mb-10 max-w-xl">
+              Africa&apos;s most advanced student innovation hub. Reserve labs, studios, and
+              collaboration spaces at UNILAG&apos;s AI-UNIPOD — in seconds.
+            </p>
+            <div className="flex flex-wrap items-center gap-3">
+              <Link href="/auth/signup">
+                <Button size="lg">
+                  Get Access <ArrowRight size={16} />
+                </Button>
+              </Link>
+              <Link href="/spaces">
+                <Button variant="outline" size="lg">
+                  Explore Spaces <ChevronRight size={16} />
+                </Button>
+              </Link>
+              <Link href="/admin/login">
+                <Button variant="ghost" size="lg" className="text-slate-500 hover:text-slate-300">
+                  Admin Login
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </div>
+        {/* Bottom fade — keeps section transition clean */}
+        <div className="absolute bottom-0 inset-x-0 h-32 pointer-events-none"
+          style={{ background: "linear-gradient(to top, #09090f, transparent)" }} />
+      </section>
+
+      {/* ── STATS ─────────────────────────────────────────────────────────────── */}
+      <section className="relative py-12 border-y border-white/[0.06]">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+            {stats.map((stat) => (
+              <div key={stat.label} className="text-center">
+                <p className="text-4xl font-display font-bold text-blue-400 mb-1">{stat.value}</p>
+                <p className="text-sm font-semibold text-slate-200">{stat.label}</p>
+                <p className="text-xs text-slate-500 mt-0.5">{stat.sub}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── PHOTO STRIP ───────────────────────────────────────────────────────── */}
+      <section className="py-8 overflow-hidden border-b border-white/[0.04]">
+        <PhotoStrip />
+      </section>
+
+      {/* ── SPACES ────────────────────────────────────────────────────────────── */}
+      <section id="spaces" className="py-24">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="mb-12">
+            <h2 className="text-3xl sm:text-4xl font-display font-bold text-slate-100 mb-3">
+              Your Innovation<br />
+              <span className="text-blue-400">Command Center</span>
+            </h2>
+            <p className="text-slate-400 max-w-xl">
+              From AI labs and maker spaces to pitch arenas — every corner of AI-UNIPOD is purpose-built for builders.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            {spaces.map((space) => (
+              <Link key={space.id} href={\`/spaces/\${space.slug}\`} className="group block">
+                <div className={\`relative rounded-2xl overflow-hidden border bg-white/[0.03] \${categoryBorder[space.category] ?? "border-white/10"} transition-all duration-300 group-hover:-translate-y-1 group-hover:shadow-glow\`}>
+                  {space.imageUrl && (
+                    <div className="relative h-52 overflow-hidden">
+                      <Image
+                        src={space.imageUrl}
+                        alt={space.name}
+                        fill
+                        className="object-cover group-hover:scale-105 transition-transform duration-500 brightness-75"
+                      />
+                      <div className="absolute inset-0" style={{ background: "linear-gradient(to top, rgba(9,9,15,0.8) 0%, transparent 60%)" }} />
+                      <div className="absolute top-3 right-3">
+                        <span className={\`inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-[10px] font-medium glass border border-white/10 \${space.availability === "available" ? "text-emerald-300" : "text-amber-300"}\`}>
+                          <span className={\`w-1.5 h-1.5 rounded-full \${space.availability === "available" ? "bg-emerald-400" : "bg-amber-400"} animate-pulse\`} />
+                          {space.availability === "available" ? "Open" : "Limited"}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                  <div className="p-4">
+                    <div className="flex items-start justify-between gap-2 mb-2">
+                      <h3 className="font-semibold text-slate-100 text-sm leading-tight">
+                        {space.name}
+                      </h3>
+                      <Badge variant={categoryBadge[space.category]} size="sm" className="shrink-0 capitalize">
+                        {space.category}
+                      </Badge>
+                    </div>
+                    <p className="text-xs text-slate-500 leading-relaxed mb-3 line-clamp-2">
+                      {space.description}
+                    </p>
+                    <div className="flex items-center justify-between text-xs text-slate-500">
+                      <span className="flex items-center gap-1">
+                        <Users size={11} className="text-blue-400" />
+                        {space.capacity} capacity
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <Clock size={11} className="text-cyan-400" />
+                        {space.approvalType === "auto" ? "Instant" : space.approvalType === "manual" ? "Needs approval" : "Admin only"}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </Link>
+            ))}
+          </div>
+
+          <div className="mt-10 text-center">
+            <Link href="/spaces">
+              <Button variant="outline" size="lg">
+                View All Spaces <ArrowRight size={16} />
+              </Button>
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* ── FEATURES ──────────────────────────────────────────────────────────── */}
+      <section id="about" className="py-24 border-t border-white/[0.04]">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="mb-12">
+            <h2 className="text-3xl sm:text-4xl font-display font-bold text-slate-100 mb-3">
+              Built for Builders.<br />
+              <span className="text-blue-400">Powered by AI-UNIPOD.</span>
+            </h2>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            {features.map(({ icon: Icon, title, description }) => (
+              <Card key={title} className="group hover:shadow-glow transition-all duration-300 border border-white/[0.06]">
+                <div className="w-10 h-10 rounded-xl bg-blue-600/20 border border-blue-500/30 flex items-center justify-center mb-4">
+                  <Icon size={18} className="text-blue-300" />
+                </div>
+                <h3 className="font-display font-semibold text-sm text-slate-100 mb-2 tracking-wide">{title}</h3>
+                <p className="text-xs text-slate-500 leading-relaxed">{description}</p>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── CTA ───────────────────────────────────────────────────────────────── */}
+      <section className="py-24 border-t border-white/[0.04]">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="relative rounded-3xl overflow-hidden p-12 text-center glass border border-blue-500/20">
+            <div className="absolute inset-0 grid-bg opacity-40" />
+            <div className="relative">
+              <h2 className="text-4xl sm:text-5xl font-display font-bold text-slate-100 mb-4">
+                Ready to Build<br />
+                <span className="text-blue-400">Something Great?</span>
+              </h2>
+              <p className="text-slate-400 mb-8 max-w-md mx-auto">
+                Sign up with your UNILAG email and start booking AI-UNIPOD spaces today. Free for registered members.
+              </p>
+              <div className="flex flex-wrap items-center justify-center gap-3">
+                <Link href="/auth/signup">
+                  <Button size="lg">
+                    Create Account <ArrowRight size={16} />
+                  </Button>
+                </Link>
+                <Link href="/auth/login">
+                  <Button variant="outline" size="lg">Already a member? Sign in</Button>
+                </Link>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── FOOTER ────────────────────────────────────────────────────────────── */}
+      <footer className="py-10 border-t border-white/[0.04]">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="w-7 h-7 rounded-lg bg-blue-600 flex items-center justify-center">
+              <span className="text-white font-display font-bold text-xs">U</span>
+            </div>
+            <span className="font-display font-bold text-xs tracking-widest text-blue-400">AI-UNIPOD</span>
+          </div>
+          <p className="text-xs text-slate-600">
+            © {new Date().getFullYear()} AI-UNIPOD UNILAG. Booking Management System.
+          </p>
+          <div className="flex items-center gap-4 text-xs text-slate-600">
+            <Link href="/admin/login" className="hover:text-slate-400 transition-colors">Admin</Link>
+            <Link href="/auth/login" className="hover:text-slate-400 transition-colors">Sign In</Link>
+          </div>
+        </div>
+      </footer>
+    </div>
+  );
+}
+`);
+
+// ─── 17. Resource-request — taller image banners so photos aren't cut off ─────
+// The space group photo banners in the resource-request page are h-28 (112px).
+// Bump to h-48 (192px) so the lab photos show properly.
+patch("app/resource-request/page.tsx", [
+  ['"relative w-full h-28 rounded-xl overflow-hidden mb-3"',
+   '"relative w-full h-48 rounded-xl overflow-hidden mb-3"'],
+]);
+
 console.log("\n✅ patch-pages.js complete.");
