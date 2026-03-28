@@ -5,6 +5,7 @@
 > **Version:** 2.0 — Frontend Implementation
 > **Stack:** Next.js 14 · TypeScript · Tailwind CSS · NextAuth.js · Recharts
 
+
 ---
 
 ## What This Is
