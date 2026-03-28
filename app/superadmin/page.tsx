@@ -47,9 +47,6 @@ export default function SuperAdminPage() {
       {/* Top bar */}
       <header className="bg-gray-900 border-b border-gray-800 px-6 py-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-brand-600 flex items-center justify-center">
-            <ShieldCheck size={16} className="text-white" />
-          </div>
           <div>
             <p className="text-sm font-bold text-white">Super Admin</p>
             <p className="text-xs text-gray-500">UNIPOD BMS Control Panel</p>

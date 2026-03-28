@@ -52,13 +52,11 @@ export default function Navbar({ user }: NavbarProps) {
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <Link href={user ? "/dashboard" : "/"} className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-brand-600 flex items-center justify-center">
-              <span className="text-white font-bold text-sm">U</span>
-            </div>
             <div className="hidden sm:block">
               <span className="font-bold text-gray-900 text-sm">AI-UNIPOD</span>
               <span className="block text-xs text-gray-500 -mt-0.5">UNILAG BMS</span>
             </div>
+            <span className="sm:hidden font-bold text-gray-900 text-sm">AI-UNIPOD</span>
           </Link>
 
           {/* Desktop nav */}

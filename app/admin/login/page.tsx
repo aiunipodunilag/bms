@@ -93,9 +93,6 @@ export default function AdminLoginPage() {
       <div className="w-full max-w-sm">
         {/* Logo / brand */}
         <div className="text-center mb-8">
-          <div className="w-14 h-14 rounded-2xl bg-brand-600 flex items-center justify-center mx-auto mb-4 shadow-lg shadow-brand-900/40">
-            <ShieldCheck size={28} className="text-white" />
-          </div>
           <h1 className="text-xl font-bold text-white">UNIPOD Admin Portal</h1>
           <p className="text-sm text-gray-400 mt-1">Sign in with your admin credentials</p>
         </div>

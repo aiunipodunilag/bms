@@ -205,9 +205,6 @@ export default function SuperAdminAdminsPage() {
           <ChevronLeft size={18} />
         </Link>
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-brand-600 flex items-center justify-center">
-            <ShieldCheck size={16} className="text-white" />
-          </div>
           <div>
             <p className="text-sm font-bold text-white">Manage Admin Accounts</p>
             <p className="text-xs text-gray-500">Create and manage all staff access</p>

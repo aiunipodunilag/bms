@@ -81,9 +81,6 @@ export default function AdminSidebar({ role = "admin" }: Props) {
       {/* Logo */}
       <div className="px-5 py-5 border-b border-gray-800">
         <Link href={role === "super_admin" ? "/superadmin" : "/admin"} className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-xl bg-brand-500 flex items-center justify-center">
-            <span className="text-white font-bold text-sm">U</span>
-          </div>
           <div>
             <p className="text-white font-semibold text-sm">AI-UNIPOD</p>
             <p className="text-gray-400 text-xs">{roleLabel[role]}</p>

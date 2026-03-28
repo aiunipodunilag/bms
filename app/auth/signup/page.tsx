@@ -216,9 +216,6 @@ export default function SignupPage() {
         {step === "class_select" && (
           <div className="bg-white rounded-3xl p-8 shadow-2xl">
             <div className="mb-7">
-              <div className="w-10 h-10 rounded-xl bg-brand-100 flex items-center justify-center mb-4">
-                <span className="text-brand-700 font-bold text-lg">U</span>
-              </div>
               <h1 className="text-2xl font-bold text-gray-900">Create your account</h1>
               <p className="text-gray-500 text-sm mt-1">Tell us who you are to get started</p>
             </div>

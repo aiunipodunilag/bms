@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
     const adminClient = createAdminClient();
 
     // Determine initial status
-    // External users are active immediately (phone OTP verified)
+    // External users are active immediately (email confirmation handled by Supabase Auth)
     // Internal users start as pending (need admin document verification)
     const status = userClass === "external" ? "active" : "pending";
 
