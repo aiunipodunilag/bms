@@ -1,6 +1,7 @@
 -- ============================================================================
 -- AI-UNIPOD UNILAG BMS — Supabase Database Schema
 -- Run this in: Supabase Dashboard → SQL Editor
+
 -- ============================================================================
 
 -- Enable UUID extension
