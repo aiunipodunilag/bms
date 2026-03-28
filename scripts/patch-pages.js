@@ -1736,4 +1736,835 @@ patch("app/spaces/[id]/book/page.tsx", [
   ["with your QR code",                                        "with your booking details"],
 ]);
 
+// ─── 13. Space-lead page — convert dark → light theme ────────────────────────
+write("app/admin/space-lead/page.tsx", `
+"use client";
+
+import { useState } from "react";
+import {
+  ShieldCheck,
+  ScanLine,
+  CheckCircle,
+  XCircle,
+  Clock,
+  User,
+  Cpu,
+  AlertCircle,
+  RotateCcw,
+  Building2,
+  LogOut,
+} from "lucide-react";
+import Link from "next/link";
+import { Card } from "@/components/ui/Card";
+import Badge from "@/components/ui/Badge";
+import Button from "@/components/ui/Button";
+import type { EquipmentAccessCode } from "@/types";
+
+const MOCK_PENDING_CODES: EquipmentAccessCode[] = [
+  {
+    id: "eq-001",
+    code: "EQ-2025-T4K9P",
+    bookingId: "bk-101",
+    bmsCode: "BMS-2025-A7X3K",
+    userId: "u-201",
+    userName: "Adeola Fashola",
+    equipmentType: "3d_printer_medium",
+    equipmentLabel: "3D Printer (Medium)",
+    spaceId: "maker-space",
+    spaceName: "Maker Space",
+    status: "active",
+    generatedAt: new Date(Date.now() - 8 * 60 * 1000).toISOString(),
+  },
+  {
+    id: "eq-002",
+    code: "EQ-2025-X8M2Q",
+    bookingId: "bk-102",
+    bmsCode: "BMS-2025-B3R1W",
+    userId: "u-202",
+    userName: "Chukwuemeka Obi",
+    equipmentType: "laser_cutter",
+    equipmentLabel: "Laser Cutter",
+    spaceId: "maker-space",
+    spaceName: "Maker Space",
+    status: "active",
+    generatedAt: new Date(Date.now() - 3 * 60 * 1000).toISOString(),
+  },
+];
+
+const MOCK_VERIFIED: EquipmentAccessCode[] = [
+  {
+    id: "eq-000",
+    code: "EQ-2025-Z2K7V",
+    bookingId: "bk-099",
+    bmsCode: "BMS-2025-C9N5D",
+    userId: "u-199",
+    userName: "Precious Okonkwo",
+    equipmentType: "vinyl_cutter",
+    equipmentLabel: "Vinyl Cutter",
+    spaceId: "maker-space",
+    spaceName: "Maker Space",
+    status: "used",
+    generatedAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+    usedAt: new Date(Date.now() - 90 * 60 * 1000).toISOString(),
+    usedByAdminId: "a-003",
+  },
+];
+
+function timeAgo(iso: string) {
+  const diff = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
+  if (diff < 60) return \`\${diff}s ago\`;
+  if (diff < 3600) return \`\${Math.floor(diff / 60)}m ago\`;
+  return \`\${Math.floor(diff / 3600)}h ago\`;
+}
+
+type VerifyState = "idle" | "loading" | "success" | "error";
+
+export default function SpaceLeadPage() {
+  const [inputCode, setInputCode]         = useState("");
+  const [verifyState, setVerifyState]     = useState<VerifyState>("idle");
+  const [verifiedItem, setVerifiedItem]   = useState<EquipmentAccessCode | null>(null);
+  const [errorMessage, setErrorMessage]   = useState("");
+  const [pendingCodes, setPendingCodes]   = useState<EquipmentAccessCode[]>(MOCK_PENDING_CODES);
+  const [verifiedCodes, setVerifiedCodes] = useState<EquipmentAccessCode[]>(MOCK_VERIFIED);
+
+  const verifyCode = async (codeToVerify: string) => {
+    const code = codeToVerify.trim().toUpperCase();
+    if (!code) return;
+    setVerifyState("loading");
+    setErrorMessage("");
+    setVerifiedItem(null);
+    // TODO: POST /api/admin/equipment-codes/verify
+    await new Promise((r) => setTimeout(r, 900));
+    const found = pendingCodes.find((c) => c.code === code);
+    if (!found) {
+      setVerifyState("error");
+      setErrorMessage(
+        code.startsWith("EQ-")
+          ? "Code not found or already used. It may have expired."
+          : "Invalid format. Equipment codes look like EQ-2025-XXXXX."
+      );
+      return;
+    }
+    const now = new Date().toISOString();
+    const verified: EquipmentAccessCode = { ...found, status: "used", usedAt: now, usedByAdminId: "a-003" };
+    setPendingCodes((prev) => prev.filter((c) => c.id !== found.id));
+    setVerifiedCodes((prev) => [verified, ...prev]);
+    setVerifiedItem(verified);
+    setVerifyState("success");
+    setInputCode("");
+  };
+
+  const handleSubmit = (e: React.FormEvent) => { e.preventDefault(); verifyCode(inputCode); };
+  const reset = () => { setVerifyState("idle"); setVerifiedItem(null); setErrorMessage(""); setInputCode(""); };
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <header className="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-lg bg-brand-600 flex items-center justify-center">
+            <Building2 size={16} className="text-white" />
+          </div>
+          <div>
+            <p className="text-sm font-bold text-gray-900">Space Lead — Maker Space</p>
+            <p className="text-xs text-gray-500">Equipment access verification</p>
+          </div>
+        </div>
+        <Link href="/admin/login">
+          <Button variant="ghost" size="sm">
+            <LogOut size={13} /> Sign out
+          </Button>
+        </Link>
+      </header>
+
+      <main className="max-w-4xl mx-auto px-6 py-8 space-y-6">
+        <Card className="bg-brand-50 border-brand-100">
+          <div className="flex items-start gap-3">
+            <ShieldCheck size={15} className="text-brand-500 shrink-0 mt-0.5" />
+            <div>
+              <p className="text-sm font-semibold text-brand-700 mb-0.5">How equipment verification works</p>
+              <p className="text-xs text-brand-600 leading-relaxed">
+                When a user checks in at reception and has requested equipment from your space, the receptionist generates a one-time code (EQ-YYYY-XXXXX) and gives it to the user. The user shows you this code — you enter it below to confirm they are authorised to use that equipment. The code expires the moment you verify it.
+              </p>
+            </div>
+          </div>
+        </Card>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="space-y-4">
+            <Card>
+              <h2 className="font-semibold text-gray-900 flex items-center gap-2 mb-4">
+                <ScanLine size={16} className="text-brand-500" /> Verify Equipment Code
+              </h2>
+
+              {verifyState === "success" && verifiedItem ? (
+                <div className="text-center py-4">
+                  <div className="w-14 h-14 rounded-full bg-green-50 flex items-center justify-center mx-auto mb-3">
+                    <CheckCircle size={28} className="text-green-600" />
+                  </div>
+                  <p className="text-green-600 font-bold text-lg">{verifiedItem.code}</p>
+                  <p className="text-gray-900 font-semibold mt-1">{verifiedItem.userName}</p>
+                  <p className="text-sm text-gray-500 mt-0.5">
+                    is authorised to use the{" "}
+                    <span className="text-brand-600 font-medium">{verifiedItem.equipmentLabel}</span>
+                  </p>
+                  <Badge variant="success" className="mt-3">Code used — now expired</Badge>
+                  <div className="mt-4">
+                    <Button variant="outline" size="sm" onClick={reset}>
+                      <RotateCcw size={13} /> Verify another code
+                    </Button>
+                  </div>
+                </div>
+              ) : verifyState === "error" ? (
+                <div className="text-center py-4">
+                  <div className="w-14 h-14 rounded-full bg-red-50 flex items-center justify-center mx-auto mb-3">
+                    <XCircle size={28} className="text-red-500" />
+                  </div>
+                  <p className="text-red-600 font-semibold">Verification failed</p>
+                  <p className="text-sm text-gray-500 mt-1">{errorMessage}</p>
+                  <div className="mt-4">
+                    <Button variant="outline" size="sm" onClick={reset}>
+                      <RotateCcw size={13} /> Try again
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <form onSubmit={handleSubmit} className="space-y-3">
+                  <div>
+                    <label className="text-xs text-gray-500 font-medium mb-1.5 block">
+                      Enter equipment access code
+                    </label>
+                    <input
+                      type="text"
+                      value={inputCode}
+                      onChange={(e) => setInputCode(e.target.value.toUpperCase())}
+                      placeholder="EQ-2025-XXXXX"
+                      autoFocus
+                      className="w-full bg-white border border-gray-300 text-gray-900 text-sm font-mono tracking-widest rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-brand-500 placeholder-gray-400"
+                    />
+                    <p className="text-xs text-gray-400 mt-1">
+                      The user should show you this code from the receptionist.
+                    </p>
+                  </div>
+                  <Button type="submit" className="w-full" loading={verifyState === "loading"}>
+                    <ShieldCheck size={14} /> Verify & Confirm Access
+                  </Button>
+                </form>
+              )}
+            </Card>
+
+            <Card>
+              <h3 className="font-semibold text-gray-800 text-sm flex items-center gap-2 mb-3">
+                <Clock size={13} className="text-yellow-500" />
+                Pending for this space
+                {pendingCodes.length > 0 && (
+                  <span className="ml-auto bg-yellow-100 text-yellow-700 text-xs font-bold px-2 py-0.5 rounded-full">
+                    {pendingCodes.length}
+                  </span>
+                )}
+              </h3>
+              {pendingCodes.length === 0 ? (
+                <p className="text-xs text-gray-400 text-center py-4">No pending equipment codes.</p>
+              ) : (
+                <div className="space-y-2">
+                  {pendingCodes.map((code) => (
+                    <div
+                      key={code.id}
+                      className="flex items-center justify-between bg-gray-50 border border-gray-100 rounded-xl px-3 py-2.5"
+                    >
+                      <div>
+                        <p className="text-xs font-mono font-bold text-yellow-600">{code.code}</p>
+                        <div className="flex items-center gap-2 mt-0.5">
+                          <p className="text-xs text-gray-600">{code.userName}</p>
+                          <span className="text-gray-300">·</span>
+                          <p className="text-xs text-gray-500">{code.equipmentLabel}</p>
+                        </div>
+                        <p className="text-xs text-gray-400 mt-0.5">Generated {timeAgo(code.generatedAt)}</p>
+                      </div>
+                      <Button size="sm" onClick={() => verifyCode(code.code)}>
+                        Verify
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </Card>
+          </div>
+
+          <div>
+            <Card>
+              <h3 className="font-semibold text-gray-800 text-sm flex items-center gap-2 mb-3">
+                <CheckCircle size={13} className="text-green-500" /> Verified Today
+              </h3>
+              {verifiedCodes.length === 0 ? (
+                <p className="text-xs text-gray-400 text-center py-4">No verifications yet today.</p>
+              ) : (
+                <div className="space-y-2">
+                  {verifiedCodes.map((code) => (
+                    <div key={code.id} className="bg-gray-50 border border-gray-100 rounded-xl px-3 py-2.5 space-y-1">
+                      <div className="flex items-center justify-between">
+                        <p className="text-xs font-mono text-gray-500">{code.code}</p>
+                        <Badge variant="success" size="sm">Used</Badge>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <User size={11} className="text-gray-400" />
+                        <p className="text-xs text-gray-700">{code.userName}</p>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <Cpu size={11} className="text-gray-400" />
+                        <p className="text-xs text-gray-500">{code.equipmentLabel}</p>
+                      </div>
+                      {code.usedAt && (
+                        <p className="text-xs text-gray-400">Verified {timeAgo(code.usedAt)}</p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </Card>
+          </div>
+        </div>
+      </main>
+    </div>
+  );
+}
+`);
+
+// ─── 14. Superadmin overview — convert dark → light theme ─────────────────────
+write("app/superadmin/page.tsx", `
+"use client";
+
+import Link from "next/link";
+import {
+  ShieldCheck,
+  Users,
+  Building2,
+  CalendarCheck,
+  UserPlus,
+  Settings,
+  Megaphone,
+  BarChart2,
+  TrendingUp,
+  AlertTriangle,
+  LogOut,
+} from "lucide-react";
+import { Card } from "@/components/ui/Card";
+import Badge from "@/components/ui/Badge";
+import Button from "@/components/ui/Button";
+
+const STATS = [
+  { label: "Total Admin Accounts", value: "8",   icon: ShieldCheck,  color: "text-brand-600",  bg: "bg-brand-50" },
+  { label: "Active Users",         value: "214", icon: Users,        color: "text-green-600",  bg: "bg-green-50" },
+  { label: "Bookings This Week",   value: "47",  icon: CalendarCheck,color: "text-blue-600",   bg: "bg-blue-50" },
+  { label: "Spaces Online",        value: "10",  icon: Building2,    color: "text-orange-600", bg: "bg-orange-50" },
+];
+
+const ADMIN_ACCOUNTS = [
+  { id: "a-001", name: "Chioma Adeyemi", email: "chioma@unipod.ng", role: "admin",        space: null,                status: "active",    last: "Today, 9:14 AM" },
+  { id: "a-002", name: "Tunde Okafor",   email: "tunde@unipod.ng",  role: "receptionist", space: null,                status: "active",    last: "Today, 8:52 AM" },
+  { id: "a-003", name: "Amaka Eze",      email: "amaka@unipod.ng",  role: "space_lead",   space: "Maker Space",       status: "active",    last: "Yesterday" },
+  { id: "a-004", name: "Segun Balogun",  email: "segun@unipod.ng",  role: "space_lead",   space: "AI & Robotics Lab", status: "active",    last: "2 days ago" },
+  { id: "a-005", name: "Fatima Yusuf",   email: "fatima@unipod.ng", role: "space_lead",   space: "VR Lab",            status: "active",    last: "3 days ago" },
+  { id: "a-006", name: "Obinna Nwosu",   email: "obinna@unipod.ng", role: "admin",        space: null,                status: "suspended", last: "1 week ago" },
+];
+
+const ROLE_CONFIG: Record<string, { label: string; variant: "success" | "info" | "warning" | "neutral" }> = {
+  super_admin:  { label: "Super Admin",  variant: "warning" },
+  admin:        { label: "Admin",        variant: "info" },
+  receptionist: { label: "Receptionist", variant: "success" },
+  space_lead:   { label: "Space Lead",   variant: "neutral" },
+};
+
+export default function SuperAdminPage() {
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <header className="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-lg bg-brand-600 flex items-center justify-center">
+            <ShieldCheck size={16} className="text-white" />
+          </div>
+          <div>
+            <p className="text-sm font-bold text-gray-900">Super Admin</p>
+            <p className="text-xs text-gray-500">UNIPOD BMS Control Panel</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-3">
+          <Link href="/admin">
+            <Button variant="outline" size="sm">
+              <BarChart2 size={13} /> Main Admin
+            </Button>
+          </Link>
+          <Link href="/admin/login">
+            <Button variant="ghost" size="sm">
+              <LogOut size={13} /> Sign out
+            </Button>
+          </Link>
+        </div>
+      </header>
+
+      <main className="max-w-6xl mx-auto px-6 py-8 space-y-6">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          {STATS.map((stat) => {
+            const Icon = stat.icon;
+            return (
+              <Card key={stat.label}>
+                <div className="flex items-center gap-3">
+                  <div className={\`w-9 h-9 rounded-xl \${stat.bg} flex items-center justify-center shrink-0\`}>
+                    <Icon size={16} className={stat.color} />
+                  </div>
+                  <div>
+                    <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
+                    <p className="text-xs text-gray-500 leading-tight">{stat.label}</p>
+                  </div>
+                </div>
+              </Card>
+            );
+          })}
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2">
+            <Card>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="font-semibold text-gray-900 flex items-center gap-2">
+                  <Users size={15} className="text-brand-500" /> Admin Accounts
+                </h2>
+                <Link href="/superadmin/admins">
+                  <Button size="sm">
+                    <UserPlus size={13} /> Manage Admins
+                  </Button>
+                </Link>
+              </div>
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-gray-100">
+                    <th className="text-left text-xs font-medium text-gray-500 pb-2.5">Name</th>
+                    <th className="text-left text-xs font-medium text-gray-500 pb-2.5">Role</th>
+                    <th className="text-left text-xs font-medium text-gray-500 pb-2.5 hidden sm:table-cell">Space</th>
+                    <th className="text-left text-xs font-medium text-gray-500 pb-2.5">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {ADMIN_ACCOUNTS.map((admin) => {
+                    const rc = ROLE_CONFIG[admin.role];
+                    return (
+                      <tr key={admin.id} className="hover:bg-gray-50 transition-colors">
+                        <td className="py-2.5">
+                          <p className="text-sm text-gray-900 font-medium">{admin.name}</p>
+                          <p className="text-xs text-gray-500">{admin.email}</p>
+                        </td>
+                        <td className="py-2.5">
+                          <Badge variant={rc.variant} size="sm">{rc.label}</Badge>
+                        </td>
+                        <td className="py-2.5 hidden sm:table-cell">
+                          <span className="text-xs text-gray-500">{admin.space ?? "—"}</span>
+                        </td>
+                        <td className="py-2.5">
+                          <Badge variant={admin.status === "active" ? "success" : "danger"} size="sm">
+                            {admin.status}
+                          </Badge>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </Card>
+          </div>
+
+          <div className="space-y-4">
+            <Card>
+              <h2 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                <TrendingUp size={15} className="text-brand-500" /> Quick Actions
+              </h2>
+              <div className="space-y-1">
+                {[
+                  { href: "/superadmin/admins", icon: UserPlus,  label: "Add / Manage Admins" },
+                  { href: "/admin",             icon: BarChart2, label: "Bookings Dashboard" },
+                  { href: "/admin/spaces",      icon: Building2, label: "Space Management" },
+                  { href: "/admin/broadcast",   icon: Megaphone, label: "Broadcast Message" },
+                  { href: "/admin/settings",    icon: Settings,  label: "System Settings" },
+                ].map(({ href, icon: Icon, label }) => (
+                  <Link
+                    key={href}
+                    href={href}
+                    className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 text-gray-600 hover:text-gray-900 transition-colors text-sm"
+                  >
+                    <Icon size={14} className="text-gray-400" />
+                    {label}
+                  </Link>
+                ))}
+              </div>
+            </Card>
+
+            <Card className="bg-yellow-50 border-yellow-100">
+              <div className="flex items-start gap-2">
+                <AlertTriangle size={14} className="text-yellow-500 shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-xs font-semibold text-yellow-700 mb-1">Super Admin Access</p>
+                  <p className="text-xs text-yellow-600 leading-relaxed">
+                    You have full system access. Changes made here affect all users and admins immediately.
+                  </p>
+                </div>
+              </div>
+            </Card>
+          </div>
+        </div>
+      </main>
+    </div>
+  );
+}
+`);
+
+// ─── 15. Superadmin admins — convert dark → light theme ───────────────────────
+write("app/superadmin/admins/page.tsx", `
+"use client";
+
+import { useState } from "react";
+import Link from "next/link";
+import {
+  ShieldCheck,
+  UserPlus,
+  X,
+  Save,
+  ChevronLeft,
+  Trash2,
+  ToggleLeft,
+  ToggleRight,
+  Building2,
+  ChevronDown,
+  Eye,
+  EyeOff,
+} from "lucide-react";
+import { Card } from "@/components/ui/Card";
+import Badge from "@/components/ui/Badge";
+import Button from "@/components/ui/Button";
+import type { AdminAccount, AdminRole } from "@/types";
+import { SPACES } from "@/lib/data/spaces";
+
+const ROLE_OPTIONS: { value: AdminRole; label: string; description: string }[] = [
+  { value: "admin",        label: "Admin",        description: "Can manage bookings, users, broadcast messages and view all analytics." },
+  { value: "receptionist", label: "Receptionist", description: "Front-desk only. Can check users in and generate equipment access codes." },
+  { value: "space_lead",   label: "Space Lead",   description: "Oversees a specific space. Verifies equipment access codes from users." },
+];
+
+const ROLE_CONFIG: Record<AdminRole, { label: string; variant: "success" | "info" | "warning" | "neutral" }> = {
+  super_admin:  { label: "Super Admin",  variant: "warning" },
+  admin:        { label: "Admin",        variant: "info" },
+  receptionist: { label: "Receptionist", variant: "success" },
+  space_lead:   { label: "Space Lead",   variant: "neutral" },
+};
+
+const MOCK_ADMINS: AdminAccount[] = [
+  { id: "a-001", fullName: "Chioma Adeyemi", email: "chioma@unipod.ng", phone: "08012345678", role: "admin",        status: "active",    createdBy: "super-001", createdAt: "2025-01-10", lastLoginAt: "2025-07-17T09:14:00" },
+  { id: "a-002", fullName: "Tunde Okafor",   email: "tunde@unipod.ng",  phone: "08023456789", role: "receptionist", status: "active",    createdBy: "super-001", createdAt: "2025-02-01", lastLoginAt: "2025-07-17T08:52:00" },
+  { id: "a-003", fullName: "Amaka Eze",      email: "amaka@unipod.ng",  phone: "08034567890", role: "space_lead",   assignedSpaceId: "maker-space",    assignedSpaceName: "Maker Space",       status: "active",    createdBy: "super-001", createdAt: "2025-02-15", lastLoginAt: "2025-07-16T14:00:00" },
+  { id: "a-004", fullName: "Segun Balogun",  email: "segun@unipod.ng",  phone: "08045678901", role: "space_lead",   assignedSpaceId: "ai-robotics-lab", assignedSpaceName: "AI & Robotics Lab", status: "active",    createdBy: "super-001", createdAt: "2025-03-01", lastLoginAt: "2025-07-15T11:30:00" },
+  { id: "a-005", fullName: "Fatima Yusuf",   email: "fatima@unipod.ng", phone: "08056789012", role: "space_lead",   assignedSpaceId: "vr-lab",         assignedSpaceName: "VR Lab",            status: "active",    createdBy: "super-001", createdAt: "2025-03-10", lastLoginAt: "2025-07-14T16:45:00" },
+  { id: "a-006", fullName: "Obinna Nwosu",   email: "obinna@unipod.ng", phone: "08067890123", role: "admin",        status: "suspended", createdBy: "super-001", createdAt: "2025-01-20", lastLoginAt: "2025-07-10T10:00:00" },
+];
+
+const PREMIUM_SPACES = SPACES.filter((s) =>
+  ["maker-space", "ai-robotics-lab", "vr-lab", "pitch-garage", "event-space", "boardroom-main"].includes(s.id)
+);
+
+export default function SuperAdminAdminsPage() {
+  const [admins, setAdmins]     = useState<AdminAccount[]>(MOCK_ADMINS);
+  const [showForm, setShowForm] = useState(false);
+  const [saving, setSaving]     = useState(false);
+  const [success, setSuccess]   = useState(false);
+  const [showPw, setShowPw]     = useState(false);
+
+  const [form, setForm] = useState({
+    fullName: "", email: "", phone: "",
+    role: "admin" as AdminRole,
+    assignedSpaceId: "", tempPassword: "", confirmPassword: "",
+  });
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+
+  const validateForm = () => {
+    const e: Record<string, string> = {};
+    if (!form.fullName.trim())   e.fullName   = "Full name is required.";
+    if (!form.email.trim())      e.email      = "Email is required.";
+    if (!form.phone.trim())      e.phone      = "Phone is required.";
+    if (!form.tempPassword)      e.tempPassword = "Temporary password is required.";
+    if (form.tempPassword.length < 8) e.tempPassword = "Password must be at least 8 characters.";
+    if (form.tempPassword !== form.confirmPassword) e.confirmPassword = "Passwords do not match.";
+    if (form.role === "space_lead" && !form.assignedSpaceId) e.assignedSpaceId = "Select a space for this lead.";
+    setFormErrors(e);
+    return Object.keys(e).length === 0;
+  };
+
+  const handleCreate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!validateForm()) return;
+    setSaving(true);
+    // TODO: POST /api/admin/admins/create
+    await new Promise((r) => setTimeout(r, 1000));
+    const newAdmin: AdminAccount = {
+      id: \`a-\${Date.now()}\`,
+      fullName: form.fullName, email: form.email, phone: form.phone,
+      role: form.role,
+      assignedSpaceId: form.assignedSpaceId || undefined,
+      assignedSpaceName: PREMIUM_SPACES.find((s) => s.id === form.assignedSpaceId)?.name,
+      status: "active", createdBy: "super-001",
+      createdAt: new Date().toISOString().split("T")[0],
+    };
+    setAdmins((prev) => [newAdmin, ...prev]);
+    setSaving(false);
+    setSuccess(true);
+    setTimeout(() => {
+      setSuccess(false);
+      setShowForm(false);
+      setForm({ fullName: "", email: "", phone: "", role: "admin", assignedSpaceId: "", tempPassword: "", confirmPassword: "" });
+    }, 1800);
+  };
+
+  const toggleStatus = (id: string) => {
+    setAdmins((prev) => prev.map((a) => a.id === id ? { ...a, status: a.status === "active" ? "suspended" : "active" } : a));
+  };
+  const removeAdmin = (id: string) => setAdmins((prev) => prev.filter((a) => a.id !== id));
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <header className="bg-white border-b border-gray-200 px-6 py-4 flex items-center gap-4">
+        <Link href="/superadmin" className="text-gray-400 hover:text-gray-900 transition-colors">
+          <ChevronLeft size={18} />
+        </Link>
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-lg bg-brand-600 flex items-center justify-center">
+            <ShieldCheck size={16} className="text-white" />
+          </div>
+          <div>
+            <p className="text-sm font-bold text-gray-900">Manage Admin Accounts</p>
+            <p className="text-xs text-gray-500">Create and manage all staff access</p>
+          </div>
+        </div>
+      </header>
+
+      <main className="max-w-5xl mx-auto px-6 py-8 space-y-6">
+        <div className="flex items-center justify-between">
+          <p className="text-sm text-gray-500">
+            {admins.filter((a) => a.status === "active").length} active ·{" "}
+            {admins.filter((a) => a.status === "suspended").length} suspended
+          </p>
+          <Button onClick={() => setShowForm(true)}>
+            <UserPlus size={14} /> Add Admin
+          </Button>
+        </div>
+
+        {showForm && (
+          <Card className="border-brand-200">
+            <div className="flex items-center justify-between mb-5">
+              <h2 className="font-semibold text-gray-900 flex items-center gap-2">
+                <UserPlus size={15} className="text-brand-500" /> New Admin Account
+              </h2>
+              <button onClick={() => setShowForm(false)} className="text-gray-400 hover:text-gray-700 transition-colors">
+                <X size={16} />
+              </button>
+            </div>
+
+            {success ? (
+              <div className="text-center py-6">
+                <div className="w-12 h-12 rounded-full bg-green-50 flex items-center justify-center mx-auto mb-3">
+                  <ShieldCheck size={24} className="text-green-600" />
+                </div>
+                <p className="text-green-700 font-semibold">Admin account created</p>
+                <p className="text-gray-500 text-sm mt-1">Login credentials sent to their email.</p>
+              </div>
+            ) : (
+              <form onSubmit={handleCreate} className="space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-xs text-gray-500 font-medium mb-1.5 block">Full name</label>
+                    <input
+                      type="text"
+                      value={form.fullName}
+                      onChange={(e) => setForm({ ...form, fullName: e.target.value })}
+                      placeholder="e.g. Amaka Eze"
+                      className="w-full bg-white border border-gray-300 text-gray-900 text-sm rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-brand-500"
+                    />
+                    {formErrors.fullName && <p className="text-xs text-red-500 mt-1">{formErrors.fullName}</p>}
+                  </div>
+                  <div>
+                    <label className="text-xs text-gray-500 font-medium mb-1.5 block">Email</label>
+                    <input
+                      type="email"
+                      value={form.email}
+                      onChange={(e) => setForm({ ...form, email: e.target.value })}
+                      placeholder="amaka@unipod.ng"
+                      className="w-full bg-white border border-gray-300 text-gray-900 text-sm rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-brand-500"
+                    />
+                    {formErrors.email && <p className="text-xs text-red-500 mt-1">{formErrors.email}</p>}
+                  </div>
+                  <div>
+                    <label className="text-xs text-gray-500 font-medium mb-1.5 block">Phone number</label>
+                    <input
+                      type="tel"
+                      value={form.phone}
+                      onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                      placeholder="080XXXXXXXX"
+                      className="w-full bg-white border border-gray-300 text-gray-900 text-sm rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-brand-500"
+                    />
+                    {formErrors.phone && <p className="text-xs text-red-500 mt-1">{formErrors.phone}</p>}
+                  </div>
+
+                  <div>
+                    <label className="text-xs text-gray-500 font-medium mb-1.5 block">Role</label>
+                    <div className="relative">
+                      <select
+                        value={form.role}
+                        onChange={(e) => setForm({ ...form, role: e.target.value as AdminRole, assignedSpaceId: "" })}
+                        className="w-full appearance-none bg-white border border-gray-300 text-gray-900 text-sm rounded-xl px-3 py-2.5 pr-8 focus:outline-none focus:ring-2 focus:ring-brand-500"
+                      >
+                        {ROLE_OPTIONS.map((r) => (
+                          <option key={r.value} value={r.value}>{r.label}</option>
+                        ))}
+                      </select>
+                      <ChevronDown size={13} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                    </div>
+                    <p className="text-xs text-gray-500 mt-1">
+                      {ROLE_OPTIONS.find((r) => r.value === form.role)?.description}
+                    </p>
+                  </div>
+
+                  {form.role === "space_lead" && (
+                    <div className="sm:col-span-2">
+                      <label className="text-xs text-gray-500 font-medium mb-1.5 flex items-center gap-1.5 block">
+                        <Building2 size={11} /> Assigned Space
+                      </label>
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                        {PREMIUM_SPACES.map((space) => (
+                          <button
+                            key={space.id}
+                            type="button"
+                            onClick={() => setForm({ ...form, assignedSpaceId: space.id })}
+                            className={\`text-left px-3 py-2 rounded-xl border text-xs transition-all \${
+                              form.assignedSpaceId === space.id
+                                ? "border-brand-500 bg-brand-50 text-brand-700"
+                                : "border-gray-200 text-gray-600 hover:border-gray-400"
+                            }\`}
+                          >
+                            {space.name}
+                          </button>
+                        ))}
+                      </div>
+                      {formErrors.assignedSpaceId && (
+                        <p className="text-xs text-red-500 mt-1">{formErrors.assignedSpaceId}</p>
+                      )}
+                    </div>
+                  )}
+
+                  <div>
+                    <label className="text-xs text-gray-500 font-medium mb-1.5 block">Temporary password</label>
+                    <div className="relative">
+                      <input
+                        type={showPw ? "text" : "password"}
+                        value={form.tempPassword}
+                        onChange={(e) => setForm({ ...form, tempPassword: e.target.value })}
+                        placeholder="Min. 8 characters"
+                        className="w-full bg-white border border-gray-300 text-gray-900 text-sm rounded-xl px-3 py-2.5 pr-9 focus:outline-none focus:ring-2 focus:ring-brand-500"
+                      />
+                      <button type="button" onClick={() => setShowPw(!showPw)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                        {showPw ? <EyeOff size={14} /> : <Eye size={14} />}
+                      </button>
+                    </div>
+                    {formErrors.tempPassword && <p className="text-xs text-red-500 mt-1">{formErrors.tempPassword}</p>}
+                  </div>
+                  <div>
+                    <label className="text-xs text-gray-500 font-medium mb-1.5 block">Confirm password</label>
+                    <input
+                      type={showPw ? "text" : "password"}
+                      value={form.confirmPassword}
+                      onChange={(e) => setForm({ ...form, confirmPassword: e.target.value })}
+                      placeholder="Repeat password"
+                      className="w-full bg-white border border-gray-300 text-gray-900 text-sm rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-brand-500"
+                    />
+                    {formErrors.confirmPassword && <p className="text-xs text-red-500 mt-1">{formErrors.confirmPassword}</p>}
+                  </div>
+                </div>
+
+                <div className="flex gap-3 pt-1">
+                  <Button type="submit" loading={saving}>
+                    <Save size={13} /> Create Admin Account
+                  </Button>
+                  <Button type="button" variant="outline" onClick={() => setShowForm(false)}>Cancel</Button>
+                </div>
+              </form>
+            )}
+          </Card>
+        )}
+
+        <Card padding="none">
+          <table className="w-full">
+            <thead>
+              <tr className="border-b border-gray-100">
+                <th className="text-left text-xs font-medium text-gray-500 px-5 py-3">Name</th>
+                <th className="text-left text-xs font-medium text-gray-500 px-4 py-3">Role</th>
+                <th className="text-left text-xs font-medium text-gray-500 px-4 py-3 hidden md:table-cell">Space</th>
+                <th className="text-left text-xs font-medium text-gray-500 px-4 py-3">Status</th>
+                <th className="text-left text-xs font-medium text-gray-500 px-4 py-3 hidden sm:table-cell">Last Login</th>
+                <th className="px-4 py-3" />
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {admins.map((admin) => {
+                const rc = ROLE_CONFIG[admin.role];
+                return (
+                  <tr key={admin.id} className="hover:bg-gray-50 transition-colors">
+                    <td className="px-5 py-3">
+                      <p className="text-sm text-gray-900 font-medium">{admin.fullName}</p>
+                      <p className="text-xs text-gray-500">{admin.email}</p>
+                    </td>
+                    <td className="px-4 py-3">
+                      <Badge variant={rc.variant} size="sm">{rc.label}</Badge>
+                    </td>
+                    <td className="px-4 py-3 hidden md:table-cell">
+                      <span className="text-xs text-gray-500">{admin.assignedSpaceName ?? "—"}</span>
+                    </td>
+                    <td className="px-4 py-3">
+                      <Badge variant={admin.status === "active" ? "success" : "danger"} size="sm">
+                        {admin.status}
+                      </Badge>
+                    </td>
+                    <td className="px-4 py-3 hidden sm:table-cell">
+                      <span className="text-xs text-gray-500">
+                        {admin.lastLoginAt
+                          ? new Date(admin.lastLoginAt).toLocaleDateString("en-GB", { day: "numeric", month: "short" })
+                          : "Never"}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => toggleStatus(admin.id)}
+                          className={\`p-1.5 rounded-lg transition-colors \${
+                            admin.status === "active"
+                              ? "text-green-600 hover:bg-green-50"
+                              : "text-gray-400 hover:bg-gray-100"
+                          }\`}
+                          title={admin.status === "active" ? "Suspend" : "Reactivate"}
+                        >
+                          {admin.status === "active" ? <ToggleRight size={16} /> : <ToggleLeft size={16} />}
+                        </button>
+                        <button
+                          onClick={() => removeAdmin(admin.id)}
+                          className="p-1.5 rounded-lg text-red-500 hover:bg-red-50 transition-colors"
+                          title="Remove admin"
+                        >
+                          <Trash2 size={13} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </Card>
+      </main>
+    </div>
+  );
+}
+`);
+
 console.log("\n✅ patch-pages.js complete.");
