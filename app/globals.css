@@ -1,42 +1,25 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* ── Base styles — NO @apply used here, plain CSS only ────────────────────── */
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
 
-html {
-  scroll-behavior: smooth;
+  body {
+    @apply bg-gray-50 text-gray-900 antialiased;
+    font-family: 'Inter', system-ui, sans-serif;
+  }
+
+  * {
+    box-sizing: border-box;
+  }
 }
 
-*,
-*::before,
-*::after {
-  box-sizing: border-box;
-}
-
-body {
-  background-color: #f9fafb; /* gray-50 */
-  color: #111827;            /* gray-900 */
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  font-family: 'Inter', system-ui, sans-serif;
-}
-
-/* ── Utility ───────────────────────────────────────────────────────────────── */
-
-.text-balance {
-  text-wrap: balance;
-}
-
-/* ── Photo strip animation (PhotoStrip component) ─────────────────────────── */
-
-@keyframes scroll-x {
-  0%   { transform: translateX(0); }
-  100% { transform: translateX(-50%); }
-}
-
-.animate-scroll-x {
-  animation: scroll-x 40s linear infinite;
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
 }
