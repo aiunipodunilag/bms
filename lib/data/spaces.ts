@@ -2,16 +2,19 @@ import type { Space, UserTier } from "@/types";
 
 // Photo filenames are actual images extracted from the UNIPOD Capacity document.
 // They live in /public/spaces/ — served as /spaces/imageN.jpeg
-// Mapping (from document order):
-//   Pitch Garage         → image1.jpeg
-//   Maker Space          → image4.jpeg
-//   Board Room (Main)    → image9.png
-//   Small Board Room     → image11.jpeg
-//   Event Space          → image13.jpeg
-//   AI & Robotics Lab    → image19.jpeg
-//   Design Lab           → image21.jpeg
-//   Design Studio        → image22.jpeg
-//   ICT Room / Training  → image23.png
+// Verified mapping (each image manually inspected):
+//   Co-working Space     → image16.jpeg (main floor workstations + sunset mural)
+//   Collaboration Space  → image11.jpeg (creative ideas mural, round table)
+//   Board Room (Main)    → image9.png   (oval table, orange chairs)
+//   Small Board Room     → image10.png  (small table, orange chairs + screen)
+//   AI & Robotics Lab    → image21.jpeg (computer workstations + projection screen)
+//   Maker Space          → image4.jpeg  (3D printers + circuit board mural)
+//   VR Lab               → image22.jpeg (creative studio)
+//   Pitch Garage         → image1.jpeg  (amphitheater seating)
+//   Design Studio        → image15.jpeg (lounge with steps + plants)
+//   Event Space          → image17.jpeg (main atrium from mezzanine)
+//   Design Lab           → image5.jpeg  (laser cutter room)
+//   ICT Room             → image23.png  (rows of computers, INNCVATE mural)
 
 const ALL_TIERS: UserTier[] = [
   "regular_student",
@@ -46,7 +49,7 @@ export const SPACES: Space[] = [
     whoCanBook: ALL_TIERS,
     externalAllowed: true,
     equipment: ["Workstations with chargers", "Desks and chairs", "High-speed Wi-Fi"],
-    imageUrl: "/spaces/image6.jpeg",
+    imageUrl: "/spaces/image16.jpeg",
     availability: "available",
     requiresJustification: false,
     maxHoursPerDay: 4,
@@ -65,7 +68,7 @@ export const SPACES: Space[] = [
     whoCanBook: ALL_TIERS,
     externalAllowed: true,
     equipment: ["1 large screen", "Seating for teamwork", "Whiteboard"],
-    imageUrl: "/spaces/image7.jpeg",
+    imageUrl: "/spaces/image11.jpeg",
     availability: "available",
     requiresJustification: false,
     minGroupSize: 2,
@@ -106,7 +109,7 @@ export const SPACES: Space[] = [
     whoCanBook: ["lecturer_staff", "product_developer", "startup_team", "partner_intern", "volunteer_space_lead"],
     externalAllowed: false,
     equipment: ["1 screen", "Meeting table", "AC"],
-    imageUrl: "/spaces/image11.jpeg",
+    imageUrl: "/spaces/image10.png",
     availability: "available",
     requiresJustification: false,
     minGroupSize: 2,
@@ -134,7 +137,7 @@ export const SPACES: Space[] = [
       "Electronics tools",
       "GPU workstation",
     ],
-    imageUrl: "/spaces/image19.jpeg",
+    imageUrl: "/spaces/image21.jpeg",
     availability: "available",
     requiresJustification: true,
     maxHoursPerDay: 4,
@@ -185,7 +188,7 @@ export const SPACES: Space[] = [
     whoCanBook: ADVANCED_TIERS,
     externalAllowed: false,
     equipment: ["3 VR headsets", "2 motion trackers", "1 large screen", "Open interaction space"],
-    imageUrl: "/spaces/image17.jpeg",
+    imageUrl: "/spaces/image22.jpeg",
     availability: "available",
     requiresJustification: true,
     maxHoursPerDay: 3,
@@ -226,7 +229,7 @@ export const SPACES: Space[] = [
     whoCanBook: ADVANCED_TIERS,
     externalAllowed: false,
     equipment: ["2 computers", "Collaborative tables", "Banquette seating"],
-    imageUrl: "/spaces/image22.jpeg",
+    imageUrl: "/spaces/image15.jpeg",
     availability: "available",
     requiresJustification: false,
     maxHoursPerDay: 4,
@@ -246,7 +249,7 @@ export const SPACES: Space[] = [
     whoCanBook: ["product_developer", "startup_team", "partner_intern", "lecturer_staff"],
     externalAllowed: true,
     equipment: ["Stage area", "Screen", "Sound system", "Flexible seating"],
-    imageUrl: "/spaces/image13.jpeg",
+    imageUrl: "/spaces/image17.jpeg",
     availability: "available",
     requiresJustification: true,
     minGroupSize: 5,
@@ -268,7 +271,7 @@ export const SPACES: Space[] = [
     whoCanBook: [],
     externalAllowed: false,
     equipment: ["8 computers", "1 screen whiteboard"],
-    imageUrl: "/spaces/image21.jpeg",
+    imageUrl: "/spaces/image5.jpeg",
     availability: "admin_scheduled",
     requiresJustification: false,
     isPubliclyListed: false,
