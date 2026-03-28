@@ -4,7 +4,18 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Button from "@/components/ui/Button";
-import { ArrowLeft, ArrowRight, Eye, EyeOff, CheckCircle, Upload, GraduationCap, Building2, CreditCard } from "lucide-react";
+import {
+  ArrowLeft,
+  ArrowRight,
+  Eye,
+  EyeOff,
+  CheckCircle,
+  Upload,
+  GraduationCap,
+  Building2,
+  CreditCard,
+} from "lucide-react";
+import { createClient } from "@/lib/supabase/client";
 
 type Step = "class_select" | "internal_form" | "external_form" | "success";
 type UserClass = "internal" | "external";
@@ -17,9 +28,10 @@ export default function SignupPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [otpSent, setOtpSent] = useState(false);
+  const [otpSending, setOtpSending] = useState(false);
   const [otpVerified, setOtpVerified] = useState(false);
+  const [otpVerifying, setOtpVerifying] = useState(false);
 
-  // Internal form state
   const [internalForm, setInternalForm] = useState({
     fullName: "",
     email: "",
@@ -32,7 +44,6 @@ export default function SignupPage() {
     documentFile: null as File | null,
   });
 
-  // External form state
   const [externalForm, setExternalForm] = useState({
     fullName: "",
     email: "",
@@ -45,6 +56,7 @@ export default function SignupPage() {
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [globalError, setGlobalError] = useState("");
 
   const handleClassSelect = (cls: UserClass) => {
     setUserClass(cls);
@@ -52,37 +64,195 @@ export default function SignupPage() {
   };
 
   const sendOTP = async () => {
-    // TODO: Call POST /api/auth/send-otp with { phone: externalForm.phone }
-    setOtpSent(true);
+    if (!externalForm.phone) {
+      setErrors({ phone: "Phone number is required" });
+      return;
+    }
+    setOtpSending(true);
+    setErrors({});
+
+    const res = await fetch("/api/auth/send-otp", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ phone: externalForm.phone }),
+    });
+
+    const data = await res.json();
+    if (!res.ok) {
+      setErrors({ phone: data.error ?? "Failed to send OTP" });
+    } else {
+      setOtpSent(true);
+    }
+    setOtpSending(false);
   };
 
   const verifyOTP = async () => {
-    // TODO: Call POST /api/auth/verify-otp with { phone, otp }
-    setOtpVerified(true);
+    if (!externalForm.otp) {
+      setErrors({ otp: "Please enter the OTP" });
+      return;
+    }
+    setOtpVerifying(true);
+    setErrors({});
+
+    const res = await fetch("/api/auth/send-otp", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ phone: externalForm.phone, otp: externalForm.otp }),
+    });
+
+    const data = await res.json();
+    if (!res.ok) {
+      setErrors({ otp: data.error ?? "Invalid OTP" });
+    } else {
+      setOtpVerified(true);
+    }
+    setOtpVerifying(false);
   };
 
   const handleInternalSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setErrors({});
+    setGlobalError("");
+
     if (internalForm.password !== internalForm.confirmPassword) {
       setErrors({ confirmPassword: "Passwords do not match." });
       return;
     }
+    if (internalForm.password.length < 8) {
+      setErrors({ password: "Password must be at least 8 characters." });
+      return;
+    }
+    if (!internalForm.documentFile) {
+      setErrors({ documentFile: "Please upload an identity document." });
+      return;
+    }
+
     setLoading(true);
-    // TODO: Call POST /api/auth/signup with FormData (includes document file)
-    await new Promise((r) => setTimeout(r, 1200));
+
+    const supabase = createClient();
+
+    // 1. Create Supabase auth user
+    const { data: authData, error: authError } = await supabase.auth.signUp({
+      email: internalForm.email.trim().toLowerCase(),
+      password: internalForm.password,
+      options: {
+        data: { full_name: internalForm.fullName },
+      },
+    });
+
+    if (authError || !authData.user) {
+      setGlobalError(authError?.message ?? "Failed to create account. Please try again.");
+      setLoading(false);
+      return;
+    }
+
+    // 2. Upload identity document to Supabase Storage
+    let documentUrl: string | null = null;
+    if (internalForm.documentFile) {
+      const ext = internalForm.documentFile.name.split(".").pop();
+      const filePath = `${authData.user.id}/identity.${ext}`;
+      const { data: uploadData, error: uploadErr } = await supabase.storage
+        .from("documents")
+        .upload(filePath, internalForm.documentFile, { upsert: true });
+
+      if (uploadErr) {
+        console.error("Document upload failed:", uploadErr);
+        // Continue — admin can request document again
+      } else {
+        const { data: urlData } = supabase.storage
+          .from("documents")
+          .getPublicUrl(uploadData.path);
+        documentUrl = urlData.publicUrl;
+      }
+    }
+
+    // 3. Create profile via API
+    const profileRes = await fetch("/api/auth/signup", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        userId: authData.user.id,
+        fullName: internalForm.fullName,
+        phone: internalForm.phone,
+        userClass: "internal",
+        tier: internalForm.userType,
+        matricNumber: internalForm.userType === "regular_student" ? internalForm.matricNumber : null,
+        staffNumber: internalForm.userType !== "regular_student" ? internalForm.staffNumber : null,
+        documentUrl,
+      }),
+    });
+
+    if (!profileRes.ok) {
+      const err = await profileRes.json();
+      setGlobalError(err.error ?? "Failed to create profile.");
+      setLoading(false);
+      return;
+    }
+
+    // Sign out immediately — internal users must wait for admin verification
+    await supabase.auth.signOut();
     setStep("success");
     setLoading(false);
   };
 
   const handleExternalSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setErrors({});
+    setGlobalError("");
+
     if (!otpVerified) {
       setErrors({ otp: "Please verify your phone number first." });
       return;
     }
+    if (externalForm.password !== externalForm.confirmPassword) {
+      setErrors({ confirmPassword: "Passwords do not match." });
+      return;
+    }
+    if (externalForm.password.length < 8) {
+      setErrors({ password: "Password must be at least 8 characters." });
+      return;
+    }
+
     setLoading(true);
-    // TODO: Call POST /api/auth/signup with external user data
-    await new Promise((r) => setTimeout(r, 1200));
+    const supabase = createClient();
+
+    // 1. Create Supabase auth user
+    const { data: authData, error: authError } = await supabase.auth.signUp({
+      email: externalForm.email.trim().toLowerCase(),
+      password: externalForm.password,
+      options: { data: { full_name: externalForm.fullName } },
+    });
+
+    if (authError || !authData.user) {
+      setGlobalError(authError?.message ?? "Failed to create account.");
+      setLoading(false);
+      return;
+    }
+
+    // 2. Create profile
+    const profileRes = await fetch("/api/auth/signup", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        userId: authData.user.id,
+        fullName: externalForm.fullName,
+        phone: externalForm.phone,
+        userClass: "external",
+        tier: "external",
+        organisation: externalForm.organisation,
+        purposeOfVisit: externalForm.purposeOfVisit,
+      }),
+    });
+
+    if (!profileRes.ok) {
+      const err = await profileRes.json();
+      setGlobalError(err.error ?? "Failed to create profile.");
+      setLoading(false);
+      return;
+    }
+
+    // External users are active immediately — redirect to login
+    await supabase.auth.signOut();
     setStep("success");
     setLoading(false);
   };
@@ -90,7 +260,6 @@ export default function SignupPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-brand-950 via-brand-900 to-brand-800 flex items-center justify-center px-4 py-12">
       <div className="w-full max-w-lg">
-        {/* Back link */}
         <Link
           href="/"
           className="inline-flex items-center gap-2 text-brand-300 hover:text-white text-sm mb-8 transition-colors"
@@ -106,14 +275,10 @@ export default function SignupPage() {
                 <span className="text-brand-700 font-bold text-lg">U</span>
               </div>
               <h1 className="text-2xl font-bold text-gray-900">Create your account</h1>
-              <p className="text-gray-500 text-sm mt-1">
-                Tell us who you are to get started
-              </p>
+              <p className="text-gray-500 text-sm mt-1">Tell us who you are to get started</p>
             </div>
 
-            <p className="font-medium text-gray-800 mb-4">
-              Are you a UNILAG student or staff member?
-            </p>
+            <p className="font-medium text-gray-800 mb-4">Are you a UNILAG student or staff member?</p>
 
             <div className="grid grid-cols-1 gap-4">
               <button
@@ -175,19 +340,24 @@ export default function SignupPage() {
               </p>
             </div>
 
+            {globalError && (
+              <div className="bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded-xl mb-4">
+                {globalError}
+              </div>
+            )}
+
             <form onSubmit={handleInternalSubmit} className="space-y-4">
               {/* User type */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1.5">I am a</label>
                 <select
                   value={internalForm.userType}
-                  onChange={(e) =>
-                    setInternalForm({ ...internalForm, userType: e.target.value as InternalType })
-                  }
+                  onChange={(e) => setInternalForm({ ...internalForm, userType: e.target.value as InternalType })}
                   className="w-full px-4 py-2.5 rounded-xl border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
                 >
                   <option value="regular_student">Regular Student</option>
                   <option value="lecturer_staff">Lecturer / Staff</option>
+                  <option value="product_developer">Product Developer</option>
                 </select>
               </div>
 
@@ -233,33 +403,25 @@ export default function SignupPage() {
               {/* Matric / Staff number */}
               {internalForm.userType === "regular_student" ? (
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                    Matric number
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Matric number</label>
                   <input
                     type="text"
                     required
                     placeholder="e.g. 210404001"
                     value={internalForm.matricNumber}
-                    onChange={(e) =>
-                      setInternalForm({ ...internalForm, matricNumber: e.target.value })
-                    }
+                    onChange={(e) => setInternalForm({ ...internalForm, matricNumber: e.target.value })}
                     className="w-full px-4 py-2.5 rounded-xl border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
                   />
                 </div>
               ) : (
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                    Staff number
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Staff number</label>
                   <input
                     type="text"
                     required
                     placeholder="e.g. SS/0001"
                     value={internalForm.staffNumber}
-                    onChange={(e) =>
-                      setInternalForm({ ...internalForm, staffNumber: e.target.value })
-                    }
+                    onChange={(e) => setInternalForm({ ...internalForm, staffNumber: e.target.value })}
                     className="w-full px-4 py-2.5 rounded-xl border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
                   />
                 </div>
@@ -283,13 +445,13 @@ export default function SignupPage() {
                     accept=".pdf,.jpg,.jpeg,.png"
                     className="hidden"
                     onChange={(e) =>
-                      setInternalForm({
-                        ...internalForm,
-                        documentFile: e.target.files?.[0] ?? null,
-                      })
+                      setInternalForm({ ...internalForm, documentFile: e.target.files?.[0] ?? null })
                     }
                   />
                 </label>
+                {errors.documentFile && (
+                  <p className="text-xs text-red-500 mt-1">{errors.documentFile}</p>
+                )}
               </div>
 
               {/* Password */}
@@ -302,10 +464,9 @@ export default function SignupPage() {
                       required
                       placeholder="Min. 8 chars"
                       minLength={8}
+                      autoComplete="new-password"
                       value={internalForm.password}
-                      onChange={(e) =>
-                        setInternalForm({ ...internalForm, password: e.target.value })
-                      }
+                      onChange={(e) => setInternalForm({ ...internalForm, password: e.target.value })}
                       className="w-full px-4 py-2.5 pr-9 rounded-xl border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
                     />
                     <button
@@ -316,6 +477,7 @@ export default function SignupPage() {
                       {showPassword ? <EyeOff size={14} /> : <Eye size={14} />}
                     </button>
                   </div>
+                  {errors.password && <p className="text-xs text-red-500 mt-1">{errors.password}</p>}
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">Confirm password</label>
@@ -323,10 +485,9 @@ export default function SignupPage() {
                     type="password"
                     required
                     placeholder="Repeat password"
+                    autoComplete="new-password"
                     value={internalForm.confirmPassword}
-                    onChange={(e) =>
-                      setInternalForm({ ...internalForm, confirmPassword: e.target.value })
-                    }
+                    onChange={(e) => setInternalForm({ ...internalForm, confirmPassword: e.target.value })}
                     className="w-full px-4 py-2.5 rounded-xl border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
                   />
                   {errors.confirmPassword && (
@@ -359,6 +520,12 @@ export default function SignupPage() {
               </p>
             </div>
 
+            {globalError && (
+              <div className="bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded-xl mb-4">
+                {globalError}
+              </div>
+            )}
+
             <form onSubmit={handleExternalSubmit} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1.5">Full name</label>
@@ -380,9 +547,7 @@ export default function SignupPage() {
                     required
                     placeholder="you@email.com"
                     value={externalForm.email}
-                    onChange={(e) =>
-                      setExternalForm({ ...externalForm, email: e.target.value })
-                    }
+                    onChange={(e) => setExternalForm({ ...externalForm, email: e.target.value })}
                     className="w-full px-4 py-2.5 rounded-xl border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
                   />
                 </div>
@@ -393,26 +558,20 @@ export default function SignupPage() {
                     required
                     placeholder="Company / School"
                     value={externalForm.organisation}
-                    onChange={(e) =>
-                      setExternalForm({ ...externalForm, organisation: e.target.value })
-                    }
+                    onChange={(e) => setExternalForm({ ...externalForm, organisation: e.target.value })}
                     className="w-full px-4 py-2.5 rounded-xl border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                  Purpose of visit
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Purpose of visit</label>
                 <textarea
                   required
                   rows={2}
                   placeholder="Why are you visiting AI-UNIPOD?"
                   value={externalForm.purposeOfVisit}
-                  onChange={(e) =>
-                    setExternalForm({ ...externalForm, purposeOfVisit: e.target.value })
-                  }
+                  onChange={(e) => setExternalForm({ ...externalForm, purposeOfVisit: e.target.value })}
                   className="w-full px-4 py-2.5 rounded-xl border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 resize-none"
                 />
               </div>
@@ -428,35 +587,40 @@ export default function SignupPage() {
                     required
                     placeholder="+234 800 000 0000"
                     value={externalForm.phone}
-                    onChange={(e) =>
-                      setExternalForm({ ...externalForm, phone: e.target.value })
-                    }
-                    className="flex-1 px-4 py-2.5 rounded-xl border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+                    onChange={(e) => setExternalForm({ ...externalForm, phone: e.target.value })}
+                    disabled={otpVerified}
+                    className="flex-1 px-4 py-2.5 rounded-xl border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 disabled:bg-gray-50"
                   />
                   <Button
                     type="button"
                     variant="secondary"
                     size="sm"
                     onClick={sendOTP}
-                    disabled={!externalForm.phone || otpSent}
+                    loading={otpSending}
+                    disabled={!externalForm.phone || otpSent || otpVerified}
                   >
-                    {otpSent ? "Sent" : "Send OTP"}
+                    {otpSent ? "Resend" : "Send OTP"}
                   </Button>
                 </div>
+                {errors.phone && <p className="text-xs text-red-500 mt-1">{errors.phone}</p>}
 
                 {otpSent && !otpVerified && (
                   <div className="mt-2 flex gap-2">
                     <input
                       type="text"
-                      placeholder="Enter OTP"
+                      placeholder="Enter 6-digit OTP"
                       maxLength={6}
                       value={externalForm.otp}
-                      onChange={(e) =>
-                        setExternalForm({ ...externalForm, otp: e.target.value })
-                      }
-                      className="flex-1 px-4 py-2.5 rounded-xl border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+                      onChange={(e) => setExternalForm({ ...externalForm, otp: e.target.value })}
+                      className="flex-1 px-4 py-2.5 rounded-xl border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 tracking-widest font-mono"
                     />
-                    <Button type="button" variant="secondary" size="sm" onClick={verifyOTP}>
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="sm"
+                      onClick={verifyOTP}
+                      loading={otpVerifying}
+                    >
                       Verify
                     </Button>
                   </div>
@@ -466,9 +630,7 @@ export default function SignupPage() {
                     <CheckCircle size={14} /> Phone number verified
                   </p>
                 )}
-                {errors.otp && (
-                  <p className="text-xs text-red-500 mt-1">{errors.otp}</p>
-                )}
+                {errors.otp && <p className="text-xs text-red-500 mt-1">{errors.otp}</p>}
               </div>
 
               <div className="grid grid-cols-2 gap-3">
@@ -479,12 +641,12 @@ export default function SignupPage() {
                     required
                     minLength={8}
                     placeholder="Min. 8 chars"
+                    autoComplete="new-password"
                     value={externalForm.password}
-                    onChange={(e) =>
-                      setExternalForm({ ...externalForm, password: e.target.value })
-                    }
+                    onChange={(e) => setExternalForm({ ...externalForm, password: e.target.value })}
                     className="w-full px-4 py-2.5 rounded-xl border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
                   />
+                  {errors.password && <p className="text-xs text-red-500 mt-1">{errors.password}</p>}
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">Confirm</label>
@@ -492,12 +654,14 @@ export default function SignupPage() {
                     type="password"
                     required
                     placeholder="Repeat"
+                    autoComplete="new-password"
                     value={externalForm.confirmPassword}
-                    onChange={(e) =>
-                      setExternalForm({ ...externalForm, confirmPassword: e.target.value })
-                    }
+                    onChange={(e) => setExternalForm({ ...externalForm, confirmPassword: e.target.value })}
                     className="w-full px-4 py-2.5 rounded-xl border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
                   />
+                  {errors.confirmPassword && (
+                    <p className="text-xs text-red-500 mt-1">{errors.confirmPassword}</p>
+                  )}
                 </div>
               </div>
 

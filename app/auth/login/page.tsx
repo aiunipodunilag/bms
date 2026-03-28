@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Button from "@/components/ui/Button";
 import { Eye, EyeOff, ArrowLeft } from "lucide-react";
+import { createClient } from "@/lib/supabase/client";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -18,16 +19,25 @@ export default function LoginPage() {
     setError("");
     setLoading(true);
 
-    // TODO: Replace with NextAuth signIn() call
-    // Example:
-    // const result = await signIn("credentials", {
-    //   email: form.email, password: form.password, redirect: false
-    // });
-    // if (result?.error) { setError("Invalid email or password."); } else { router.push("/dashboard"); }
+    const supabase = createClient();
+    const { error: authError } = await supabase.auth.signInWithPassword({
+      email: form.email.trim().toLowerCase(),
+      password: form.password,
+    });
 
-    await new Promise((r) => setTimeout(r, 1000)); // mock delay
+    if (authError) {
+      setError(
+        authError.message === "Invalid login credentials"
+          ? "Incorrect email or password. Please try again."
+          : authError.message
+      );
+      setLoading(false);
+      return;
+    }
+
+    // Refresh to let the server pick up the new session cookie
+    router.refresh();
     router.push("/dashboard");
-    setLoading(false);
   };
 
   return (
@@ -62,6 +72,7 @@ export default function LoginPage() {
               <input
                 type="email"
                 required
+                autoComplete="email"
                 placeholder="you@email.com"
                 value={form.email}
                 onChange={(e) => setForm({ ...form, email: e.target.value })}
@@ -84,6 +95,7 @@ export default function LoginPage() {
                 <input
                   type={showPassword ? "text" : "password"}
                   required
+                  autoComplete="current-password"
                   placeholder="Your password"
                   value={form.password}
                   onChange={(e) => setForm({ ...form, password: e.target.value })}
