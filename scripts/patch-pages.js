@@ -1412,4 +1412,328 @@ export default function ResourceRequestPage() {
 }
 `);
 
+// ─── 8. Admin login — impressive split layout (photo left, form right) ────────
+write("app/admin/login/page.tsx", `
+"use client";
+
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import Image from "next/image";
+import { ShieldCheck, Eye, EyeOff, Lock, Mail, AlertCircle } from "lucide-react";
+import Button from "@/components/ui/Button";
+import type { AdminRole } from "@/types";
+
+const ROLE_REDIRECTS: Record<AdminRole, string> = {
+  super_admin:  "/superadmin",
+  admin:        "/admin",
+  receptionist: "/admin/checkin",
+  space_lead:   "/admin/space-lead",
+};
+
+const ROLE_LABELS: Record<AdminRole, string> = {
+  super_admin:  "Super Admin",
+  admin:        "Admin",
+  receptionist: "Receptionist",
+  space_lead:   "Space Lead",
+};
+
+export default function AdminLoginPage() {
+  const router = useRouter();
+  const [email, setEmail]       = useState("");
+  const [password, setPassword] = useState("");
+  const [showPw, setShowPw]     = useState(false);
+  const [loading, setLoading]   = useState(false);
+  const [error, setError]       = useState("");
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    if (!email || !password) { setError("Please enter your email and password."); return; }
+    setLoading(true);
+    // TODO: POST /api/admin/auth/login
+    await new Promise((r) => setTimeout(r, 900));
+    let mockRole: AdminRole = "admin";
+    if (email.includes("super"))      mockRole = "super_admin";
+    else if (email.includes("recep")) mockRole = "receptionist";
+    else if (email.includes("lead"))  mockRole = "space_lead";
+    setLoading(false);
+    router.push(ROLE_REDIRECTS[mockRole]);
+  };
+
+  return (
+    <div className="min-h-screen flex flex-col lg:flex-row">
+
+      {/* Left panel — workspace visual */}
+      <div className="hidden lg:flex flex-col flex-1 relative bg-blue-900 overflow-hidden">
+        <Image src="/spaces/image4.jpeg" alt="AI-UNIPOD workspace" fill className="object-cover opacity-35" priority />
+        <div className="relative z-10 flex flex-col h-full p-10">
+          <div>
+            <p className="font-bold text-white text-lg font-mono tracking-wider">AI-UNIPOD</p>
+            <p className="text-blue-300 text-xs tracking-widest uppercase mt-0.5">University of Lagos · BMS</p>
+          </div>
+          <div className="flex-1 flex flex-col justify-center max-w-sm">
+            <h1 className="text-4xl font-bold text-white leading-tight mb-4">
+              Innovation Hub<br/>
+              <span className="text-blue-300">Admin Portal</span>
+            </h1>
+            <p className="text-blue-100 text-sm leading-relaxed">
+              Manage bookings, verify members, monitor all UNIPOD spaces and broadcast
+              announcements — all from one unified dashboard.
+            </p>
+            <div className="mt-8 grid grid-cols-2 gap-3">
+              {[
+                { value: "12",   label: "Managed Spaces"   },
+                { value: "500+", label: "Active Members"   },
+                { value: "9hrs", label: "Daily Operations" },
+                { value: "100%", label: "Digital Workflow" },
+              ].map(({ value, label }) => (
+                <div key={label} className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/10">
+                  <p className="text-2xl font-bold text-white">{value}</p>
+                  <p className="text-blue-200 text-xs mt-0.5">{label}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+          <p className="text-blue-400 text-xs">All access is logged · Authorised UNIPOD staff only</p>
+        </div>
+      </div>
+
+      {/* Right panel — login form */}
+      <div className="flex-1 lg:max-w-md flex flex-col justify-center px-6 sm:px-10 py-12 bg-white min-h-screen lg:min-h-0">
+        {/* Mobile brand */}
+        <div className="lg:hidden flex items-center gap-3 mb-8">
+          <div className="w-10 h-10 bg-blue-600 rounded-2xl flex items-center justify-center shrink-0">
+            <ShieldCheck size={20} className="text-white" />
+          </div>
+          <div>
+            <p className="font-bold text-blue-600 font-mono text-sm">AI-UNIPOD</p>
+            <p className="text-xs text-gray-400">Admin Portal</p>
+          </div>
+        </div>
+
+        <div className="max-w-sm w-full mx-auto">
+          <h2 className="text-2xl font-bold text-gray-900 mb-1">Sign in</h2>
+          <p className="text-sm text-gray-500 mb-8">Enter your admin credentials to continue</p>
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label className="text-xs font-semibold text-gray-600 mb-1.5 block">Admin email</label>
+              <div className="relative">
+                <Mail size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                <input
+                  type="email" autoComplete="email"
+                  placeholder="admin@unipod.unilag.edu.ng"
+                  value={email} onChange={(e) => setEmail(e.target.value)}
+                  className="w-full border border-gray-300 text-gray-900 placeholder-gray-400 text-sm rounded-xl pl-9 pr-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="text-xs font-semibold text-gray-600 mb-1.5 block">Password</label>
+              <div className="relative">
+                <Lock size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                <input
+                  type={showPw ? "text" : "password"} autoComplete="current-password"
+                  placeholder="••••••••"
+                  value={password} onChange={(e) => setPassword(e.target.value)}
+                  className="w-full border border-gray-300 text-gray-900 placeholder-gray-400 text-sm rounded-xl pl-9 pr-10 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+                <button type="button" onClick={() => setShowPw(!showPw)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors">
+                  {showPw ? <EyeOff size={15} /> : <Eye size={15} />}
+                </button>
+              </div>
+            </div>
+
+            {error && (
+              <div className="flex items-center gap-2 bg-red-50 border border-red-200 rounded-xl px-3 py-2.5">
+                <AlertCircle size={14} className="text-red-500 shrink-0" />
+                <p className="text-xs text-red-700">{error}</p>
+              </div>
+            )}
+
+            <Button type="submit" className="w-full" size="lg" loading={loading}>
+              <ShieldCheck size={15} /> Sign in to Portal
+            </Button>
+          </form>
+
+          <div className="mt-8 bg-gray-50 rounded-2xl p-4">
+            <p className="text-xs text-gray-500 font-semibold mb-2">Access levels</p>
+            <div className="space-y-1.5">
+              {(Object.entries(ROLE_LABELS) as [AdminRole, string][]).map(([, label]) => (
+                <div key={label} className="flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-blue-400 shrink-0" />
+                  <span className="text-xs text-gray-500">{label}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <p className="mt-6 text-center text-xs text-gray-400">
+            Member access?{" "}
+            <a href="/auth/login" className="text-blue-600 hover:underline font-medium">Sign in here</a>
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+`);
+
+// ─── 9. Auth login — remove dark gradient ─────────────────────────────────────
+patch("app/auth/login/page.tsx", [
+  [
+    'className="min-h-screen bg-gradient-to-br from-brand-950 via-brand-900 to-brand-800 flex items-center justify-center px-4"',
+    'className="min-h-screen bg-gray-50 flex items-center justify-center px-4"',
+  ],
+  [
+    'className="inline-flex items-center gap-2 text-brand-300 hover:text-white text-sm mb-8 transition-colors"',
+    'className="inline-flex items-center gap-2 text-gray-500 hover:text-gray-800 text-sm mb-8 transition-colors"',
+  ],
+  [
+    'className="w-10 h-10 rounded-xl bg-brand-100 flex items-center justify-center mb-4"',
+    'className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center mb-4"',
+  ],
+  [
+    '<span className="text-brand-700 font-bold text-lg">U</span>',
+    '<span className="text-white font-bold text-sm font-mono">U</span>',
+  ],
+]);
+
+// ─── 10. Auth signup — remove dark gradient ────────────────────────────────────
+patch("app/auth/signup/page.tsx", [
+  [
+    'className="min-h-screen bg-gradient-to-br from-brand-950 via-brand-900 to-brand-800 flex items-center justify-center px-4 py-12"',
+    'className="min-h-screen bg-gray-50 flex items-center justify-center px-4 py-12"',
+  ],
+  [
+    'className="inline-flex items-center gap-2 text-brand-300 hover:text-white text-sm mb-8 transition-colors"',
+    'className="inline-flex items-center gap-2 text-gray-500 hover:text-gray-800 text-sm mb-8 transition-colors"',
+  ],
+  [
+    'className="w-10 h-10 rounded-xl bg-brand-100 flex items-center justify-center mb-4"',
+    'className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center mb-4"',
+  ],
+  [
+    '<span className="text-brand-700 font-bold text-lg">U</span>',
+    '<span className="text-white font-bold text-sm font-mono">U</span>',
+  ],
+]);
+
+// ─── 11. Bookings list — rewrite without QR code button ───────────────────────
+write("app/bookings/page.tsx", `
+import Navbar from "@/components/layout/Navbar";
+import { Card } from "@/components/ui/Card";
+import Badge from "@/components/ui/Badge";
+import Button from "@/components/ui/Button";
+import Link from "next/link";
+import { TIER_LABELS } from "@/lib/data/tiers";
+import { formatDate, formatTime } from "@/lib/utils";
+import { CalendarDays, Clock, ArrowRight, Plus } from "lucide-react";
+import type { UserTier } from "@/types";
+
+const currentUserTier: UserTier = "regular_student";
+
+const mockBookings = [
+  { id: "bk-001", bmsCode: "BMS-2025-T4K9P", space: "Co-working Space",    date: "2025-07-17", startTime: "10:00", endTime: "12:00", status: "confirmed",  type: "individual" },
+  { id: "bk-00a", bmsCode: "BMS-2025-A1B2C", space: "Design Studio",       date: "2025-07-14", startTime: "13:00", endTime: "15:00", status: "completed",  type: "individual" },
+  { id: "bk-00b", bmsCode: "BMS-2025-D3E4F", space: "AI & Robotics Lab",   date: "2025-07-10", startTime: "10:00", endTime: "13:00", status: "no_show",    type: "individual" },
+  { id: "bk-00c", bmsCode: "BMS-2025-G5H6I", space: "Pitch Garage",        date: "2025-07-07", startTime: "14:00", endTime: "16:00", status: "completed",  type: "group"      },
+  { id: "bk-00d", bmsCode: "BMS-2025-J7K8L", space: "Collaboration Space", date: "2025-07-03", startTime: "11:00", endTime: "13:00", status: "cancelled",  type: "group"      },
+];
+
+const statusConfig: Record<string, { label: string; variant: "success" | "danger" | "neutral" | "warning" | "info" }> = {
+  confirmed:  { label: "Confirmed",        variant: "info"    },
+  checked_in: { label: "Checked In",       variant: "success" },
+  completed:  { label: "Completed",        variant: "success" },
+  cancelled:  { label: "Cancelled",        variant: "neutral" },
+  no_show:    { label: "No Show",          variant: "danger"  },
+  pending:    { label: "Pending Approval", variant: "warning" },
+  rejected:   { label: "Rejected",         variant: "danger"  },
+};
+
+export default function BookingsPage() {
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <Navbar user={{ name: "Tolu Adeyemi", tier: currentUserTier, tierLabel: TIER_LABELS[currentUserTier] }} />
+
+      <main className="max-w-3xl mx-auto px-4 sm:px-6 py-8">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">My Bookings</h1>
+            <p className="text-sm text-gray-500 mt-0.5">{mockBookings.length} bookings total</p>
+          </div>
+          <Link href="/spaces">
+            <Button size="sm"><Plus size={14} /> New Booking</Button>
+          </Link>
+        </div>
+
+        <div className="space-y-3">
+          {mockBookings.map((b) => {
+            const s = statusConfig[b.status];
+            return (
+              <Card key={b.id} className="hover:shadow-md transition-all">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex flex-wrap items-center gap-2 mb-1.5">
+                      <h3 className="font-semibold text-gray-900">{b.space}</h3>
+                      <Badge variant={s.variant} size="sm">{s.label}</Badge>
+                      {b.type === "group" && <Badge variant="neutral" size="sm">Group</Badge>}
+                    </div>
+                    <div className="flex flex-wrap items-center gap-3 text-sm text-gray-500 mb-2">
+                      <span className="flex items-center gap-1.5"><CalendarDays size={13} /> {formatDate(b.date)}</span>
+                      <span className="flex items-center gap-1.5"><Clock size={13} /> {formatTime(b.startTime)} – {formatTime(b.endTime)}</span>
+                    </div>
+                    <p className="text-xs font-mono text-blue-600 bg-blue-50 inline-block px-2 py-0.5 rounded-md">{b.bmsCode}</p>
+                  </div>
+                  <div className="flex gap-2 shrink-0">
+                    {b.status === "confirmed" && (
+                      <Link href={\`/bookings/\${b.id}\`}>
+                        <Button variant="secondary" size="sm">Details <ArrowRight size={13} /></Button>
+                      </Link>
+                    )}
+                    {(b.status === "confirmed" || b.status === "pending") && (
+                      <Button variant="danger" size="sm">Cancel</Button>
+                    )}
+                  </div>
+                </div>
+              </Card>
+            );
+          })}
+        </div>
+      </main>
+    </div>
+  );
+}
+`);
+
+// ─── 12a. Admin pages — add mobile top-bar offset (pt-14 lg:pt-0) ─────────────
+for (const file of [
+  "app/admin/page.tsx",
+  "app/admin/users/page.tsx",
+  "app/admin/spaces/page.tsx",
+  "app/admin/checkin/page.tsx",
+  "app/admin/broadcast/page.tsx",
+  "app/admin/space-lead/page.tsx",
+]) {
+  patch(file, [
+    ['<div className="flex-1 overflow-auto">', '<div className="flex-1 overflow-auto pt-14 lg:pt-0">'],
+  ]);
+}
+
+// ─── 12b. Dashboard — remove "View QR" reference ──────────────────────────────
+patch("app/dashboard/page.tsx", [
+  ["View QR <ArrowRight size={14} />", "View Details <ArrowRight size={14} />"],
+  ["View QR<",                         "View Details<"],
+]);
+
+// ─── 12c. Booking confirmation — remove all QR code text ─────────────────────
+patch("app/spaces/[id]/book/page.tsx", [
+  ["A confirmation email with your QR code and booking code", "A confirmation email with your booking code"],
+  ["You'll receive an email with your QR code once approved.", "You'll receive a confirmation email once approved."],
+  ["Present this code or your QR code to the receptionist",   "Present this booking code to the receptionist"],
+  ["with your QR code",                                        "with your booking details"],
+]);
+
 console.log("\n✅ patch-pages.js complete.");
