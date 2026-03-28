@@ -98,19 +98,13 @@ export default function Navbar({ user }: NavbarProps) {
         <div className="flex items-center justify-between h-16">
 
           {/* ── Logo ── */}
-          <Link href={user ? "/dashboard" : "/"} className="flex items-center gap-3 group">
-            <div className="relative w-9 h-9 flex items-center justify-center">
-              <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-violet-600 to-cyan-500 opacity-90 group-hover:opacity-100 transition-opacity" />
-              <span className="relative text-white font-display font-bold text-sm">U</span>
-            </div>
-            <div className="hidden sm:block">
-              <span className="font-display font-bold text-sm tracking-widest gradient-text">
-                AI-UNIPOD
-              </span>
-              <span className="block text-[10px] text-slate-400 tracking-[0.2em] uppercase -mt-0.5">
-                UNILAG · BMS
-              </span>
-            </div>
+          <Link href={user ? "/dashboard" : "/"} className="flex items-center gap-1.5 group">
+            <span className="font-display font-bold text-base tracking-widest gradient-text group-hover:opacity-80 transition-opacity">
+              AI-UNIPOD
+            </span>
+            <span className="text-[10px] text-slate-500 tracking-[0.15em] uppercase hidden sm:inline self-end mb-0.5">
+              · BMS
+            </span>
           </Link>
 
           {/* ── Desktop nav ── */}
