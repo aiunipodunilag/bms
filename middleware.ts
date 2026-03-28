@@ -91,9 +91,10 @@ export async function middleware(request: NextRequest) {
   }
 
   // ── Redirect already-authenticated users away from auth pages ─────────────
-  if (user && (pathname.startsWith("/auth/login") || pathname.startsWith("/auth/signup"))) {
-    return NextResponse.redirect(new URL("/dashboard", request.url));
-  }
+  // NOTE: Deliberately NOT redirecting from /auth/login or /auth/signup here.
+  // Doing so creates a redirect loop when the dashboard or a server component
+  // itself redirects back to /auth/login (e.g. missing profile row).
+  // The login/signup pages handle the "already logged in" case client-side.
 
   return supabaseResponse;
 }

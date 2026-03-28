@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { ShieldCheck, Eye, EyeOff, Lock, Mail, AlertCircle } from "lucide-react";
 import Button from "@/components/ui/Button";
@@ -28,6 +28,20 @@ export default function AdminLoginPage() {
   const [showPw, setShowPw]     = useState(false);
   const [loading, setLoading]   = useState(false);
   const [error, setError]       = useState("");
+
+  // If already logged in as admin, skip login screen
+  useEffect(() => {
+    const supabase = createClient();
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      if (!session) return;
+      const { data } = await supabase
+        .from("admin_accounts")
+        .select("role")
+        .eq("id", session.user.id)
+        .single();
+      if (data?.role) router.replace(ROLE_REDIRECTS[data.role as AdminRole]);
+    });
+  }, [router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
