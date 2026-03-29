@@ -14,7 +14,8 @@ export async function POST(request: NextRequest) {
   } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorised" }, { status: 401 });
 
-  const { data: adminAccount } = await supabase
+  const adminDb = createAdminClient();
+  const { data: adminAccount } = await adminDb
     .from("admin_accounts")
     .select("full_name, role, status")
     .eq("id", user.id)
@@ -35,10 +36,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Subject and message are required" }, { status: 400 });
     }
 
-    const adminClient = createAdminClient();
-
     // Store the broadcast record
-    await adminClient.from("broadcast_messages").insert({
+    await adminDb.from("broadcast_messages").insert({
       admin_id: user.id,
       admin_name: adminAccount.full_name,
       subject,
@@ -47,14 +46,13 @@ export async function POST(request: NextRequest) {
     });
 
     // Fetch target users
-    let userQuery = adminClient.from("profiles").select("id").eq("status", "verified");
+    let userQuery = adminDb.from("profiles").select("id").eq("status", "verified");
 
     if (target === "internal") {
       userQuery = userQuery.eq("class", "internal");
     } else if (target === "external") {
       userQuery = userQuery.eq("class", "external");
     } else if (target && target !== "all") {
-      // target is a tier name
       userQuery = userQuery.eq("tier", target);
     }
 
@@ -63,7 +61,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: true, sent: 0 });
     }
 
-    // Create notification for each user
     const notifications = targetUsers.map((u) => ({
       user_id: u.id,
       type: "admin_broadcast",
@@ -71,12 +68,9 @@ export async function POST(request: NextRequest) {
       message,
     }));
 
-    // Batch insert (Supabase handles up to 1000 rows per insert)
     const BATCH_SIZE = 500;
     for (let i = 0; i < notifications.length; i += BATCH_SIZE) {
-      await adminClient
-        .from("notifications")
-        .insert(notifications.slice(i, i + BATCH_SIZE));
+      await adminDb.from("notifications").insert(notifications.slice(i, i + BATCH_SIZE));
     }
 
     return NextResponse.json({ success: true, sent: targetUsers.length });
@@ -97,7 +91,8 @@ export async function GET() {
   } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorised" }, { status: 401 });
 
-  const { data: adminAccount } = await supabase
+  const adminDb = createAdminClient();
+  const { data: adminAccount } = await adminDb
     .from("admin_accounts")
     .select("role, status")
     .eq("id", user.id)
@@ -107,7 +102,7 @@ export async function GET() {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const { data } = await supabase
+  const { data } = await adminDb
     .from("broadcast_messages")
     .select("*")
     .order("sent_at", { ascending: false })

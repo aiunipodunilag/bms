@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 /**
  * GET /api/admin/stats
@@ -12,7 +13,9 @@ export async function GET() {
   } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorised" }, { status: 401 });
 
-  const { data: adminAccount } = await supabase
+  // Use service-role client to bypass RLS for admin lookup
+  const adminDb = createAdminClient();
+  const { data: adminAccount } = await adminDb
     .from("admin_accounts")
     .select("role, status")
     .eq("id", user.id)
@@ -39,30 +42,30 @@ export async function GET() {
     { count: pendingApprovals },
     { data: revenueData },
   ] = await Promise.all([
-    supabase.from("profiles").select("*", { count: "exact", head: true }),
-    supabase
+    adminDb.from("profiles").select("*", { count: "exact", head: true }),
+    adminDb
       .from("profiles")
       .select("*", { count: "exact", head: true })
       .eq("status", "pending"),
-    supabase
+    adminDb
       .from("bookings")
       .select("*", { count: "exact", head: true })
       .eq("date", today)
       .in("status", ["confirmed", "checked_in"]),
-    supabase
+    adminDb
       .from("bookings")
       .select("*", { count: "exact", head: true })
       .gte("date", weekStartStr),
-    supabase
+    adminDb
       .from("bookings")
       .select("*", { count: "exact", head: true })
       .gte("date", weekStartStr)
       .eq("status", "no_show"),
-    supabase
+    adminDb
       .from("bookings")
       .select("*", { count: "exact", head: true })
       .eq("status", "pending"),
-    supabase
+    adminDb
       .from("bookings")
       .select("payment_amount")
       .gte("date", monthStart)

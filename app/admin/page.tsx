@@ -77,7 +77,8 @@ export default function AdminDashboard() {
       fetch("/api/admin/users?status=pending"),
     ]);
 
-    if (!statsRes.ok) { router.push("/admin/login"); return; }
+    if (statsRes.status === 401) { router.push("/admin/login"); return; }
+    if (!statsRes.ok) { setLoading(false); return; }
 
     const [statsData, bookingsData, usersData] = await Promise.all([
       statsRes.json(),

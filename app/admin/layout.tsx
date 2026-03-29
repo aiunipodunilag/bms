@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 export default async function AdminLayout({
   children,
@@ -19,7 +20,9 @@ export default async function AdminLayout({
 
   if (!user) redirect("/admin/login");
 
-  const { data: admin } = await supabase
+  // Use service-role client to bypass RLS for admin lookup
+  const adminDb = createAdminClient();
+  const { data: admin } = await adminDb
     .from("admin_accounts")
     .select("role, status")
     .eq("id", user.id)
