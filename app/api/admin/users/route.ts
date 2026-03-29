@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 /**
  * GET /api/admin/users
@@ -13,7 +14,8 @@ export async function GET(request: NextRequest) {
   } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorised" }, { status: 401 });
 
-  const { data: adminAccount } = await supabase
+  const adminDb = createAdminClient();
+  const { data: adminAccount } = await adminDb
     .from("admin_accounts")
     .select("role, status")
     .eq("id", user.id)
@@ -28,7 +30,7 @@ export async function GET(request: NextRequest) {
   const tierFilter = searchParams.get("tier");
   const search = searchParams.get("search");
 
-  let query = supabase
+  let query = adminDb
     .from("profiles")
     .select("*")
     .order("created_at", { ascending: false });

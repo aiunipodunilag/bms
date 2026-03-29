@@ -13,7 +13,8 @@ export async function GET() {
   } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorised" }, { status: 401 });
 
-  const { data: adminAccount } = await supabase
+  const adminDb = createAdminClient();
+  const { data: adminAccount } = await adminDb
     .from("admin_accounts")
     .select("role, status")
     .eq("id", user.id)
@@ -23,7 +24,7 @@ export async function GET() {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const { data, error } = await supabase
+  const { data, error } = await adminDb
     .from("admin_accounts")
     .select("*")
     .order("created_at", { ascending: false });
@@ -47,7 +48,8 @@ export async function POST(request: NextRequest) {
   } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorised" }, { status: 401 });
 
-  const { data: adminAccount } = await supabase
+  const adminDb = createAdminClient();
+  const { data: adminAccount } = await adminDb
     .from("admin_accounts")
     .select("role, status")
     .eq("id", user.id)
@@ -68,10 +70,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const adminClient = createAdminClient();
-
     // Create the auth user
-    const { data: authData, error: authErr } = await adminClient.auth.admin.createUser({
+    const { data: authData, error: authErr } = await adminDb.auth.admin.createUser({
       email,
       password: tempPassword,
       email_confirm: true,
@@ -87,7 +87,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Create the admin_accounts record
-    const { data: newAdmin, error: insertErr } = await adminClient
+    const { data: newAdmin, error: insertErr } = await adminDb
       .from("admin_accounts")
       .insert({
         id: authData.user.id,
@@ -104,7 +104,7 @@ export async function POST(request: NextRequest) {
 
     if (insertErr) {
       // Rollback auth user creation
-      await adminClient.auth.admin.deleteUser(authData.user.id);
+      await adminDb.auth.admin.deleteUser(authData.user.id);
       console.error("[admin/admins POST] insert error:", insertErr);
       return NextResponse.json({ error: "Failed to create admin record" }, { status: 500 });
     }
