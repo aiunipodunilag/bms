@@ -1,6 +1,9 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { useParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
-import { notFound } from "next/navigation";
 import Navbar from "@/components/layout/Navbar";
 import { Card } from "@/components/ui/Card";
 import Badge from "@/components/ui/Badge";
@@ -10,12 +13,33 @@ import { TIER_LABELS } from "@/lib/data/tiers";
 import { Users, Clock, CheckCircle, Info, ArrowRight, ChevronLeft } from "lucide-react";
 import type { UserTier } from "@/types";
 
-// Mock current user tier
-const currentUserTier: UserTier = "regular_student";
+export default function SpaceDetailPage() {
+  const params = useParams();
+  const slug = params.id as string;
+  const space = getSpaceBySlug(slug);
 
-export default function SpaceDetailPage({ params }: { params: { id: string } }) {
-  const space = getSpaceBySlug(params.id);
-  if (!space) notFound();
+  const [currentUserTier, setCurrentUserTier] = useState<UserTier>("regular_student");
+  const [userName, setUserName] = useState("");
+
+  useEffect(() => {
+    fetch("/api/users/me")
+      .then((r) => r.json())
+      .then(({ profile }) => {
+        if (profile) {
+          setUserName(profile.full_name ?? "");
+          setCurrentUserTier((profile.tier as UserTier) ?? "regular_student");
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  if (!space) {
+    return (
+      <div className="min-h-screen flex items-center justify-center text-gray-400">
+        Space not found.
+      </div>
+    );
+  }
 
   const canBook =
     space.whoCanBook.includes(currentUserTier) ||
@@ -32,7 +56,7 @@ export default function SpaceDetailPage({ params }: { params: { id: string } }) 
     <div className="min-h-screen bg-gray-50">
       <Navbar
         user={{
-          name: "Tolu Adeyemi",
+          name: userName,
           tier: currentUserTier,
           tierLabel: TIER_LABELS[currentUserTier],
         }}

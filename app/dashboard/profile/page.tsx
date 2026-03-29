@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import Navbar from "@/components/layout/Navbar";
 import { Card } from "@/components/ui/Card";
@@ -21,44 +21,89 @@ import {
 } from "lucide-react";
 import type { UserTier } from "@/types";
 
-const mockUser = {
-  id: "u-001",
-  fullName: "Tolu Adeyemi",
-  email: "tolu@student.unilag.edu.ng",
-  phone: "+234 801 234 5678",
-  tier: "regular_student" as UserTier,
-  status: "verified",
-  class: "internal",
-  matricNumber: "210404032",
-  totalBookings: 15,
-  completedBookings: 12,
-  noShowCount: 0,
-  joinedAt: "January 2025",
-};
+interface Profile {
+  id: string;
+  full_name: string;
+  email: string;
+  phone: string | null;
+  tier: UserTier;
+  status: string;
+  class: string;
+  matric_number: string | null;
+  total_bookings: number;
+  completed_bookings: number;
+  no_show_count: number;
+  created_at: string;
+}
 
 export default function ProfilePage() {
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
-  const [form, setForm] = useState({
-    fullName: mockUser.fullName,
-    phone: mockUser.phone,
-  });
+  const [form, setForm] = useState({ fullName: "", phone: "" });
   const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/users/me")
+      .then((r) => r.json())
+      .then(({ profile: p }) => {
+        if (p) {
+          setProfile(p);
+          setForm({ fullName: p.full_name ?? "", phone: p.phone ?? "" });
+        }
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
 
   const handleSave = async () => {
     setSaving(true);
-    // TODO: PUT /api/users/me with { fullName: form.fullName, phone: form.phone }
-    await new Promise((r) => setTimeout(r, 800));
+    try {
+      const res = await fetch("/api/users/me", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ fullName: form.fullName, phone: form.phone }),
+      });
+      const { profile: updated } = await res.json();
+      if (updated) {
+        setProfile(updated);
+        setForm({ fullName: updated.full_name ?? "", phone: updated.phone ?? "" });
+      }
+    } catch {
+      // silent
+    }
     setSaving(false);
     setEditing(false);
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <p className="text-gray-400 text-sm">Loading profile…</p>
+      </div>
+    );
+  }
+
+  if (!profile) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <p className="text-gray-400 text-sm">Could not load profile.</p>
+      </div>
+    );
+  }
+
+  const joinedAt = new Date(profile.created_at).toLocaleDateString("en-GB", {
+    month: "long",
+    year: "numeric",
+  });
 
   return (
     <div className="min-h-screen bg-gray-50">
       <Navbar
         user={{
-          name: mockUser.fullName,
-          tier: mockUser.tier,
-          tierLabel: TIER_LABELS[mockUser.tier],
+          name: profile.full_name,
+          tier: profile.tier,
+          tierLabel: TIER_LABELS[profile.tier],
         }}
       />
 
@@ -77,23 +122,23 @@ export default function ProfilePage() {
           <Card className="flex items-center gap-5">
             <div className="w-16 h-16 rounded-2xl bg-brand-100 flex items-center justify-center shrink-0">
               <span className="text-brand-700 text-2xl font-bold">
-                {mockUser.fullName.charAt(0)}
+                {profile.full_name?.charAt(0) ?? "?"}
               </span>
             </div>
             <div className="flex-1">
-              <h2 className="text-lg font-bold text-gray-900">{mockUser.fullName}</h2>
-              <p className="text-sm text-gray-500">{mockUser.email}</p>
+              <h2 className="text-lg font-bold text-gray-900">{profile.full_name}</h2>
+              <p className="text-sm text-gray-500">{profile.email}</p>
               <div className="flex items-center gap-2 mt-2">
                 <span
-                  className={`text-xs font-medium px-2.5 py-1 rounded-full ${TIER_COLORS[mockUser.tier]}`}
+                  className={`text-xs font-medium px-2.5 py-1 rounded-full ${TIER_COLORS[profile.tier]}`}
                 >
-                  {TIER_LABELS[mockUser.tier]}
+                  {TIER_LABELS[profile.tier]}
                 </span>
                 <Badge
-                  variant={mockUser.status === "verified" ? "success" : "warning"}
+                  variant={profile.status === "verified" || profile.status === "active" ? "success" : "warning"}
                   size="sm"
                 >
-                  {mockUser.status === "verified" ? (
+                  {profile.status === "verified" || profile.status === "active" ? (
                     <span className="flex items-center gap-1">
                       <ShieldCheck size={11} /> Verified
                     </span>
@@ -108,9 +153,9 @@ export default function ProfilePage() {
           {/* Stats */}
           <div className="grid grid-cols-3 gap-4">
             {[
-              { label: "Total Bookings", value: mockUser.totalBookings },
-              { label: "Completed", value: mockUser.completedBookings },
-              { label: "No-shows", value: mockUser.noShowCount },
+              { label: "Total Bookings", value: profile.total_bookings ?? 0 },
+              { label: "Completed", value: profile.completed_bookings ?? 0 },
+              { label: "No-shows", value: profile.no_show_count ?? 0 },
             ].map((s) => (
               <Card key={s.label} className="text-center">
                 <p className="text-2xl font-bold text-gray-900">{s.value}</p>
@@ -153,7 +198,7 @@ export default function ProfilePage() {
                       className="w-full px-3 py-2 rounded-xl border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
                     />
                   ) : (
-                    <p className="text-sm font-medium text-gray-800">{mockUser.fullName}</p>
+                    <p className="text-sm font-medium text-gray-800">{profile.full_name}</p>
                   )}
                 </div>
               </div>
@@ -163,7 +208,7 @@ export default function ProfilePage() {
                 <Mail size={16} className="text-gray-400 mt-1 shrink-0" />
                 <div>
                   <p className="text-xs text-gray-400 font-medium mb-1">Email Address</p>
-                  <p className="text-sm font-medium text-gray-800">{mockUser.email}</p>
+                  <p className="text-sm font-medium text-gray-800">{profile.email}</p>
                   <p className="text-xs text-gray-400 mt-0.5">Cannot be changed after signup</p>
                 </div>
               </div>
@@ -181,19 +226,21 @@ export default function ProfilePage() {
                       className="w-full px-3 py-2 rounded-xl border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
                     />
                   ) : (
-                    <p className="text-sm font-medium text-gray-800">{mockUser.phone}</p>
+                    <p className="text-sm font-medium text-gray-800">{profile.phone ?? "—"}</p>
                   )}
                 </div>
               </div>
 
               {/* Matric number — not editable */}
-              <div className="flex items-start gap-3">
-                <BookOpen size={16} className="text-gray-400 mt-1 shrink-0" />
-                <div>
-                  <p className="text-xs text-gray-400 font-medium mb-1">Matric Number</p>
-                  <p className="text-sm font-medium text-gray-800">{mockUser.matricNumber}</p>
+              {profile.matric_number && (
+                <div className="flex items-start gap-3">
+                  <BookOpen size={16} className="text-gray-400 mt-1 shrink-0" />
+                  <div>
+                    <p className="text-xs text-gray-400 font-medium mb-1">Matric Number</p>
+                    <p className="text-sm font-medium text-gray-800">{profile.matric_number}</p>
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
           </Card>
 
@@ -203,23 +250,28 @@ export default function ProfilePage() {
             <div className="space-y-3 text-sm">
               <div className="flex items-center justify-between py-2 border-b border-gray-100">
                 <span className="text-gray-500">Account type</span>
-                <span className="font-medium text-gray-800 capitalize">{mockUser.class}</span>
+                <span className="font-medium text-gray-800 capitalize">{profile.class ?? "—"}</span>
               </div>
               <div className="flex items-center justify-between py-2 border-b border-gray-100">
                 <span className="text-gray-500">Tier</span>
                 <span
-                  className={`text-xs font-medium px-2.5 py-1 rounded-full ${TIER_COLORS[mockUser.tier]}`}
+                  className={`text-xs font-medium px-2.5 py-1 rounded-full ${TIER_COLORS[profile.tier]}`}
                 >
-                  {TIER_LABELS[mockUser.tier]}
+                  {TIER_LABELS[profile.tier]}
                 </span>
               </div>
               <div className="flex items-center justify-between py-2 border-b border-gray-100">
                 <span className="text-gray-500">Member since</span>
-                <span className="font-medium text-gray-800">{mockUser.joinedAt}</span>
+                <span className="font-medium text-gray-800">{joinedAt}</span>
               </div>
               <div className="flex items-center justify-between py-2">
                 <span className="text-gray-500">Status</span>
-                <Badge variant="success" size="sm">Verified</Badge>
+                <Badge
+                  variant={profile.status === "verified" || profile.status === "active" ? "success" : "warning"}
+                  size="sm"
+                >
+                  {profile.status === "verified" || profile.status === "active" ? "Verified" : "Pending"}
+                </Badge>
               </div>
             </div>
           </Card>
