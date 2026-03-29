@@ -5,11 +5,10 @@ import AdminSidebar from "@/components/layout/AdminSidebar";
 import { Card } from "@/components/ui/Card";
 import Badge from "@/components/ui/Badge";
 import Button from "@/components/ui/Button";
+import Toggle from "@/components/ui/Toggle";
 import {
   Building2,
   Users,
-  ToggleLeft,
-  ToggleRight,
   Edit2,
   Image as ImageIcon,
   Save,
@@ -337,17 +336,11 @@ export default function AdminSpacesPage() {
                         </td>
                         <td className="px-4 py-3.5">
                           <div className="flex items-center gap-1.5">
-                            <button
-                              onClick={() => toggleStatus(space.id)}
-                              className={`p-1.5 rounded-lg transition-colors ${
-                                space.status === "active"
-                                  ? "text-green-600 hover:bg-green-50"
-                                  : "text-gray-400 hover:bg-gray-100"
-                              }`}
-                              title={space.status === "active" ? "Deactivate space" : "Activate space"}
-                            >
-                              {space.status === "active" ? <ToggleRight size={18} /> : <ToggleLeft size={18} />}
-                            </button>
+                            <Toggle
+                              checked={space.status === "active"}
+                              onChange={() => toggleStatus(space.id)}
+                              size="sm"
+                            />
                             <button
                               onClick={() => startEdit(space)}
                               className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"

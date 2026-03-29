@@ -1,16 +1,12 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Link from "next/link";
 import {
   ShieldCheck,
   UserPlus,
   X,
   Save,
-  ChevronLeft,
   Trash2,
-  ToggleLeft,
-  ToggleRight,
   Building2,
   ChevronDown,
   Eye,
@@ -19,6 +15,7 @@ import {
 import { Card } from "@/components/ui/Card";
 import Badge from "@/components/ui/Badge";
 import Button from "@/components/ui/Button";
+import Toggle from "@/components/ui/Toggle";
 import AdminSidebar from "@/components/layout/AdminSidebar";
 import type { AdminRole } from "@/types";
 import { SPACES } from "@/lib/data/spaces";
@@ -363,18 +360,12 @@ export default function SuperAdminAdminsPage() {
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-1">
-                          <button
-                            onClick={() => toggleStatus(admin)}
+                          <Toggle
+                            checked={admin.status === "active"}
+                            onChange={() => toggleStatus(admin)}
                             disabled={actionLoading === admin.id + "toggle"}
-                            className={`p-1.5 rounded-lg transition-colors ${
-                              admin.status === "active"
-                                ? "text-green-600 hover:bg-green-50"
-                                : "text-gray-600 hover:bg-gray-100"
-                            }`}
-                            title={admin.status === "active" ? "Suspend" : "Reactivate"}
-                          >
-                            {admin.status === "active" ? <ToggleRight size={16} /> : <ToggleLeft size={16} />}
-                          </button>
+                            size="sm"
+                          />
                           <button
                             onClick={() => removeAdmin(admin.id)}
                             disabled={actionLoading === admin.id + "delete"}
