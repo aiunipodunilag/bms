@@ -52,60 +52,67 @@ export default function AdminLoginPage() {
     }
 
     setLoading(true);
+    console.log("[admin-login] step 1: attempting signInWithPassword for", email.trim().toLowerCase());
 
     try {
       const supabase = createClient();
 
-      // Sign in with Supabase Auth
       const { data: authData, error: authErr } = await supabase.auth.signInWithPassword({
         email: email.trim().toLowerCase(),
         password,
       });
 
+      console.log("[admin-login] step 2: auth result", { user: authData?.user?.id, error: authErr?.message });
+
       if (authErr || !authData.user) {
-        setError(
-          authErr?.message === "Invalid login credentials"
-            ? "Incorrect email or password."
-            : authErr?.message ?? "Login failed"
-        );
+        const msg = authErr?.message === "Invalid login credentials"
+          ? "Incorrect email or password."
+          : (authErr?.message ?? "Login failed \u2014 no user returned");
+        console.error("[admin-login] auth failed:", msg);
+        setError(msg);
         setLoading(false);
         return;
       }
 
-      // Check if user has an admin account
+      console.log("[admin-login] step 3: querying admin_accounts for user", authData.user.id);
       const { data: adminAccount, error: adminErr } = await supabase
         .from("admin_accounts")
         .select("role, status")
         .eq("id", authData.user.id)
         .single();
 
+      console.log("[admin-login] step 4: admin_accounts result", { adminAccount, error: adminErr?.message, code: adminErr?.code });
+
       if (adminErr || !adminAccount) {
         await supabase.auth.signOut();
-        setError("Access denied. This portal is for authorised UNIPOD staff only.");
+        const msg = `Access denied \u2014 no admin record found. (DB error: ${adminErr?.message ?? "no row"})`;
+        console.error("[admin-login]", msg);
+        setError("Access denied. No admin account found for this email. Check the DB.");
         setLoading(false);
         return;
       }
 
       if (adminAccount.status !== "active") {
         await supabase.auth.signOut();
-        setError("Your admin account has been suspended. Contact a super admin.");
+        const msg = `Account status is "${adminAccount.status}", not active.`;
+        console.error("[admin-login]", msg);
+        setError(`Account not active (status: ${adminAccount.status}). Contact a super admin.`);
         setLoading(false);
         return;
       }
 
-      // Update last login time (fire and forget)
+      console.log("[admin-login] step 5: success! role =", adminAccount.role, "\u2192 redirecting to", ROLE_REDIRECTS[adminAccount.role as AdminRole]);
+
       supabase
         .from("admin_accounts")
         .update({ last_login_at: new Date().toISOString() })
         .eq("id", authData.user.id)
         .then(() => {});
 
-      // Full page reload so the browser sends fresh session cookies
-      // to the middleware \u2014 router.push() misses them on first navigation
       window.location.href = ROLE_REDIRECTS[adminAccount.role as AdminRole];
     } catch (err) {
-      console.error("[admin-login]", err);
-      setError("Something went wrong. Check your connection and try again.");
+      console.error("[admin-login] unexpected exception:", err);
+      setError(`Unexpected error: ${err instanceof Error ? err.message : String(err)}`);
       setLoading(false);
     }
   };
@@ -163,9 +170,9 @@ export default function AdminLoginPage() {
 
             {/* Error */}
             {error && (
-              <div className="flex items-center gap-2 bg-red-900/30 border border-red-800 rounded-xl px-3 py-2.5">
-                <AlertCircle size={14} className="text-red-400 shrink-0" />
-                <p className="text-xs text-red-300">{error}</p>
+              <div className="flex items-start gap-2 bg-red-500/20 border-2 border-red-500 rounded-xl px-3 py-3">
+                <AlertCircle size={16} className="text-red-400 shrink-0 mt-0.5" />
+                <p className="text-sm text-red-200 font-medium">{error}</p>
               </div>
             )}
 
