@@ -131,10 +131,12 @@ export default function AdminLoginPage() {
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* Email */}
             <div>
-              <label className="text-xs text-gray-400 font-medium mb-1.5 block">Admin email</label>
+              <label htmlFor="admin-email" className="text-xs text-gray-400 font-medium mb-1.5 block">Admin email</label>
               <div className="relative">
                 <Mail size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
                 <input
+                  id="admin-email"
+                  name="email"
                   type="email"
                   autoComplete="email"
                   placeholder="admin@unipod.unilag.edu.ng"
@@ -147,10 +149,12 @@ export default function AdminLoginPage() {
 
             {/* Password */}
             <div>
-              <label className="text-xs text-gray-400 font-medium mb-1.5 block">Password</label>
+              <label htmlFor="admin-password" className="text-xs text-gray-400 font-medium mb-1.5 block">Password</label>
               <div className="relative">
                 <Lock size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
                 <input
+                  id="admin-password"
+                  name="password"
                   type={showPw ? "text" : "password"}
                   autoComplete="current-password"
                   placeholder="\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022"
