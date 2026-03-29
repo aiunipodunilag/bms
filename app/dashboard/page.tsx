@@ -7,6 +7,7 @@ import Button from "@/components/ui/Button";
 import { TIER_LABELS, TIER_COLORS, BOOKING_RULES, TIER_RULES } from "@/lib/data/tiers";
 import { formatDate, formatTime, formatCurrency } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import {
   CalendarDays,
   Clock,
@@ -36,15 +37,17 @@ export default async function DashboardPage() {
 
   if (!user) redirect("/auth/login");
 
+  // Use service-role client to bypass RLS for all DB queries
+  const adminDb = createAdminClient();
+
   // Fetch profile
-  const { data: profile } = await supabase
+  const { data: profile } = await adminDb
     .from("profiles")
     .select("*")
     .eq("id", user.id)
     .single();
 
   // No profile row — user created an auth account but signup didn't finish.
-  // Sign them out at the page level; they'll land on login cleanly.
   if (!profile) redirect("/auth/signout");
 
   const tier = profile.tier as UserTier;
@@ -59,7 +62,7 @@ export default async function DashboardPage() {
   const today = new Date().toISOString().split("T")[0];
 
   // Fetch active booking (confirmed or pending, today or future)
-  const { data: activeBookings } = await supabase
+  const { data: activeBookings } = await adminDb
     .from("bookings")
     .select("*")
     .eq("user_id", user.id)
@@ -72,7 +75,7 @@ export default async function DashboardPage() {
   const activeBooking = activeBookings?.[0] ?? null;
 
   // Fetch recent past bookings
-  const { data: pastBookings } = await supabase
+  const { data: pastBookings } = await adminDb
     .from("bookings")
     .select("*")
     .eq("user_id", user.id)
