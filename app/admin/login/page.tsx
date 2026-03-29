@@ -14,6 +14,7 @@ const ROLE_REDIRECTS: Record<AdminRole, string> = {
   space_lead:   "/admin/space-lead",
 };
 
+
 const ROLE_LABELS: Record<AdminRole, string> = {
   super_admin:  "Super Admin",
   admin:        "Admin",
