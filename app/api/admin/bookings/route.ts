@@ -9,9 +9,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
  */
 export async function GET(request: NextRequest) {
   const supabase = createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorised" }, { status: 401 });
 
   const adminDb = createAdminClient();
@@ -29,6 +27,21 @@ export async function GET(request: NextRequest) {
   const statusFilter = searchParams.get("status");
   const dateFilter = searchParams.get("date");
   const spaceFilter = searchParams.get("spaceId");
+  const codeFilter = searchParams.get("code");
+
+  // Support lookup by BMS code (for check-in)
+  if (codeFilter) {
+    const { data: booking, error } = await adminDb
+      .from("bookings")
+      .select("*, profiles:user_id(full_name, email, tier, matric_number, phone)")
+      .eq("bms_code", codeFilter.trim().toUpperCase())
+      .single();
+
+    if (error || !booking) {
+      return NextResponse.json({ error: "Booking not found" }, { status: 404 });
+    }
+    return NextResponse.json({ booking });
+  }
 
   let query = adminDb
     .from("bookings")
@@ -40,10 +53,34 @@ export async function GET(request: NextRequest) {
   if (dateFilter) query = query.eq("date", dateFilter);
   if (spaceFilter) query = query.eq("space_id", spaceFilter);
 
-  const { data, error } = await query;
+  const { data: bookings, error } = await query;
   if (error) {
     return NextResponse.json({ error: "Failed to fetch bookings" }, { status: 500 });
   }
 
-  return NextResponse.json({ bookings: data });
+  if (!bookings || bookings.length === 0) {
+    return NextResponse.json({ bookings: [] });
+  }
+
+  // Fill in missing emails from auth for older profiles
+  const missingEmailUserIds = bookings
+    .filter((b) => b.profiles && !b.profiles.email)
+    .map((b) => b.user_id);
+
+  let authEmailMap: Record<string, string> = {};
+  if (missingEmailUserIds.length > 0) {
+    const { data: { users: authUsers } } = await adminDb.auth.admin.listUsers({ perPage: 1000 });
+    for (const au of authUsers ?? []) {
+      if (au.email) authEmailMap[au.id] = au.email;
+    }
+  }
+
+  const enriched = bookings.map((b) => ({
+    ...b,
+    profiles: b.profiles
+      ? { ...b.profiles, email: b.profiles.email ?? authEmailMap[b.user_id] ?? "" }
+      : null,
+  }));
+
+  return NextResponse.json({ bookings: enriched });
 }

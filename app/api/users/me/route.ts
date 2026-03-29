@@ -4,7 +4,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 
 /**
  * GET /api/users/me
- * Returns the current user's profile.
+ * Returns the current user's profile, including their auth email.
  */
 export async function GET() {
   const supabase = createClient();
@@ -25,7 +25,8 @@ export async function GET() {
     return NextResponse.json({ error: "Profile not found" }, { status: 404 });
   }
 
-  return NextResponse.json({ profile });
+  // Always return auth email (reliable even if not yet in profiles table)
+  return NextResponse.json({ profile: { ...profile, email: profile.email ?? user.email } });
 }
 
 /**
@@ -46,7 +47,7 @@ export async function PATCH(request: NextRequest) {
 
     const updates: Record<string, string> = {};
     if (fullName) updates.full_name = fullName;
-    if (phone) updates.phone = phone;
+    if (phone !== undefined) updates.phone = phone;
 
     if (Object.keys(updates).length === 0) {
       return NextResponse.json({ error: "No fields to update" }, { status: 400 });
@@ -65,7 +66,7 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: "Failed to update profile" }, { status: 500 });
     }
 
-    return NextResponse.json({ profile: data });
+    return NextResponse.json({ profile: { ...data, email: data.email ?? user.email } });
   } catch (err) {
     console.error("[users/me PATCH] unexpected error:", err);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
