@@ -49,13 +49,14 @@ interface PendingUser {
   created_at: string;
 }
 
-// Fixed chart data — real analytics would need a separate endpoint with daily aggregation
-const weeklyPlaceholder = [
+const EMPTY_WEEK = [
   { day: "Mon", bookings: 0, noShows: 0 },
   { day: "Tue", bookings: 0, noShows: 0 },
   { day: "Wed", bookings: 0, noShows: 0 },
   { day: "Thu", bookings: 0, noShows: 0 },
   { day: "Fri", bookings: 0, noShows: 0 },
+  { day: "Sat", bookings: 0, noShows: 0 },
+  { day: "Sun", bookings: 0, noShows: 0 },
 ];
 
 export default function AdminDashboard() {
@@ -63,6 +64,7 @@ export default function AdminDashboard() {
   const [stats, setStats] = useState<Stats | null>(null);
   const [pendingApprovals, setPendingApprovals] = useState<PendingBooking[]>([]);
   const [pendingVerifications, setPendingVerifications] = useState<PendingUser[]>([]);
+  const [weeklyData, setWeeklyData] = useState(EMPTY_WEEK);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
 
@@ -71,24 +73,27 @@ export default function AdminDashboard() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { router.push("/admin/login"); return; }
 
-    const [statsRes, bookingsRes, usersRes] = await Promise.all([
+    const [statsRes, bookingsRes, usersRes, weeklyRes] = await Promise.all([
       fetch("/api/admin/stats"),
       fetch("/api/admin/bookings?status=pending"),
       fetch("/api/admin/users?status=pending"),
+      fetch("/api/admin/stats/weekly"),
     ]);
 
     if (statsRes.status === 401) { router.push("/admin/login"); return; }
     if (!statsRes.ok) { setLoading(false); return; }
 
-    const [statsData, bookingsData, usersData] = await Promise.all([
+    const [statsData, bookingsData, usersData, weeklyRaw] = await Promise.all([
       statsRes.json(),
       bookingsRes.json(),
       usersRes.json(),
+      weeklyRes.ok ? weeklyRes.json() : { weekly: null },
     ]);
 
     setStats(statsData.stats);
     setPendingApprovals(bookingsData.bookings ?? []);
     setPendingVerifications(usersData.users ?? []);
+    if (weeklyRaw.weekly) setWeeklyData(weeklyRaw.weekly);
     setLoading(false);
   }, [router]);
 
@@ -214,18 +219,15 @@ export default function AdminDashboard() {
                 <Badge variant="neutral" size="sm">This Week</Badge>
               </div>
               <ResponsiveContainer width="100%" height={200}>
-                <BarChart data={weeklyPlaceholder} barSize={24}>
+                <BarChart data={weeklyData} barSize={24}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                   <XAxis dataKey="day" tick={{ fontSize: 12 }} axisLine={false} tickLine={false} />
-                  <YAxis tick={{ fontSize: 12 }} axisLine={false} tickLine={false} />
+                  <YAxis allowDecimals={false} tick={{ fontSize: 12 }} axisLine={false} tickLine={false} />
                   <Tooltip contentStyle={{ borderRadius: "12px", border: "1px solid #e5e7eb", fontSize: 12 }} />
-                  <Bar dataKey="bookings" fill="#4f5fff" radius={[4, 4, 0, 0]} />
-                  <Bar dataKey="noShows" fill="#fca5a5" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="bookings" name="Bookings" fill="#4f5fff" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="noShows" name="No-shows" fill="#fca5a5" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
-              <p className="text-xs text-center text-gray-400 mt-2">
-                Real-time chart data requires a daily aggregation endpoint.
-              </p>
             </Card>
 
             {/* Quick stats */}

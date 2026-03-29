@@ -121,6 +121,7 @@ export default function SignupPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         userId: authData.user.id,
+        email: internalForm.email.trim().toLowerCase(),
         fullName: internalForm.fullName,
         phone: internalForm.phone,
         userClass: "internal",
@@ -180,6 +181,7 @@ export default function SignupPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         userId: authData.user.id,
+        email: externalForm.email.trim().toLowerCase(),
         fullName: externalForm.fullName,
         phone: externalForm.phone,
         userClass: "external",

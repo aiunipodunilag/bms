@@ -12,6 +12,7 @@ create extension if not exists "pgcrypto";
 create table if not exists public.profiles (
   id                          uuid references auth.users(id) on delete cascade primary key,
   full_name                   text not null,
+  email                       text,                -- copied from auth.users for easy admin queries
   phone                       text,
   class                       text not null check (class in ('internal', 'external')),
   tier                        text not null default 'regular_student'
@@ -369,6 +370,11 @@ create policy "Admins can manage space overrides"
   using (
     exists (select 1 from public.admin_accounts where id = auth.uid() and role in ('admin','super_admin') and status = 'active')
   );
+
+-- ============================================================================
+-- Migration: add email column to profiles (run this if profiles table already exists)
+-- alter table public.profiles add column if not exists email text;
+-- ============================================================================
 
 -- ============================================================================
 -- Indexes

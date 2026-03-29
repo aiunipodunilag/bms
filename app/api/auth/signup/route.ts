@@ -12,6 +12,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const {
       userId,
+      email,
       fullName,
       phone,
       userClass,
@@ -42,6 +43,7 @@ export async function POST(request: NextRequest) {
       .insert({
         id: userId,
         full_name: fullName,
+        email: email ?? null,
         phone: phone ?? null,
         class: userClass,
         tier: tier ?? (userClass === "external" ? "external" : "regular_student"),
