@@ -19,6 +19,7 @@ import {
 import { Card } from "@/components/ui/Card";
 import Badge from "@/components/ui/Badge";
 import Button from "@/components/ui/Button";
+import AdminSidebar from "@/components/layout/AdminSidebar";
 import type { AdminRole } from "@/types";
 import { SPACES } from "@/lib/data/spaces";
 
@@ -154,20 +155,17 @@ export default function SuperAdminAdminsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-950">
-      <header className="bg-gray-900 border-b border-gray-800 px-6 py-4 flex items-center gap-4">
-        <Link href="/superadmin" className="text-gray-400 hover:text-white transition-colors">
-          <ChevronLeft size={18} />
-        </Link>
-        <div>
-          <p className="text-sm font-bold text-white">Manage Admin Accounts</p>
-          <p className="text-xs text-gray-500">Create and manage all staff access</p>
-        </div>
-      </header>
+    <div className="flex min-h-screen bg-gray-50">
+      <AdminSidebar />
 
-      <main className="max-w-5xl mx-auto px-6 py-8 space-y-6">
+      <div className="flex-1 overflow-auto">
+        <main className="max-w-5xl mx-auto px-6 py-8 space-y-6">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">Manage Admin Accounts</h1>
+            <p className="text-sm text-gray-500 mt-0.5">Create and manage all staff access</p>
+          </div>
         <div className="flex items-center justify-between">
-          <p className="text-sm text-gray-400">
+          <p className="text-sm text-gray-500">
             {admins.filter((a) => a.status === "active").length} active ·{" "}
             {admins.filter((a) => a.status !== "active").length} suspended
           </p>
@@ -178,22 +176,22 @@ export default function SuperAdminAdminsPage() {
 
         {/* Create form */}
         {showForm && (
-          <Card className="bg-gray-900 border-brand-700/40">
+          <Card className="bg-white border-violet-200">
             <div className="flex items-center justify-between mb-5">
-              <h2 className="font-semibold text-white flex items-center gap-2">
-                <UserPlus size={15} className="text-brand-400" /> New Admin Account
+              <h2 className="font-semibold text-gray-900 flex items-center gap-2">
+                <UserPlus size={15} className="text-violet-600" /> New Admin Account
               </h2>
-              <button onClick={() => setShowForm(false)} className="text-gray-500 hover:text-white">
+              <button onClick={() => setShowForm(false)} className="text-gray-500 hover:text-gray-900">
                 <X size={16} />
               </button>
             </div>
 
             {success ? (
               <div className="text-center py-6">
-                <div className="w-12 h-12 rounded-full bg-green-900/50 flex items-center justify-center mx-auto mb-3">
-                  <ShieldCheck size={24} className="text-green-400" />
+                <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-3">
+                  <ShieldCheck size={24} className="text-green-600" />
                 </div>
-                <p className="text-green-400 font-semibold">Admin account created</p>
+                <p className="text-green-600 font-semibold">Admin account created</p>
                 <p className="text-gray-500 text-sm mt-1">Login credentials sent to their email.</p>
               </div>
             ) : (
@@ -206,9 +204,9 @@ export default function SuperAdminAdminsPage() {
                       value={form.fullName}
                       onChange={(e) => setForm({ ...form, fullName: e.target.value })}
                       placeholder="e.g. Amaka Eze"
-                      className="w-full bg-gray-800 border border-gray-700 text-white text-sm rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-brand-500"
+                      className="w-full bg-white border border-gray-300 text-gray-900 text-sm rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-violet-500"
                     />
-                    {formErrors.fullName && <p className="text-xs text-red-400 mt-1">{formErrors.fullName}</p>}
+                    {formErrors.fullName && <p className="text-xs text-red-500 mt-1">{formErrors.fullName}</p>}
                   </div>
                   <div>
                     <label className="text-xs text-gray-400 font-medium mb-1.5 block">Email</label>
@@ -217,9 +215,9 @@ export default function SuperAdminAdminsPage() {
                       value={form.email}
                       onChange={(e) => setForm({ ...form, email: e.target.value })}
                       placeholder="amaka@unipod.ng"
-                      className="w-full bg-gray-800 border border-gray-700 text-white text-sm rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-brand-500"
+                      className="w-full bg-white border border-gray-300 text-gray-900 text-sm rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-violet-500"
                     />
-                    {formErrors.email && <p className="text-xs text-red-400 mt-1">{formErrors.email}</p>}
+                    {formErrors.email && <p className="text-xs text-red-500 mt-1">{formErrors.email}</p>}
                   </div>
                   <div>
                     <label className="text-xs text-gray-400 font-medium mb-1.5 block">Phone number</label>
@@ -228,9 +226,9 @@ export default function SuperAdminAdminsPage() {
                       value={form.phone}
                       onChange={(e) => setForm({ ...form, phone: e.target.value })}
                       placeholder="080XXXXXXXX"
-                      className="w-full bg-gray-800 border border-gray-700 text-white text-sm rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-brand-500"
+                      className="w-full bg-white border border-gray-300 text-gray-900 text-sm rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-violet-500"
                     />
-                    {formErrors.phone && <p className="text-xs text-red-400 mt-1">{formErrors.phone}</p>}
+                    {formErrors.phone && <p className="text-xs text-red-500 mt-1">{formErrors.phone}</p>}
                   </div>
                   <div>
                     <label className="text-xs text-gray-400 font-medium mb-1.5 block">Role</label>
@@ -238,7 +236,7 @@ export default function SuperAdminAdminsPage() {
                       <select
                         value={form.role}
                         onChange={(e) => setForm({ ...form, role: e.target.value as AdminRole, assignedSpaceId: "" })}
-                        className="w-full appearance-none bg-gray-800 border border-gray-700 text-white text-sm rounded-xl px-3 py-2.5 pr-8 focus:outline-none focus:ring-2 focus:ring-brand-500"
+                        className="w-full appearance-none bg-white border border-gray-300 text-gray-900 text-sm rounded-xl px-3 py-2.5 pr-8 focus:outline-none focus:ring-2 focus:ring-violet-500"
                       >
                         {ROLE_OPTIONS.map((r) => (
                           <option key={r.value} value={r.value}>{r.label}</option>
@@ -264,8 +262,8 @@ export default function SuperAdminAdminsPage() {
                             onClick={() => setForm({ ...form, assignedSpaceId: space.id })}
                             className={`text-left px-3 py-2 rounded-xl border text-xs transition-all ${
                               form.assignedSpaceId === space.id
-                                ? "border-brand-500 bg-brand-900/30 text-brand-300"
-                                : "border-gray-700 text-gray-400 hover:border-gray-600"
+                                ? "border-violet-500 bg-violet-50 text-violet-700"
+                                : "border-gray-200 text-gray-600 hover:border-gray-400"
                             }`}
                           >
                             {space.name}
@@ -273,7 +271,7 @@ export default function SuperAdminAdminsPage() {
                         ))}
                       </div>
                       {formErrors.assignedSpaceId && (
-                        <p className="text-xs text-red-400 mt-1">{formErrors.assignedSpaceId}</p>
+                        <p className="text-xs text-red-500 mt-1">{formErrors.assignedSpaceId}</p>
                       )}
                     </div>
                   )}
@@ -286,13 +284,13 @@ export default function SuperAdminAdminsPage() {
                         value={form.tempPassword}
                         onChange={(e) => setForm({ ...form, tempPassword: e.target.value })}
                         placeholder="Min. 8 characters"
-                        className="w-full bg-gray-800 border border-gray-700 text-white text-sm rounded-xl px-3 py-2.5 pr-9 focus:outline-none focus:ring-2 focus:ring-brand-500"
+                        className="w-full bg-white border border-gray-300 text-gray-900 text-sm rounded-xl px-3 py-2.5 pr-9 focus:outline-none focus:ring-2 focus:ring-violet-500"
                       />
                       <button type="button" onClick={() => setShowPw(!showPw)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500">
                         {showPw ? <EyeOff size={14} /> : <Eye size={14} />}
                       </button>
                     </div>
-                    {formErrors.tempPassword && <p className="text-xs text-red-400 mt-1">{formErrors.tempPassword}</p>}
+                    {formErrors.tempPassword && <p className="text-xs text-red-500 mt-1">{formErrors.tempPassword}</p>}
                   </div>
                   <div>
                     <label className="text-xs text-gray-400 font-medium mb-1.5 block">Confirm password</label>
@@ -301,9 +299,9 @@ export default function SuperAdminAdminsPage() {
                       value={form.confirmPassword}
                       onChange={(e) => setForm({ ...form, confirmPassword: e.target.value })}
                       placeholder="Repeat password"
-                      className="w-full bg-gray-800 border border-gray-700 text-white text-sm rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-brand-500"
+                      className="w-full bg-white border border-gray-300 text-gray-900 text-sm rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-violet-500"
                     />
-                    {formErrors.confirmPassword && <p className="text-xs text-red-400 mt-1">{formErrors.confirmPassword}</p>}
+                    {formErrors.confirmPassword && <p className="text-xs text-red-500 mt-1">{formErrors.confirmPassword}</p>}
                   </div>
                 </div>
 
@@ -321,7 +319,7 @@ export default function SuperAdminAdminsPage() {
         )}
 
         {/* Admins table */}
-        <Card className="bg-gray-900 border-gray-800" padding="none">
+        <Card className="bg-white border-gray-200" padding="none">
           {loadingAdmins ? (
             <div className="text-center py-12 text-gray-500 text-sm">Loading admins…</div>
           ) : (
@@ -336,20 +334,20 @@ export default function SuperAdminAdminsPage() {
                   <th className="px-4 py-3" />
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-800">
+              <tbody className="divide-y divide-gray-100">
                 {admins.map((admin) => {
                   const rc = ROLE_CONFIG[admin.role] ?? { label: admin.role, variant: "neutral" as const };
                   return (
-                    <tr key={admin.id} className="hover:bg-gray-800/40 transition-colors">
+                    <tr key={admin.id} className="hover:bg-gray-100/40 transition-colors">
                       <td className="px-5 py-3">
-                        <p className="text-sm text-white font-medium">{admin.full_name}</p>
+                        <p className="text-sm text-gray-900 font-medium">{admin.full_name}</p>
                         <p className="text-xs text-gray-500">{admin.email}</p>
                       </td>
                       <td className="px-4 py-3">
                         <Badge variant={rc.variant} size="sm">{rc.label}</Badge>
                       </td>
                       <td className="px-4 py-3 hidden md:table-cell">
-                        <span className="text-xs text-gray-400">{admin.assigned_space_name ?? "—"}</span>
+                        <span className="text-xs text-gray-500">{admin.assigned_space_name ?? "—"}</span>
                       </td>
                       <td className="px-4 py-3">
                         <Badge variant={admin.status === "active" ? "success" : "danger"} size="sm">
@@ -370,8 +368,8 @@ export default function SuperAdminAdminsPage() {
                             disabled={actionLoading === admin.id + "toggle"}
                             className={`p-1.5 rounded-lg transition-colors ${
                               admin.status === "active"
-                                ? "text-green-500 hover:bg-green-900/30"
-                                : "text-gray-600 hover:bg-gray-800"
+                                ? "text-green-600 hover:bg-green-50"
+                                : "text-gray-600 hover:bg-gray-100"
                             }`}
                             title={admin.status === "active" ? "Suspend" : "Reactivate"}
                           >
@@ -380,7 +378,7 @@ export default function SuperAdminAdminsPage() {
                           <button
                             onClick={() => removeAdmin(admin.id)}
                             disabled={actionLoading === admin.id + "delete"}
-                            className="p-1.5 rounded-lg text-red-600 hover:bg-red-900/30 transition-colors"
+                            className="p-1.5 rounded-lg text-red-500 hover:bg-red-50 transition-colors"
                             title="Remove admin"
                           >
                             <Trash2 size={13} />
@@ -394,7 +392,8 @@ export default function SuperAdminAdminsPage() {
             </table>
           )}
         </Card>
-      </main>
+        </main>
+      </div>
     </div>
   );
 }

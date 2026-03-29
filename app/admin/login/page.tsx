@@ -103,20 +103,20 @@ export default function AdminLoginPage() {
 
   
   return (
-    <div className="min-h-screen bg-gray-950 flex items-center justify-center px-4">
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
       <div className="w-full max-w-sm">
         {/* Logo / brand */}
         <div className="text-center mb-8">
-          <h1 className="text-xl font-bold text-white">UNIPOD Admin Portal</h1>
-          <p className="text-sm text-gray-400 mt-1">Sign in with your admin credentials</p>
+          <h1 className="text-xl font-bold text-gray-900">UNIPOD Admin Portal</h1>
+          <p className="text-sm text-gray-500 mt-1">Sign in with your admin credentials</p>
         </div>
 
         {/* Card */}
-        <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6 shadow-2xl">
+        <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* Email */}
             <div>
-              <label htmlFor="admin-email" className="text-xs text-gray-400 font-medium mb-1.5 block">Admin email</label>
+              <label htmlFor="admin-email" className="text-xs text-gray-600 font-medium mb-1.5 block">Admin email</label>
               <div className="relative">
                 <Mail size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
                 <input
@@ -127,14 +127,14 @@ export default function AdminLoginPage() {
                   placeholder="admin@unipod.unilag.edu.ng"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full bg-gray-800 border border-gray-700 text-white placeholder-gray-600 text-sm rounded-xl pl-9 pr-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
+                  className="w-full bg-white border border-gray-300 text-gray-900 placeholder-gray-400 text-sm rounded-xl pl-9 pr-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent"
                 />
               </div>
             </div>
 
             {/* Password */}
             <div>
-              <label htmlFor="admin-password" className="text-xs text-gray-400 font-medium mb-1.5 block">Password</label>
+              <label htmlFor="admin-password" className="text-xs text-gray-600 font-medium mb-1.5 block">Password</label>
               <div className="relative">
                 <Lock size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
                 <input
@@ -145,12 +145,12 @@ export default function AdminLoginPage() {
                   placeholder="\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full bg-gray-800 border border-gray-700 text-white placeholder-gray-600 text-sm rounded-xl pl-9 pr-10 py-2.5 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
+                  className="w-full bg-white border border-gray-300 text-gray-900 placeholder-gray-400 text-sm rounded-xl pl-9 pr-10 py-2.5 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPw(!showPw)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300 transition-colors"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700 transition-colors"
                 >
                   {showPw ? <EyeOff size={15} /> : <Eye size={15} />}
                 </button>
@@ -170,25 +170,25 @@ export default function AdminLoginPage() {
             </Button>
           </form>
 
-          <p className="text-center text-xs text-gray-600 mt-5">
+          <p className="text-center text-xs text-gray-500 mt-5">
             This portal is for authorised UNIPOD staff only.
             <br />
             Not an admin?{" "}
-            <a href="/auth/login" className="text-brand-400 hover:underline">
+            <a href="/auth/login" className="text-violet-600 hover:underline">
               Go to member login
             </a>
           </p>
         </div>
 
         {/* Role hint */}
-        <div className="mt-5 bg-gray-900/50 border border-gray-800 rounded-2xl px-4 py-3">
+        <div className="mt-5 bg-gray-50 border border-gray-200 rounded-2xl px-4 py-3">
           <p className="text-xs text-gray-500 font-medium mb-2">Role-based access</p>
           <div className="space-y-1">
             {(Object.entries(ROLE_LABELS) as [AdminRole, string][]).map(([role, label]) => (
               <div key={role} className="flex items-center gap-2">
                 <span className="w-1.5 h-1.5 rounded-full bg-brand-500 shrink-0" />
                 <span className="text-xs text-gray-500">
-                  <span className="text-gray-300">{label}</span>
+                  <span className="text-gray-700">{label}</span>
                   {" \u2192 "}
                   {ROLE_REDIRECTS[role]}
                 </span>

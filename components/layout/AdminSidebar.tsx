@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import {
   LayoutDashboard,
@@ -19,6 +19,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { useEffect, useState } from "react";
+import { createClient } from "@/lib/supabase/client";
 
 // Full admin nav — shown to super_admin and admin
 const ADMIN_LINKS: NavLink[] = [
@@ -59,13 +60,23 @@ interface NavLink {
 }
 
 interface Props {
-  // TODO: Replace with real role from session/auth context
   role?: AdminRole;
 }
 
-export default function AdminSidebar({ role = "admin" }: Props) {
+export default function AdminSidebar({ role: roleProp }: Props) {
   const pathname = usePathname();
+  const router = useRouter();
+  const [role, setRole] = useState<AdminRole>(roleProp ?? "admin");
   const [pendingCounts, setPendingCounts] = useState<Record<string, number>>({});
+  const [signingOut, setSigningOut] = useState(false);
+
+  // Fetch actual role from session so nav links are always correct
+  useEffect(() => {
+    fetch("/api/admin/me")
+      .then((r) => r.ok ? r.json() : null)
+      .then((data) => { if (data?.role) setRole(data.role as AdminRole); })
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     if (role === "admin" || role === "super_admin") {
@@ -83,6 +94,13 @@ export default function AdminSidebar({ role = "admin" }: Props) {
     }
   }, [role]);
 
+  const handleSignOut = async () => {
+    setSigningOut(true);
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    router.push("/admin/login");
+  };
+
   const links =
     role === "super_admin"  ? SUPER_ADMIN_LINKS :
     role === "receptionist" ? RECEPTIONIST_LINKS :
@@ -97,12 +115,15 @@ export default function AdminSidebar({ role = "admin" }: Props) {
   };
 
   return (
-    <aside className="w-60 min-h-screen bg-gray-950 flex flex-col shrink-0">
+    <aside className="w-60 min-h-screen bg-white border-r border-gray-200 flex flex-col shrink-0">
       {/* Logo */}
-      <div className="px-5 py-5 border-b border-gray-800">
+      <div className="px-5 py-5 border-b border-gray-200">
         <Link href={role === "super_admin" ? "/superadmin" : "/admin"} className="flex items-center gap-2.5">
+          <div className="w-7 h-7 rounded-lg bg-violet-600 flex items-center justify-center">
+            <span className="text-white font-bold text-xs">U</span>
+          </div>
           <div>
-            <p className="text-white font-semibold text-sm">AI-UNIPOD</p>
+            <p className="text-gray-900 font-semibold text-sm">AI-UNIPOD</p>
             <p className="text-gray-400 text-xs">{roleLabel[role]}</p>
           </div>
         </Link>
@@ -119,8 +140,8 @@ export default function AdminSidebar({ role = "admin" }: Props) {
               className={cn(
                 "flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors",
                 active
-                  ? "bg-brand-600 text-white"
-                  : "text-gray-400 hover:text-white hover:bg-gray-800"
+                  ? "bg-violet-600 text-white"
+                  : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
               )}
             >
               <div className="flex items-center gap-3">
@@ -140,14 +161,15 @@ export default function AdminSidebar({ role = "admin" }: Props) {
       </nav>
 
       {/* Footer */}
-      <div className="px-3 pb-5 border-t border-gray-800 pt-4">
-        <Link
-          href="/admin/login"
-          className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-gray-400 hover:text-white hover:bg-gray-800 transition-colors"
+      <div className="px-3 pb-5 border-t border-gray-200 pt-4">
+        <button
+          onClick={handleSignOut}
+          disabled={signingOut}
+          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-gray-500 hover:text-gray-900 hover:bg-gray-100 transition-colors disabled:opacity-50"
         >
           <LogOut size={16} />
-          Sign out
-        </Link>
+          {signingOut ? "Signing out…" : "Sign out"}
+        </button>
       </div>
     </aside>
   );
