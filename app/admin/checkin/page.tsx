@@ -76,7 +76,7 @@ export default function AdminCheckinPage() {
     if (!trimmed) return;
     setLoading(true);
 
-    const res = await fetch(`/api/admin/bookings/lookup?code=${encodeURIComponent(trimmed)}`);
+    const res = await fetch(`/api/admin/bookings?code=${encodeURIComponent(trimmed)}`);
     const data = await res.json();
     setLoading(false);
 

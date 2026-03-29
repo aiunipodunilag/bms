@@ -12,9 +12,8 @@ import {
   AlertCircle,
   DollarSign,
   ShieldCheck,
-  ToggleLeft,
-  ToggleRight,
 } from "lucide-react";
+import Toggle from "@/components/ui/Toggle";
 
 interface DaySchedule {
   enabled: boolean;
@@ -154,12 +153,11 @@ export default function AdminSettingsPage() {
               {Object.entries(schedule).map(([day, config]) => (
                 <div key={day} className="flex items-center gap-4">
                   <div className="w-28 flex items-center gap-2">
-                    <button
-                      onClick={() => updateDay(day, "enabled", !config.enabled)}
-                      className={`transition-colors ${config.enabled ? "text-brand-600" : "text-gray-300"}`}
-                    >
-                      {config.enabled ? <ToggleRight size={20} /> : <ToggleLeft size={20} />}
-                    </button>
+                    <Toggle
+                      checked={config.enabled}
+                      onChange={() => updateDay(day, "enabled", !config.enabled)}
+                      size="sm"
+                    />
                     <span className={`text-sm font-medium ${config.enabled ? "text-gray-800" : "text-gray-400"}`}>
                       {day}
                     </span>
@@ -317,12 +315,10 @@ export default function AdminSettingsPage() {
                   <p className="text-sm font-medium text-gray-800">Maintenance Mode</p>
                   <p className="text-xs text-gray-400 mt-0.5">Block all new bookings site-wide.</p>
                 </div>
-                <button
-                  onClick={() => setSettings({ ...settings, maintenanceMode: !settings.maintenanceMode })}
-                  className={`transition-colors ${settings.maintenanceMode ? "text-red-500" : "text-gray-300"}`}
-                >
-                  {settings.maintenanceMode ? <ToggleRight size={24} /> : <ToggleLeft size={24} />}
-                </button>
+                <Toggle
+                  checked={settings.maintenanceMode}
+                  onChange={() => setSettings({ ...settings, maintenanceMode: !settings.maintenanceMode })}
+                />
               </div>
 
               <div className="flex items-center justify-between p-3 rounded-xl border border-gray-200 bg-gray-50">
@@ -332,12 +328,10 @@ export default function AdminSettingsPage() {
                     Users must explain why they need AI Lab, Maker Space, VR Lab, etc.
                   </p>
                 </div>
-                <button
-                  onClick={() => setSettings({ ...settings, requireJustificationForPremium: !settings.requireJustificationForPremium })}
-                  className={`transition-colors ${settings.requireJustificationForPremium ? "text-brand-600" : "text-gray-300"}`}
-                >
-                  {settings.requireJustificationForPremium ? <ToggleRight size={24} /> : <ToggleLeft size={24} />}
-                </button>
+                <Toggle
+                  checked={settings.requireJustificationForPremium}
+                  onChange={() => setSettings({ ...settings, requireJustificationForPremium: !settings.requireJustificationForPremium })}
+                />
               </div>
             </div>
 

@@ -10,13 +10,12 @@ import {
   User,
   Cpu,
   RotateCcw,
-  LogOut,
   RefreshCw,
 } from "lucide-react";
-import Link from "next/link";
 import { Card } from "@/components/ui/Card";
 import Badge from "@/components/ui/Badge";
 import Button from "@/components/ui/Button";
+import AdminSidebar from "@/components/layout/AdminSidebar";
 
 interface EquipmentCode {
   id: string;
@@ -125,35 +124,31 @@ export default function SpaceLeadPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-950">
-      <header className="bg-gray-900 border-b border-gray-800 px-6 py-4 flex items-center justify-between">
-        <div>
-          <p className="text-sm font-bold text-white">Space Lead — {spaceName}</p>
-          <p className="text-xs text-gray-500">Equipment access verification</p>
-        </div>
-        <div className="flex items-center gap-2">
+    <div className="flex min-h-screen bg-gray-50">
+      <AdminSidebar />
+
+      <div className="flex-1 overflow-auto">
+        <div className="flex items-center justify-between px-6 pt-6 pb-2">
+          <div>
+            <h1 className="text-xl font-bold text-gray-900">Space Lead — {spaceName}</h1>
+            <p className="text-sm text-gray-500 mt-0.5">Equipment access verification</p>
+          </div>
           <button
             onClick={loadCodes}
-            className="p-2 text-gray-400 hover:text-white hover:bg-gray-800 rounded-xl transition-colors"
+            className="p-2 text-gray-400 hover:text-gray-900 hover:bg-gray-100 rounded-xl transition-colors"
             title="Refresh"
           >
             <RefreshCw size={14} />
           </button>
-          <Link href="/admin/login">
-            <Button variant="ghost" size="sm">
-              <LogOut size={13} /> Sign out
-            </Button>
-          </Link>
         </div>
-      </header>
 
-      <main className="max-w-4xl mx-auto px-6 py-8 space-y-6">
-        <Card className="bg-brand-950/30 border-brand-800/30">
+        <main className="max-w-4xl mx-auto px-6 py-4 space-y-6">
+        <Card className="bg-violet-50 border-violet-200">
           <div className="flex items-start gap-3">
-            <ShieldCheck size={15} className="text-brand-400 shrink-0 mt-0.5" />
+            <ShieldCheck size={15} className="text-violet-600 shrink-0 mt-0.5" />
             <div>
-              <p className="text-sm font-semibold text-brand-300 mb-0.5">How equipment verification works</p>
-              <p className="text-xs text-brand-600 leading-relaxed">
+              <p className="text-sm font-semibold text-violet-600 mb-0.5">How equipment verification works</p>
+              <p className="text-xs text-violet-600 leading-relaxed">
                 When a user checks in at reception and has requested equipment from your space, the receptionist generates a one-time code (EQ-YYYY-XXXXX) and gives it to the user. The user shows you this code — you enter it below to confirm they are authorised to use that equipment. The code expires the moment you verify it.
               </p>
             </div>
@@ -163,21 +158,21 @@ export default function SpaceLeadPage() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Verification input */}
           <div className="space-y-4">
-            <Card className="bg-gray-900 border-gray-800">
-              <h2 className="font-semibold text-white flex items-center gap-2 mb-4">
-                <ScanLine size={16} className="text-brand-400" /> Verify Equipment Code
+            <Card className="bg-white border-gray-200">
+              <h2 className="font-semibold text-gray-900 flex items-center gap-2 mb-4">
+                <ScanLine size={16} className="text-violet-600" /> Verify Equipment Code
               </h2>
 
               {verifyState === "success" && verifiedItem ? (
                 <div className="text-center py-4">
-                  <div className="w-14 h-14 rounded-full bg-green-900/40 flex items-center justify-center mx-auto mb-3">
-                    <CheckCircle size={28} className="text-green-400" />
+                  <div className="w-14 h-14 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-3">
+                    <CheckCircle size={28} className="text-green-500" />
                   </div>
-                  <p className="text-green-400 font-bold text-lg">{verifiedItem.code}</p>
-                  <p className="text-white font-semibold mt-1">{verifiedItem.user_name}</p>
+                  <p className="text-green-600 font-bold text-lg">{verifiedItem.code}</p>
+                  <p className="text-gray-900 font-semibold mt-1">{verifiedItem.user_name}</p>
                   <p className="text-sm text-gray-400 mt-0.5">
                     is authorised to use the{" "}
-                    <span className="text-brand-300 font-medium">{verifiedItem.equipment_label}</span>
+                    <span className="text-violet-600 font-medium">{verifiedItem.equipment_label}</span>
                   </p>
                   <Badge variant="success" className="mt-3">Code used — now expired</Badge>
                   <div className="mt-4">
@@ -188,10 +183,10 @@ export default function SpaceLeadPage() {
                 </div>
               ) : verifyState === "error" ? (
                 <div className="text-center py-4">
-                  <div className="w-14 h-14 rounded-full bg-red-900/40 flex items-center justify-center mx-auto mb-3">
-                    <XCircle size={28} className="text-red-400" />
+                  <div className="w-14 h-14 rounded-full bg-red-100 flex items-center justify-center mx-auto mb-3">
+                    <XCircle size={28} className="text-red-500" />
                   </div>
-                  <p className="text-red-400 font-semibold">Verification failed</p>
+                  <p className="text-red-500 font-semibold">Verification failed</p>
                   <p className="text-sm text-gray-400 mt-1">{errorMessage}</p>
                   <div className="mt-4">
                     <Button variant="outline" size="sm" onClick={reset}>
@@ -213,9 +208,9 @@ export default function SpaceLeadPage() {
                       onChange={(e) => setInputCode(e.target.value.toUpperCase())}
                       placeholder="EQ-2025-XXXXX"
                       autoFocus
-                      className="w-full bg-gray-800 border border-gray-700 text-white text-sm font-mono tracking-widest rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-brand-500 placeholder-gray-600"
+                      className="w-full bg-white border border-gray-300 text-gray-900 text-sm font-mono tracking-widest rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-violet-500 placeholder-gray-400"
                     />
-                    <p className="text-xs text-gray-600 mt-1">
+                    <p className="text-xs text-gray-500 mt-1">
                       The user should show you this code from the receptionist.
                     </p>
                   </div>
@@ -231,33 +226,33 @@ export default function SpaceLeadPage() {
             </Card>
 
             {/* Pending codes for this space */}
-            <Card className="bg-gray-900 border-gray-800">
-              <h3 className="font-semibold text-white text-sm flex items-center gap-2 mb-3">
-                <Clock size={13} className="text-yellow-400" />
+            <Card className="bg-white border-gray-200">
+              <h3 className="font-semibold text-gray-900 text-sm flex items-center gap-2 mb-3">
+                <Clock size={13} className="text-yellow-600" />
                 Pending for this space
                 {pendingCodes.length > 0 && (
-                  <span className="ml-auto bg-yellow-900/50 text-yellow-400 text-xs font-bold px-2 py-0.5 rounded-full">
+                  <span className="ml-auto bg-yellow-100 text-yellow-700 text-xs font-bold px-2 py-0.5 rounded-full">
                     {pendingCodes.length}
                   </span>
                 )}
               </h3>
               {pendingCodes.length === 0 ? (
-                <p className="text-xs text-gray-600 text-center py-4">No pending equipment codes.</p>
+                <p className="text-xs text-gray-400 text-center py-4">No pending equipment codes.</p>
               ) : (
                 <div className="space-y-2">
                   {pendingCodes.map((code) => (
                     <div
                       key={code.id}
-                      className="flex items-center justify-between bg-gray-800 rounded-xl px-3 py-2.5"
+                      className="flex items-center justify-between bg-gray-100 rounded-xl px-3 py-2.5"
                     >
                       <div>
-                        <p className="text-xs font-mono font-bold text-yellow-400">{code.code}</p>
+                        <p className="text-xs font-mono font-bold text-yellow-600">{code.code}</p>
                         <div className="flex items-center gap-2 mt-0.5">
-                          <p className="text-xs text-gray-400">{code.user_name}</p>
+                          <p className="text-xs text-gray-500">{code.user_name}</p>
                           <span className="text-gray-600">·</span>
                           <p className="text-xs text-gray-500">{code.equipment_label}</p>
                         </div>
-                        <p className="text-xs text-gray-600 mt-0.5">Generated {timeAgo(code.generated_at)}</p>
+                        <p className="text-xs text-gray-500 mt-0.5">Generated {timeAgo(code.generated_at)}</p>
                       </div>
                       <Button size="sm" onClick={() => verifyCode(code.code)}>
                         Verify
@@ -271,30 +266,30 @@ export default function SpaceLeadPage() {
 
           {/* Verification history */}
           <div>
-            <Card className="bg-gray-900 border-gray-800">
-              <h3 className="font-semibold text-white text-sm flex items-center gap-2 mb-3">
-                <CheckCircle size={13} className="text-green-400" /> Verified Today
+            <Card className="bg-white border-gray-200">
+              <h3 className="font-semibold text-gray-900 text-sm flex items-center gap-2 mb-3">
+                <CheckCircle size={13} className="text-green-500" /> Verified Today
               </h3>
               {verifiedCodes.length === 0 ? (
-                <p className="text-xs text-gray-600 text-center py-4">No verifications yet today.</p>
+                <p className="text-xs text-gray-400 text-center py-4">No verifications yet today.</p>
               ) : (
                 <div className="space-y-2">
                   {verifiedCodes.map((code) => (
-                    <div key={code.id} className="bg-gray-800/50 rounded-xl px-3 py-2.5 space-y-1">
+                    <div key={code.id} className="bg-gray-50 rounded-xl px-3 py-2.5 space-y-1">
                       <div className="flex items-center justify-between">
                         <p className="text-xs font-mono text-gray-400">{code.code}</p>
                         <Badge variant="success" size="sm">Used</Badge>
                       </div>
                       <div className="flex items-center gap-1.5">
                         <User size={11} className="text-gray-500" />
-                        <p className="text-xs text-gray-300">{code.user_name}</p>
+                        <p className="text-xs text-gray-700">{code.user_name}</p>
                       </div>
                       <div className="flex items-center gap-1.5">
                         <Cpu size={11} className="text-gray-500" />
-                        <p className="text-xs text-gray-400">{code.equipment_label}</p>
+                        <p className="text-xs text-gray-500">{code.equipment_label}</p>
                       </div>
                       {code.used_at && (
-                        <p className="text-xs text-gray-600">Verified {timeAgo(code.used_at)}</p>
+                        <p className="text-xs text-gray-500">Verified {timeAgo(code.used_at)}</p>
                       )}
                     </div>
                   ))}
@@ -303,7 +298,8 @@ export default function SpaceLeadPage() {
             </Card>
           </div>
         </div>
-      </main>
+        </main>
+      </div>
     </div>
   );
 }
