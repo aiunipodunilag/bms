@@ -21,7 +21,9 @@ export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const statusFilter = searchParams.get("status");
 
-  let query = supabase
+  const adminDb = createAdminClient();
+
+  let query = adminDb
     .from("bookings")
     .select("*")
     .eq("user_id", user.id)
@@ -74,8 +76,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const adminDb = createAdminClient();
+
     // Load user profile
-    const { data: profile, error: profileErr } = await supabase
+    const { data: profile, error: profileErr } = await adminDb
       .from("profiles")
       .select("*")
       .eq("id", user.id)
@@ -131,7 +135,7 @@ export async function POST(request: NextRequest) {
     }
 
     // ── Check for time-slot conflict ──────────────────────────────────────
-    const { data: conflicts } = await supabase
+    const { data: conflicts } = await adminDb
       .from("bookings")
       .select("id")
       .eq("space_id", spaceId)
@@ -142,7 +146,7 @@ export async function POST(request: NextRequest) {
 
     if (conflicts && conflicts.length > 0) {
       // Check if the space has remaining capacity
-      const { data: spaceBookings } = await supabase
+      const { data: spaceBookings } = await adminDb
         .from("bookings")
         .select("id")
         .eq("space_id", spaceId)
@@ -178,9 +182,8 @@ export async function POST(request: NextRequest) {
       : undefined;
 
     const bmsCode = generateBMSCode();
-    const adminClient = createAdminClient();
 
-    const { data: booking, error: insertErr } = await adminClient
+    const { data: booking, error: insertErr } = await adminDb
       .from("bookings")
       .insert({
         bms_code: bmsCode,
@@ -209,14 +212,14 @@ export async function POST(request: NextRequest) {
 
     // ── Increment weekly counter ───────────────────────────────────────────
     if (!isGroup) {
-      await adminClient
+      await adminDb
         .from("profiles")
         .update({
           weekly_bookings_used: profile.weekly_bookings_used + 1,
         })
         .eq("id", user.id);
     } else {
-      await adminClient
+      await adminDb
         .from("profiles")
         .update({
           weekly_group_bookings_led: profile.weekly_group_bookings_led + 1,
@@ -225,7 +228,7 @@ export async function POST(request: NextRequest) {
     }
 
     // ── Send notification ──────────────────────────────────────────────────
-    await adminClient.from("notifications").insert({
+    await adminDb.from("notifications").insert({
       user_id: user.id,
       type: autoApproved ? "booking_confirmed" : "booking_pending",
       title: autoApproved ? "Booking Confirmed" : "Booking Submitted",

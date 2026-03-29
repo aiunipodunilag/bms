@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 /**
  * GET /api/users/me
@@ -7,15 +8,14 @@ import { createClient } from "@/lib/supabase/server";
  */
 export async function GET() {
   const supabase = createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) {
     return NextResponse.json({ error: "Unauthorised" }, { status: 401 });
   }
 
-  const { data: profile, error } = await supabase
+  const adminDb = createAdminClient();
+  const { data: profile, error } = await adminDb
     .from("profiles")
     .select("*")
     .eq("id", user.id)
@@ -34,9 +34,7 @@ export async function GET() {
  */
 export async function PATCH(request: NextRequest) {
   const supabase = createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) {
     return NextResponse.json({ error: "Unauthorised" }, { status: 401 });
@@ -54,7 +52,8 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: "No fields to update" }, { status: 400 });
     }
 
-    const { data, error } = await supabase
+    const adminDb = createAdminClient();
+    const { data, error } = await adminDb
       .from("profiles")
       .update(updates)
       .eq("id", user.id)

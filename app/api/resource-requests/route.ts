@@ -14,7 +14,8 @@ export async function GET() {
   } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorised" }, { status: 401 });
 
-  const { data, error } = await supabase
+  const adminDb = createAdminClient();
+  const { data, error } = await adminDb
     .from("resource_requests")
     .select("*")
     .eq("user_id", user.id)
@@ -54,8 +55,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const adminDb = createAdminClient();
+
     // Verify user has access to premium resources
-    const { data: profile } = await supabase
+    const { data: profile } = await adminDb
       .from("profiles")
       .select("tier, status")
       .eq("id", user.id)
@@ -74,9 +77,8 @@ export async function POST(request: NextRequest) {
     }
 
     const bmsCode = generateBMSCode();
-    const adminClient = createAdminClient();
 
-    const { data, error: insertErr } = await adminClient
+    const { data, error: insertErr } = await adminDb
       .from("resource_requests")
       .insert({
         user_id: user.id,
@@ -97,7 +99,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Notification
-    await adminClient.from("notifications").insert({
+    await adminDb.from("notifications").insert({
       user_id: user.id,
       type: "resource_approved",
       title: "Resource Request Submitted",

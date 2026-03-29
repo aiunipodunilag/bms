@@ -46,31 +46,6 @@ export default function LoginPage() {
         return;
       }
 
-      // Check profile status before letting them in
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("status")
-        .eq("id", authData.user.id)
-        .single();
-
-      if (profile?.status === "pending") {
-        await supabase.auth.signOut();
-        setError(
-          "Your account is pending admin verification. You'll be notified by email once it's approved \u2014 usually within 24 hours."
-        );
-        setLoading(false);
-        return;
-      }
-
-      if (profile?.status === "rejected") {
-        await supabase.auth.signOut();
-        setError(
-          "Your account application was not approved. Contact UNIPOD staff for more information."
-        );
-        setLoading(false);
-        return;
-      }
-
       window.location.href = "/dashboard";
     } catch (err) {
       console.error("[login]", err);

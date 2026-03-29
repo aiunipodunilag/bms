@@ -17,8 +17,10 @@ export async function POST(
   } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorised" }, { status: 401 });
 
+  const adminClient = createAdminClient();
+
   // Verify ownership
-  const { data: booking, error: fetchErr } = await supabase
+  const { data: booking, error: fetchErr } = await adminClient
     .from("bookings")
     .select("*")
     .eq("id", params.id)
@@ -36,7 +38,6 @@ export async function POST(
     );
   }
 
-  const adminClient = createAdminClient();
   const { error: updateErr } = await adminClient
     .from("bookings")
     .update({ status: "cancelled" })
@@ -49,7 +50,7 @@ export async function POST(
 
   // Decrement weekly counter for individual bookings
   if (booking.type === "individual") {
-    const { data: profile } = await supabase
+    const { data: profile } = await adminClient
       .from("profiles")
       .select("weekly_bookings_used")
       .eq("id", user.id)
