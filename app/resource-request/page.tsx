@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import Navbar from "@/components/layout/Navbar";
 import { Card } from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
-import { TIER_LABELS } from "@/lib/data/tiers";
+import { TIER_LABELS, TIER_RULES } from "@/lib/data/tiers";
 import {
   ChevronLeft,
   Cpu,
@@ -50,7 +50,9 @@ const TIME_WINDOWS = [
   "1:00 PM – 2:00 PM", "2:00 PM – 3:00 PM", "3:00 PM – 4:00 PM", "4:00 PM – 5:00 PM",
 ];
 
-const PREMIUM_TIERS = ["lecturer_staff", "product_developer", "volunteer_space_lead", "startup_team", "partner_intern"];
+const PREMIUM_TIERS = Object.entries(TIER_RULES)
+  .filter(([, rules]) => rules.canAccessPremiumResources)
+  .map(([tier]) => tier);
 
 type Step = "form" | "success";
 
