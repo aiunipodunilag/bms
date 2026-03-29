@@ -15,18 +15,21 @@ import {
   LogOut,
   ShieldCheck,
   UserCog,
+  Package,
   type LucideIcon,
 } from "lucide-react";
+import { useEffect, useState } from "react";
 
 // Full admin nav — shown to super_admin and admin
 const ADMIN_LINKS: NavLink[] = [
-  { href: "/admin",            label: "Overview",            icon: LayoutDashboard },
-  { href: "/admin/bookings",   label: "Bookings & Approvals", icon: CalendarDays, badge: 5 },
-  { href: "/admin/users",      label: "User Management",     icon: Users, badge: 3 },
-  { href: "/admin/spaces",     label: "Spaces",              icon: Building2 },
-  { href: "/admin/checkin",    label: "Check-in",            icon: QrCode },
-  { href: "/admin/broadcast",  label: "Broadcast",           icon: Megaphone },
-  { href: "/admin/settings",   label: "Settings",            icon: Settings },
+  { href: "/admin",                    label: "Overview",             icon: LayoutDashboard },
+  { href: "/admin/bookings",           label: "Bookings & Approvals", icon: CalendarDays },
+  { href: "/admin/resource-requests",  label: "Resource Requests",    icon: Package },
+  { href: "/admin/users",              label: "User Management",      icon: Users },
+  { href: "/admin/spaces",             label: "Spaces",               icon: Building2 },
+  { href: "/admin/checkin",            label: "Check-in",             icon: QrCode },
+  { href: "/admin/broadcast",          label: "Broadcast",            icon: Megaphone },
+  { href: "/admin/settings",           label: "Settings",             icon: Settings },
 ];
 
 // Super admin gets an extra link to their control panel
@@ -62,6 +65,23 @@ interface Props {
 
 export default function AdminSidebar({ role = "admin" }: Props) {
   const pathname = usePathname();
+  const [pendingCounts, setPendingCounts] = useState<Record<string, number>>({});
+
+  useEffect(() => {
+    if (role === "admin" || role === "super_admin") {
+      Promise.all([
+        fetch("/api/admin/bookings?status=pending").then((r) => r.json()),
+        fetch("/api/admin/users?status=pending").then((r) => r.json()),
+        fetch("/api/admin/resource-requests?status=pending").then((r) => r.json()),
+      ]).then(([bookingsData, usersData, resourceData]) => {
+        setPendingCounts({
+          "/admin/bookings": bookingsData.bookings?.length ?? 0,
+          "/admin/users": usersData.users?.length ?? 0,
+          "/admin/resource-requests": resourceData.requests?.length ?? 0,
+        });
+      }).catch(() => {});
+    }
+  }, [role]);
 
   const links =
     role === "super_admin"  ? SUPER_ADMIN_LINKS :
@@ -107,9 +127,9 @@ export default function AdminSidebar({ role = "admin" }: Props) {
                 <Icon size={16} />
                 {label}
               </div>
-              {badge ? (
+              {(pendingCounts[href] ?? badge ?? 0) > 0 ? (
                 <span className="bg-red-500 text-white text-xs font-bold px-1.5 py-0.5 rounded-full">
-                  {badge}
+                  {pendingCounts[href] ?? badge}
                 </span>
               ) : (
                 active && <ChevronRight size={14} className="opacity-60" />

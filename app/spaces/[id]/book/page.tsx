@@ -8,7 +8,7 @@ import { Card } from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 import Badge from "@/components/ui/Badge";
 import { getSpaceBySlug, SPACE_EQUIPMENT_MAP } from "@/lib/data/spaces";
-import { TIER_LABELS, BOOKING_RULES } from "@/lib/data/tiers";
+import { TIER_LABELS, BOOKING_RULES, TIER_RULES } from "@/lib/data/tiers";
 import { getBookableDates, formatDate, formatTime, formatCurrency } from "@/lib/utils";
 import {
   ChevronLeft,
@@ -75,10 +75,12 @@ export default function BookSpacePage({ params }: { params: { id: string } }) {
 
   if (!space) return null;
 
-  const weeklyLimit = 3;
-  const isAtLimit =
-    profile?.tier === "regular_student" &&
-    (profile?.weekly_bookings_used ?? 0) >= weeklyLimit;
+  const tierRules = profile ? TIER_RULES[profile.tier] : null;
+  const weeklyLimit =
+    tierRules && tierRules.weeklyIndividualLimit !== "unlimited"
+      ? (tierRules.weeklyIndividualLimit as number)
+      : null;
+  const isAtLimit = weeklyLimit !== null && (profile?.weekly_bookings_used ?? 0) >= weeklyLimit;
   const needsExtraPayment = isAtLimit;
 
   const timeSlots = Array.from({ length: 7 }, (_, i) => {
@@ -205,7 +207,7 @@ export default function BookSpacePage({ params }: { params: { id: string } }) {
                   <div>
                     <p className="font-semibold text-amber-800 text-sm">Weekly limit reached</p>
                     <p className="text-amber-700 text-sm mt-1">
-                      You&apos;ve used all 3 of your individual bookings this week. You can:
+                      You&apos;ve used all {weeklyLimit} of your individual bookings this week. You can:
                     </p>
                     <ul className="mt-2 space-y-1 text-sm text-amber-700">
                       <li className="flex items-center gap-2">
