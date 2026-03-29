@@ -16,7 +16,8 @@ export async function PATCH(
   } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorised" }, { status: 401 });
 
-  const { data: adminAccount } = await supabase
+  const adminDb = createAdminClient();
+  const { data: adminAccount } = await adminDb
     .from("admin_accounts")
     .select("role, status")
     .eq("id", user.id)
@@ -40,8 +41,7 @@ export async function PATCH(
       return NextResponse.json({ error: "No fields to update" }, { status: 400 });
     }
 
-    const adminClient = createAdminClient();
-    const { data, error } = await adminClient
+    const { data, error } = await adminDb
       .from("admin_accounts")
       .update(updates)
       .eq("id", params.id)
@@ -73,7 +73,8 @@ export async function DELETE(
   } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorised" }, { status: 401 });
 
-  const { data: adminAccount } = await supabase
+  const adminDb2 = createAdminClient();
+  const { data: adminAccount } = await adminDb2
     .from("admin_accounts")
     .select("role, status")
     .eq("id", user.id)
@@ -84,8 +85,7 @@ export async function DELETE(
   }
 
   // Soft delete by suspending, not actually deleting
-  const adminClient = createAdminClient();
-  const { error } = await adminClient
+  const { error } = await adminDb2
     .from("admin_accounts")
     .update({ status: "suspended" })
     .eq("id", params.id);

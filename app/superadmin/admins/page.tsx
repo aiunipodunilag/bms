@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import {
   ShieldCheck,
@@ -19,25 +19,26 @@ import {
 import { Card } from "@/components/ui/Card";
 import Badge from "@/components/ui/Badge";
 import Button from "@/components/ui/Button";
-import type { AdminAccount, AdminRole } from "@/types";
+import type { AdminRole } from "@/types";
 import { SPACES } from "@/lib/data/spaces";
 
+interface AdminAccount {
+  id: string;
+  full_name: string;
+  email: string;
+  phone: string | null;
+  role: AdminRole;
+  assigned_space_id: string | null;
+  assigned_space_name: string | null;
+  status: string;
+  created_at: string;
+  last_login_at: string | null;
+}
+
 const ROLE_OPTIONS: { value: AdminRole; label: string; description: string }[] = [
-  {
-    value: "admin",
-    label: "Admin",
-    description: "Can manage bookings, users, broadcast messages and view all analytics.",
-  },
-  {
-    value: "receptionist",
-    label: "Receptionist",
-    description: "Front-desk only. Can check users in and generate equipment access codes.",
-  },
-  {
-    value: "space_lead",
-    label: "Space Lead",
-    description: "Oversees a specific space. Verifies equipment access codes from users.",
-  },
+  { value: "admin",        label: "Admin",        description: "Can manage bookings, users, broadcast messages and view all analytics." },
+  { value: "receptionist", label: "Receptionist", description: "Front-desk only. Can check users in and generate equipment access codes." },
+  { value: "space_lead",   label: "Space Lead",   description: "Oversees a specific space. Verifies equipment access codes from users." },
 ];
 
 const ROLE_CONFIG: Record<AdminRole, { label: string; variant: "success" | "info" | "warning" | "neutral" }> = {
@@ -47,91 +48,18 @@ const ROLE_CONFIG: Record<AdminRole, { label: string; variant: "success" | "info
   space_lead:   { label: "Space Lead",   variant: "neutral" },
 };
 
-const MOCK_ADMINS: AdminAccount[] = [
-  {
-    id: "a-001",
-    fullName: "Chioma Adeyemi",
-    email: "chioma@unipod.ng",
-    phone: "08012345678",
-    role: "admin",
-    status: "active",
-    createdBy: "super-001",
-    createdAt: "2025-01-10",
-    lastLoginAt: "2025-07-17T09:14:00",
-  },
-  {
-    id: "a-002",
-    fullName: "Tunde Okafor",
-    email: "tunde@unipod.ng",
-    phone: "08023456789",
-    role: "receptionist",
-    status: "active",
-    createdBy: "super-001",
-    createdAt: "2025-02-01",
-    lastLoginAt: "2025-07-17T08:52:00",
-  },
-  {
-    id: "a-003",
-    fullName: "Amaka Eze",
-    email: "amaka@unipod.ng",
-    phone: "08034567890",
-    role: "space_lead",
-    assignedSpaceId: "maker-space",
-    assignedSpaceName: "Maker Space",
-    status: "active",
-    createdBy: "super-001",
-    createdAt: "2025-02-15",
-    lastLoginAt: "2025-07-16T14:00:00",
-  },
-  {
-    id: "a-004",
-    fullName: "Segun Balogun",
-    email: "segun@unipod.ng",
-    phone: "08045678901",
-    role: "space_lead",
-    assignedSpaceId: "ai-robotics-lab",
-    assignedSpaceName: "AI & Robotics Lab",
-    status: "active",
-    createdBy: "super-001",
-    createdAt: "2025-03-01",
-    lastLoginAt: "2025-07-15T11:30:00",
-  },
-  {
-    id: "a-005",
-    fullName: "Fatima Yusuf",
-    email: "fatima@unipod.ng",
-    phone: "08056789012",
-    role: "space_lead",
-    assignedSpaceId: "vr-lab",
-    assignedSpaceName: "VR Lab",
-    status: "active",
-    createdBy: "super-001",
-    createdAt: "2025-03-10",
-    lastLoginAt: "2025-07-14T16:45:00",
-  },
-  {
-    id: "a-006",
-    fullName: "Obinna Nwosu",
-    email: "obinna@unipod.ng",
-    phone: "08067890123",
-    role: "admin",
-    status: "suspended",
-    createdBy: "super-001",
-    createdAt: "2025-01-20",
-    lastLoginAt: "2025-07-10T10:00:00",
-  },
-];
-
 const PREMIUM_SPACES = SPACES.filter((s) =>
   ["maker-space", "ai-robotics-lab", "vr-lab", "pitch-garage", "event-space", "boardroom-main"].includes(s.id)
 );
 
 export default function SuperAdminAdminsPage() {
-  const [admins, setAdmins]         = useState<AdminAccount[]>(MOCK_ADMINS);
+  const [admins, setAdmins]         = useState<AdminAccount[]>([]);
+  const [loadingAdmins, setLoadingAdmins] = useState(true);
   const [showForm, setShowForm]     = useState(false);
   const [saving, setSaving]         = useState(false);
   const [success, setSuccess]       = useState(false);
   const [showPw, setShowPw]         = useState(false);
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
 
   const [form, setForm] = useState({
     fullName: "",
@@ -144,12 +72,25 @@ export default function SuperAdminAdminsPage() {
   });
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
+  const fetchAdmins = () => {
+    setLoadingAdmins(true);
+    fetch("/api/admin/admins")
+      .then((r) => r.json())
+      .then(({ admins: a }) => setAdmins(a ?? []))
+      .catch(() => {})
+      .finally(() => setLoadingAdmins(false));
+  };
+
+  useEffect(() => {
+    fetchAdmins();
+  }, []);
+
   const validateForm = () => {
     const e: Record<string, string> = {};
-    if (!form.fullName.trim())   e.fullName   = "Full name is required.";
-    if (!form.email.trim())      e.email      = "Email is required.";
-    if (!form.phone.trim())      e.phone      = "Phone is required.";
-    if (!form.tempPassword)      e.tempPassword = "Temporary password is required.";
+    if (!form.fullName.trim())  e.fullName  = "Full name is required.";
+    if (!form.email.trim())     e.email     = "Email is required.";
+    if (!form.phone.trim())     e.phone     = "Phone is required.";
+    if (!form.tempPassword)     e.tempPassword = "Temporary password is required.";
     if (form.tempPassword.length < 8) e.tempPassword = "Password must be at least 8 characters.";
     if (form.tempPassword !== form.confirmPassword) e.confirmPassword = "Passwords do not match.";
     if (form.role === "space_lead" && !form.assignedSpaceId) e.assignedSpaceId = "Select a space for this lead.";
@@ -161,63 +102,74 @@ export default function SuperAdminAdminsPage() {
     e.preventDefault();
     if (!validateForm()) return;
     setSaving(true);
-    // TODO: POST /api/admin/admins/create with form data
-    await new Promise((r) => setTimeout(r, 1000));
-    const newAdmin: AdminAccount = {
-      id: `a-${Date.now()}`,
-      fullName: form.fullName,
-      email: form.email,
-      phone: form.phone,
-      role: form.role,
-      assignedSpaceId: form.assignedSpaceId || undefined,
-      assignedSpaceName: PREMIUM_SPACES.find((s) => s.id === form.assignedSpaceId)?.name,
-      status: "active",
-      createdBy: "super-001",
-      createdAt: new Date().toISOString().split("T")[0],
-    };
-    setAdmins((prev) => [newAdmin, ...prev]);
+
+    const selectedSpace = PREMIUM_SPACES.find((s) => s.id === form.assignedSpaceId);
+    const res = await fetch("/api/admin/admins", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        fullName: form.fullName,
+        email: form.email,
+        phone: form.phone,
+        role: form.role,
+        assignedSpaceId: form.assignedSpaceId || undefined,
+        assignedSpaceName: selectedSpace?.name,
+        tempPassword: form.tempPassword,
+      }),
+    });
+    const data = await res.json();
+
     setSaving(false);
-    setSuccess(true);
-    setTimeout(() => {
-      setSuccess(false);
-      setShowForm(false);
-      setForm({ fullName: "", email: "", phone: "", role: "admin", assignedSpaceId: "", tempPassword: "", confirmPassword: "" });
-    }, 1800);
+    if (res.ok) {
+      setSuccess(true);
+      fetchAdmins();
+      setTimeout(() => {
+        setSuccess(false);
+        setShowForm(false);
+        setForm({ fullName: "", email: "", phone: "", role: "admin", assignedSpaceId: "", tempPassword: "", confirmPassword: "" });
+      }, 1800);
+    } else {
+      setFormErrors({ email: data.error ?? "Failed to create admin." });
+    }
   };
 
-  const toggleStatus = (id: string) => {
-    setAdmins((prev) =>
-      prev.map((a) =>
-        a.id === id ? { ...a, status: a.status === "active" ? "suspended" : "active" } : a
-      )
-    );
+  const toggleStatus = async (admin: AdminAccount) => {
+    const newStatus = admin.status === "active" ? "suspended" : "active";
+    setActionLoading(admin.id + "toggle");
+    await fetch(`/api/admin/admins/${admin.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status: newStatus }),
+    });
+    setActionLoading(null);
+    fetchAdmins();
   };
 
-  const removeAdmin = (id: string) => {
-    setAdmins((prev) => prev.filter((a) => a.id !== id));
+  const removeAdmin = async (id: string) => {
+    if (!confirm("Are you sure you want to remove this admin?")) return;
+    setActionLoading(id + "delete");
+    await fetch(`/api/admin/admins/${id}`, { method: "DELETE" });
+    setActionLoading(null);
+    fetchAdmins();
   };
 
   return (
     <div className="min-h-screen bg-gray-950">
-      {/* Top bar */}
       <header className="bg-gray-900 border-b border-gray-800 px-6 py-4 flex items-center gap-4">
         <Link href="/superadmin" className="text-gray-400 hover:text-white transition-colors">
           <ChevronLeft size={18} />
         </Link>
-        <div className="flex items-center gap-3">
-          <div>
-            <p className="text-sm font-bold text-white">Manage Admin Accounts</p>
-            <p className="text-xs text-gray-500">Create and manage all staff access</p>
-          </div>
+        <div>
+          <p className="text-sm font-bold text-white">Manage Admin Accounts</p>
+          <p className="text-xs text-gray-500">Create and manage all staff access</p>
         </div>
       </header>
 
       <main className="max-w-5xl mx-auto px-6 py-8 space-y-6">
-        {/* Header row */}
         <div className="flex items-center justify-between">
           <p className="text-sm text-gray-400">
             {admins.filter((a) => a.status === "active").length} active ·{" "}
-            {admins.filter((a) => a.status === "suspended").length} suspended
+            {admins.filter((a) => a.status !== "active").length} suspended
           </p>
           <Button onClick={() => setShowForm(true)}>
             <UserPlus size={14} /> Add Admin
@@ -280,8 +232,6 @@ export default function SuperAdminAdminsPage() {
                     />
                     {formErrors.phone && <p className="text-xs text-red-400 mt-1">{formErrors.phone}</p>}
                   </div>
-
-                  {/* Role */}
                   <div>
                     <label className="text-xs text-gray-400 font-medium mb-1.5 block">Role</label>
                     <div className="relative">
@@ -301,7 +251,6 @@ export default function SuperAdminAdminsPage() {
                     </p>
                   </div>
 
-                  {/* Assigned space (only for space_lead) */}
                   {form.role === "space_lead" && (
                     <div className="sm:col-span-2">
                       <label className="text-xs text-gray-400 font-medium mb-1.5 flex items-center gap-1.5 block">
@@ -329,7 +278,6 @@ export default function SuperAdminAdminsPage() {
                     </div>
                   )}
 
-                  {/* Temp password */}
                   <div>
                     <label className="text-xs text-gray-400 font-medium mb-1.5 block">Temporary password</label>
                     <div className="relative">
@@ -374,71 +322,77 @@ export default function SuperAdminAdminsPage() {
 
         {/* Admins table */}
         <Card className="bg-gray-900 border-gray-800" padding="none">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-gray-800">
-                <th className="text-left text-xs font-medium text-gray-500 px-5 py-3">Name</th>
-                <th className="text-left text-xs font-medium text-gray-500 px-4 py-3">Role</th>
-                <th className="text-left text-xs font-medium text-gray-500 px-4 py-3 hidden md:table-cell">Space</th>
-                <th className="text-left text-xs font-medium text-gray-500 px-4 py-3">Status</th>
-                <th className="text-left text-xs font-medium text-gray-500 px-4 py-3 hidden sm:table-cell">Last Login</th>
-                <th className="px-4 py-3" />
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-800">
-              {admins.map((admin) => {
-                const rc = ROLE_CONFIG[admin.role];
-                return (
-                  <tr key={admin.id} className="hover:bg-gray-800/40 transition-colors">
-                    <td className="px-5 py-3">
-                      <p className="text-sm text-white font-medium">{admin.fullName}</p>
-                      <p className="text-xs text-gray-500">{admin.email}</p>
-                    </td>
-                    <td className="px-4 py-3">
-                      <Badge variant={rc.variant} size="sm">{rc.label}</Badge>
-                    </td>
-                    <td className="px-4 py-3 hidden md:table-cell">
-                      <span className="text-xs text-gray-400">{admin.assignedSpaceName ?? "—"}</span>
-                    </td>
-                    <td className="px-4 py-3">
-                      <Badge variant={admin.status === "active" ? "success" : "danger"} size="sm">
-                        {admin.status}
-                      </Badge>
-                    </td>
-                    <td className="px-4 py-3 hidden sm:table-cell">
-                      <span className="text-xs text-gray-500">
-                        {admin.lastLoginAt
-                          ? new Date(admin.lastLoginAt).toLocaleDateString("en-GB", { day: "numeric", month: "short" })
-                          : "Never"}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-1">
-                        <button
-                          onClick={() => toggleStatus(admin.id)}
-                          className={`p-1.5 rounded-lg transition-colors ${
-                            admin.status === "active"
-                              ? "text-green-500 hover:bg-green-900/30"
-                              : "text-gray-600 hover:bg-gray-800"
-                          }`}
-                          title={admin.status === "active" ? "Suspend" : "Reactivate"}
-                        >
-                          {admin.status === "active" ? <ToggleRight size={16} /> : <ToggleLeft size={16} />}
-                        </button>
-                        <button
-                          onClick={() => removeAdmin(admin.id)}
-                          className="p-1.5 rounded-lg text-red-600 hover:bg-red-900/30 transition-colors"
-                          title="Remove admin"
-                        >
-                          <Trash2 size={13} />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+          {loadingAdmins ? (
+            <div className="text-center py-12 text-gray-500 text-sm">Loading admins…</div>
+          ) : (
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-gray-800">
+                  <th className="text-left text-xs font-medium text-gray-500 px-5 py-3">Name</th>
+                  <th className="text-left text-xs font-medium text-gray-500 px-4 py-3">Role</th>
+                  <th className="text-left text-xs font-medium text-gray-500 px-4 py-3 hidden md:table-cell">Space</th>
+                  <th className="text-left text-xs font-medium text-gray-500 px-4 py-3">Status</th>
+                  <th className="text-left text-xs font-medium text-gray-500 px-4 py-3 hidden sm:table-cell">Last Login</th>
+                  <th className="px-4 py-3" />
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-800">
+                {admins.map((admin) => {
+                  const rc = ROLE_CONFIG[admin.role] ?? { label: admin.role, variant: "neutral" as const };
+                  return (
+                    <tr key={admin.id} className="hover:bg-gray-800/40 transition-colors">
+                      <td className="px-5 py-3">
+                        <p className="text-sm text-white font-medium">{admin.full_name}</p>
+                        <p className="text-xs text-gray-500">{admin.email}</p>
+                      </td>
+                      <td className="px-4 py-3">
+                        <Badge variant={rc.variant} size="sm">{rc.label}</Badge>
+                      </td>
+                      <td className="px-4 py-3 hidden md:table-cell">
+                        <span className="text-xs text-gray-400">{admin.assigned_space_name ?? "—"}</span>
+                      </td>
+                      <td className="px-4 py-3">
+                        <Badge variant={admin.status === "active" ? "success" : "danger"} size="sm">
+                          {admin.status}
+                        </Badge>
+                      </td>
+                      <td className="px-4 py-3 hidden sm:table-cell">
+                        <span className="text-xs text-gray-500">
+                          {admin.last_login_at
+                            ? new Date(admin.last_login_at).toLocaleDateString("en-GB", { day: "numeric", month: "short" })
+                            : "Never"}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-1">
+                          <button
+                            onClick={() => toggleStatus(admin)}
+                            disabled={actionLoading === admin.id + "toggle"}
+                            className={`p-1.5 rounded-lg transition-colors ${
+                              admin.status === "active"
+                                ? "text-green-500 hover:bg-green-900/30"
+                                : "text-gray-600 hover:bg-gray-800"
+                            }`}
+                            title={admin.status === "active" ? "Suspend" : "Reactivate"}
+                          >
+                            {admin.status === "active" ? <ToggleRight size={16} /> : <ToggleLeft size={16} />}
+                          </button>
+                          <button
+                            onClick={() => removeAdmin(admin.id)}
+                            disabled={actionLoading === admin.id + "delete"}
+                            className="p-1.5 rounded-lg text-red-600 hover:bg-red-900/30 transition-colors"
+                            title="Remove admin"
+                          >
+                            <Trash2 size={13} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          )}
         </Card>
       </main>
     </div>

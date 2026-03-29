@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
   ShieldCheck,
@@ -16,23 +17,25 @@ import {
 import { Card } from "@/components/ui/Card";
 import Badge from "@/components/ui/Badge";
 import Button from "@/components/ui/Button";
+import type { AdminRole } from "@/types";
 
-// Mock stats for super admin overview
-const STATS = [
-  { label: "Total Admin Accounts", value: "8", icon: ShieldCheck, color: "text-brand-600", bg: "bg-brand-50" },
-  { label: "Active Users", value: "214", icon: Users, color: "text-green-600", bg: "bg-green-50" },
-  { label: "Bookings This Week", value: "47", icon: CalendarCheck, color: "text-blue-600", bg: "bg-blue-50" },
-  { label: "Spaces Online", value: "10", icon: Building2, color: "text-orange-600", bg: "bg-orange-50" },
-];
+interface Stats {
+  totalUsers: number;
+  pendingVerifications: number;
+  activeBookingsToday: number;
+  totalBookingsThisWeek: number;
+  pendingApprovals: number;
+}
 
-const ADMIN_ACCOUNTS = [
-  { id: "a-001", name: "Chioma Adeyemi",   email: "chioma@unipod.ng",  role: "admin",        space: null,          status: "active",    last: "Today, 9:14 AM" },
-  { id: "a-002", name: "Tunde Okafor",     email: "tunde@unipod.ng",   role: "receptionist", space: null,          status: "active",    last: "Today, 8:52 AM" },
-  { id: "a-003", name: "Amaka Eze",        email: "amaka@unipod.ng",   role: "space_lead",   space: "Maker Space", status: "active",    last: "Yesterday" },
-  { id: "a-004", name: "Segun Balogun",    email: "segun@unipod.ng",   role: "space_lead",   space: "AI & Robotics Lab", status: "active", last: "2 days ago" },
-  { id: "a-005", name: "Fatima Yusuf",     email: "fatima@unipod.ng",  role: "space_lead",   space: "VR Lab",      status: "active",    last: "3 days ago" },
-  { id: "a-006", name: "Obinna Nwosu",     email: "obinna@unipod.ng",  role: "admin",        space: null,          status: "suspended", last: "1 week ago" },
-];
+interface AdminAccount {
+  id: string;
+  full_name: string;
+  email: string;
+  role: AdminRole;
+  assigned_space_name: string | null;
+  status: string;
+  last_login_at: string | null;
+}
 
 const ROLE_CONFIG: Record<string, { label: string; variant: "success" | "info" | "warning" | "neutral" }> = {
   super_admin:  { label: "Super Admin",  variant: "warning" },
@@ -42,9 +45,32 @@ const ROLE_CONFIG: Record<string, { label: string; variant: "success" | "info" |
 };
 
 export default function SuperAdminPage() {
+  const [stats, setStats] = useState<Stats | null>(null);
+  const [admins, setAdmins] = useState<AdminAccount[]>([]);
+
+  useEffect(() => {
+    fetch("/api/admin/stats")
+      .then((r) => r.json())
+      .then(({ stats: s }) => setStats(s))
+      .catch(() => {});
+
+    fetch("/api/admin/admins")
+      .then((r) => r.json())
+      .then(({ admins: a }) => setAdmins(a ?? []))
+      .catch(() => {});
+  }, []);
+
+  const statCards = stats
+    ? [
+        { label: "Total Admin Accounts", value: admins.length, icon: ShieldCheck, color: "text-brand-600", bg: "bg-brand-50" },
+        { label: "Registered Users",     value: stats.totalUsers, icon: Users, color: "text-green-600", bg: "bg-green-50" },
+        { label: "Bookings This Week",   value: stats.totalBookingsThisWeek, icon: CalendarCheck, color: "text-blue-600", bg: "bg-blue-50" },
+        { label: "Pending Approvals",    value: stats.pendingApprovals, icon: Building2, color: "text-orange-600", bg: "bg-orange-50" },
+      ]
+    : [];
+
   return (
     <div className="min-h-screen bg-gray-950">
-      {/* Top bar */}
       <header className="bg-gray-900 border-b border-gray-800 px-6 py-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div>
@@ -67,7 +93,7 @@ export default function SuperAdminPage() {
       <main className="max-w-6xl mx-auto px-6 py-8 space-y-6">
         {/* Stats */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          {STATS.map((stat) => {
+          {statCards.map((stat) => {
             const Icon = stat.icon;
             return (
               <Card key={stat.label} className="bg-gray-900 border-gray-800">
@@ -76,7 +102,7 @@ export default function SuperAdminPage() {
                     <Icon size={16} className={stat.color} />
                   </div>
                   <div>
-                    <p className="text-2xl font-bold text-white">{stat.value}</p>
+                    <p className="text-2xl font-bold text-white">{stat.value ?? "—"}</p>
                     <p className="text-xs text-gray-500 leading-tight">{stat.label}</p>
                   </div>
                 </div>
@@ -100,43 +126,44 @@ export default function SuperAdminPage() {
                 </Link>
               </div>
 
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-gray-800">
-                    <th className="text-left text-xs font-medium text-gray-500 pb-2.5">Name</th>
-                    <th className="text-left text-xs font-medium text-gray-500 pb-2.5">Role</th>
-                    <th className="text-left text-xs font-medium text-gray-500 pb-2.5 hidden sm:table-cell">Space</th>
-                    <th className="text-left text-xs font-medium text-gray-500 pb-2.5">Status</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-800">
-                  {ADMIN_ACCOUNTS.map((admin) => {
-                    const rc = ROLE_CONFIG[admin.role];
-                    return (
-                      <tr key={admin.id} className="hover:bg-gray-800/50">
-                        <td className="py-2.5">
-                          <p className="text-sm text-white font-medium">{admin.name}</p>
-                          <p className="text-xs text-gray-500">{admin.email}</p>
-                        </td>
-                        <td className="py-2.5">
-                          <Badge variant={rc.variant} size="sm">{rc.label}</Badge>
-                        </td>
-                        <td className="py-2.5 hidden sm:table-cell">
-                          <span className="text-xs text-gray-400">{admin.space ?? "—"}</span>
-                        </td>
-                        <td className="py-2.5">
-                          <Badge
-                            variant={admin.status === "active" ? "success" : "danger"}
-                            size="sm"
-                          >
-                            {admin.status}
-                          </Badge>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+              {admins.length === 0 ? (
+                <p className="text-xs text-gray-500 text-center py-6">Loading admin accounts…</p>
+              ) : (
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-gray-800">
+                      <th className="text-left text-xs font-medium text-gray-500 pb-2.5">Name</th>
+                      <th className="text-left text-xs font-medium text-gray-500 pb-2.5">Role</th>
+                      <th className="text-left text-xs font-medium text-gray-500 pb-2.5 hidden sm:table-cell">Space</th>
+                      <th className="text-left text-xs font-medium text-gray-500 pb-2.5">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-800">
+                    {admins.slice(0, 8).map((admin) => {
+                      const rc = ROLE_CONFIG[admin.role] ?? { label: admin.role, variant: "neutral" as const };
+                      return (
+                        <tr key={admin.id} className="hover:bg-gray-800/50">
+                          <td className="py-2.5">
+                            <p className="text-sm text-white font-medium">{admin.full_name}</p>
+                            <p className="text-xs text-gray-500">{admin.email}</p>
+                          </td>
+                          <td className="py-2.5">
+                            <Badge variant={rc.variant} size="sm">{rc.label}</Badge>
+                          </td>
+                          <td className="py-2.5 hidden sm:table-cell">
+                            <span className="text-xs text-gray-400">{admin.assigned_space_name ?? "—"}</span>
+                          </td>
+                          <td className="py-2.5">
+                            <Badge variant={admin.status === "active" ? "success" : "danger"} size="sm">
+                              {admin.status}
+                            </Badge>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              )}
             </Card>
           </div>
 
@@ -148,11 +175,11 @@ export default function SuperAdminPage() {
               </h2>
               <div className="space-y-2">
                 {[
-                  { href: "/superadmin/admins",   icon: UserPlus,    label: "Add / Manage Admins" },
-                  { href: "/admin",               icon: BarChart2,   label: "Bookings Dashboard" },
-                  { href: "/admin/spaces",        icon: Building2,   label: "Space Management" },
-                  { href: "/admin/broadcast",     icon: Megaphone,   label: "Broadcast Message" },
-                  { href: "/admin/settings",      icon: Settings,    label: "System Settings" },
+                  { href: "/superadmin/admins", icon: UserPlus,  label: "Add / Manage Admins" },
+                  { href: "/admin",             icon: BarChart2, label: "Bookings Dashboard" },
+                  { href: "/admin/spaces",      icon: Building2, label: "Space Management" },
+                  { href: "/admin/broadcast",   icon: Megaphone, label: "Broadcast Message" },
+                  { href: "/admin/settings",    icon: Settings,  label: "System Settings" },
                 ].map(({ href, icon: Icon, label }) => (
                   <Link
                     key={href}
