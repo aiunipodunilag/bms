@@ -139,6 +139,27 @@ create table if not exists public.broadcast_messages (
   sent_at       timestamptz not null default now()
 );
 
+-- ─── system_settings ─────────────────────────────────────────────────────────
+-- Stores key-value pairs for system-wide settings (schedule, booking rules).
+create table if not exists public.system_settings (
+  key         text primary key,
+  value       jsonb not null,
+  updated_at  timestamptz not null default now(),
+  updated_by  uuid references public.admin_accounts(id)
+);
+
+-- ─── space_overrides ─────────────────────────────────────────────────────────
+-- Persists admin edits to space status, description, and capacity.
+-- The space_id matches the slug from lib/data/spaces.ts.
+create table if not exists public.space_overrides (
+  space_id    text primary key,
+  status      text check (status in ('active','inactive','maintenance')),
+  description text,
+  capacity    integer,
+  updated_at  timestamptz not null default now(),
+  updated_by  uuid references public.admin_accounts(id)
+);
+
 -- ============================================================================
 -- Row Level Security (RLS)
 -- ============================================================================
@@ -294,6 +315,36 @@ create policy "Users can read own notifications"
 create policy "Users can update own notifications (mark read)"
   on public.notifications for update
   using (auth.uid() = user_id);
+
+-- ── system_settings RLS ──────────────────────────────────────────────────────
+alter table public.system_settings enable row level security;
+
+create policy "Admins can read system settings"
+  on public.system_settings for select
+  using (
+    exists (select 1 from public.admin_accounts where id = auth.uid() and status = 'active')
+  );
+
+create policy "Admins can manage system settings"
+  on public.system_settings for all
+  using (
+    exists (select 1 from public.admin_accounts where id = auth.uid() and role in ('admin','super_admin') and status = 'active')
+  );
+
+-- ── space_overrides RLS ───────────────────────────────────────────────────────
+alter table public.space_overrides enable row level security;
+
+create policy "Admins can read space overrides"
+  on public.space_overrides for select
+  using (
+    exists (select 1 from public.admin_accounts where id = auth.uid() and status = 'active')
+  );
+
+create policy "Admins can manage space overrides"
+  on public.space_overrides for all
+  using (
+    exists (select 1 from public.admin_accounts where id = auth.uid() and role in ('admin','super_admin') and status = 'active')
+  );
 
 -- ============================================================================
 -- Indexes

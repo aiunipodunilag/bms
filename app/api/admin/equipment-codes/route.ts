@@ -3,6 +3,55 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { SPACE_EQUIPMENT_MAP } from "@/lib/data/spaces";
 
+/**
+ * GET /api/admin/equipment-codes?status=active|used
+ * Returns equipment codes for the current space lead's space (or all for admin/super_admin).
+ */
+export async function GET(request: NextRequest) {
+  const supabase = createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return NextResponse.json({ error: "Unauthorised" }, { status: 401 });
+
+  const adminDb = createAdminClient();
+  const { data: adminAccount } = await adminDb
+    .from("admin_accounts")
+    .select("role, status, assigned_space_id")
+    .eq("id", user.id)
+    .single();
+
+  if (!adminAccount || adminAccount.status !== "active") {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  const url = new URL(request.url);
+  const statusFilter = url.searchParams.get("status") ?? "active";
+
+  let query = adminDb
+    .from("equipment_access_codes")
+    .select("*")
+    .eq("status", statusFilter)
+    .order("generated_at", { ascending: false });
+
+  // Space leads only see codes for their assigned space
+  if (adminAccount.role === "space_lead" && adminAccount.assigned_space_id) {
+    query = query.eq("space_id", adminAccount.assigned_space_id);
+  }
+
+  // For "used" status, limit to today
+  if (statusFilter === "used") {
+    const today = new Date().toISOString().split("T")[0];
+    query = query.gte("used_at", today + "T00:00:00.000Z");
+  }
+
+  const { data, error } = await query.limit(50);
+
+  if (error) {
+    return NextResponse.json({ error: "Failed to fetch equipment codes" }, { status: 500 });
+  }
+
+  return NextResponse.json({ codes: data ?? [] });
+}
+
 function generateEquipmentCode(): string {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
   let code = "";

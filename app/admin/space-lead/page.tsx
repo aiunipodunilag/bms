@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   ShieldCheck,
   ScanLine,
@@ -9,66 +9,30 @@ import {
   Clock,
   User,
   Cpu,
-  AlertCircle,
   RotateCcw,
   LogOut,
+  RefreshCw,
 } from "lucide-react";
 import Link from "next/link";
 import { Card } from "@/components/ui/Card";
 import Badge from "@/components/ui/Badge";
 import Button from "@/components/ui/Button";
-import type { EquipmentAccessCode } from "@/types";
 
-// ── Mock data: codes that are pending verification for this space lead ────────
-const MOCK_PENDING_CODES: EquipmentAccessCode[] = [
-  {
-    id: "eq-001",
-    code: "EQ-2025-T4K9P",
-    bookingId: "bk-101",
-    bmsCode: "BMS-2025-A7X3K",
-    userId: "u-201",
-    userName: "Adeola Fashola",
-    equipmentType: "3d_printer_medium",
-    equipmentLabel: "3D Printer (Medium)",
-    spaceId: "maker-space",
-    spaceName: "Maker Space",
-    status: "active",
-    generatedAt: new Date(Date.now() - 8 * 60 * 1000).toISOString(),
-  },
-  {
-    id: "eq-002",
-    code: "EQ-2025-X8M2Q",
-    bookingId: "bk-102",
-    bmsCode: "BMS-2025-B3R1W",
-    userId: "u-202",
-    userName: "Chukwuemeka Obi",
-    equipmentType: "laser_cutter",
-    equipmentLabel: "Laser Cutter",
-    spaceId: "maker-space",
-    spaceName: "Maker Space",
-    status: "active",
-    generatedAt: new Date(Date.now() - 3 * 60 * 1000).toISOString(),
-  },
-];
-
-const MOCK_VERIFIED: EquipmentAccessCode[] = [
-  {
-    id: "eq-000",
-    code: "EQ-2025-Z2K7V",
-    bookingId: "bk-099",
-    bmsCode: "BMS-2025-C9N5D",
-    userId: "u-199",
-    userName: "Precious Okonkwo",
-    equipmentType: "vinyl_cutter",
-    equipmentLabel: "Vinyl Cutter",
-    spaceId: "maker-space",
-    spaceName: "Maker Space",
-    status: "used",
-    generatedAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-    usedAt: new Date(Date.now() - 90 * 60 * 1000).toISOString(),
-    usedByAdminId: "a-003",
-  },
-];
+interface EquipmentCode {
+  id: string;
+  code: string;
+  booking_id: string;
+  bms_code: string;
+  user_id: string;
+  user_name: string;
+  equipment_type: string;
+  equipment_label: string;
+  space_id: string;
+  space_name: string;
+  status: "active" | "used" | "expired";
+  generated_at: string;
+  used_at: string | null;
+}
 
 function timeAgo(iso: string) {
   const diff = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
@@ -80,14 +44,42 @@ function timeAgo(iso: string) {
 type VerifyState = "idle" | "loading" | "success" | "error";
 
 export default function SpaceLeadPage() {
-  const [inputCode, setInputCode]           = useState("");
-  const [verifyState, setVerifyState]       = useState<VerifyState>("idle");
-  const [verifiedItem, setVerifiedItem]     = useState<EquipmentAccessCode | null>(null);
-  const [errorMessage, setErrorMessage]     = useState("");
-  const [pendingCodes, setPendingCodes]     = useState<EquipmentAccessCode[]>(MOCK_PENDING_CODES);
-  const [verifiedCodes, setVerifiedCodes]   = useState<EquipmentAccessCode[]>(MOCK_VERIFIED);
+  const [inputCode, setInputCode]         = useState("");
+  const [verifyState, setVerifyState]     = useState<VerifyState>("idle");
+  const [verifiedItem, setVerifiedItem]   = useState<EquipmentCode | null>(null);
+  const [errorMessage, setErrorMessage]   = useState("");
+  const [pendingCodes, setPendingCodes]   = useState<EquipmentCode[]>([]);
+  const [verifiedCodes, setVerifiedCodes] = useState<EquipmentCode[]>([]);
+  const [spaceName, setSpaceName]         = useState("Your Space");
 
-  // Verify a code (either typed or from pending list)
+  const loadCodes = useCallback(async () => {
+    const [activeRes, usedRes] = await Promise.all([
+      fetch("/api/admin/equipment-codes?status=active"),
+      fetch("/api/admin/equipment-codes?status=used"),
+    ]);
+
+    if (activeRes.ok) {
+      const { codes } = await activeRes.json();
+      setPendingCodes(codes ?? []);
+      if (codes?.[0]?.space_name) setSpaceName(codes[0].space_name);
+    }
+    if (usedRes.ok) {
+      const { codes } = await usedRes.json();
+      setVerifiedCodes(codes ?? []);
+      if (!pendingCodes[0] && codes?.[0]?.space_name) setSpaceName(codes[0].space_name);
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    // Fetch admin info for space name display
+    fetch("/api/admin/me")
+      .then((r) => r.json())
+      .then(({ assigned_space_name }) => { if (assigned_space_name) setSpaceName(assigned_space_name); })
+      .catch(() => {});
+
+    loadCodes();
+  }, [loadCodes]);
+
   const verifyCode = async (codeToVerify: string) => {
     const code = codeToVerify.trim().toUpperCase();
     if (!code) return;
@@ -95,25 +87,25 @@ export default function SpaceLeadPage() {
     setErrorMessage("");
     setVerifiedItem(null);
 
-    // TODO: POST /api/admin/equipment-codes/verify with { code }
-    await new Promise((r) => setTimeout(r, 900));
+    const res = await fetch(`/api/admin/equipment-codes/${encodeURIComponent(code)}/verify`, {
+      method: "POST",
+    });
+    const data = await res.json();
 
-    // Find in pending list
-    const found = pendingCodes.find((c) => c.code === code);
-    if (!found) {
+    if (!res.ok) {
       setVerifyState("error");
       setErrorMessage(
-        code.startsWith("EQ-")
-          ? "Code not found or already used. It may have expired."
-          : "Invalid format. Equipment codes look like EQ-2025-XXXXX."
+        data.error ?? (
+          code.startsWith("EQ-")
+            ? "Code not found or already used. It may have expired."
+            : "Invalid format. Equipment codes look like EQ-2025-XXXXX."
+        )
       );
       return;
     }
 
-    // Mark as used
-    const now = new Date().toISOString();
-    const verified: EquipmentAccessCode = { ...found, status: "used", usedAt: now, usedByAdminId: "a-003" };
-    setPendingCodes((prev) => prev.filter((c) => c.id !== found.id));
+    const verified: EquipmentCode = data.equipmentCode;
+    setPendingCodes((prev) => prev.filter((c) => c.code !== code));
     setVerifiedCodes((prev) => [verified, ...prev]);
     setVerifiedItem(verified);
     setVerifyState("success");
@@ -134,23 +126,28 @@ export default function SpaceLeadPage() {
 
   return (
     <div className="min-h-screen bg-gray-950">
-      {/* Top bar */}
       <header className="bg-gray-900 border-b border-gray-800 px-6 py-4 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div>
-            <p className="text-sm font-bold text-white">Space Lead — Maker Space</p>
-            <p className="text-xs text-gray-500">Equipment access verification</p>
-          </div>
+        <div>
+          <p className="text-sm font-bold text-white">Space Lead — {spaceName}</p>
+          <p className="text-xs text-gray-500">Equipment access verification</p>
         </div>
-        <Link href="/admin/login">
-          <Button variant="ghost" size="sm">
-            <LogOut size={13} /> Sign out
-          </Button>
-        </Link>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={loadCodes}
+            className="p-2 text-gray-400 hover:text-white hover:bg-gray-800 rounded-xl transition-colors"
+            title="Refresh"
+          >
+            <RefreshCw size={14} />
+          </button>
+          <Link href="/admin/login">
+            <Button variant="ghost" size="sm">
+              <LogOut size={13} /> Sign out
+            </Button>
+          </Link>
+        </div>
       </header>
 
       <main className="max-w-4xl mx-auto px-6 py-8 space-y-6">
-        {/* How it works banner */}
         <Card className="bg-brand-950/30 border-brand-800/30">
           <div className="flex items-start gap-3">
             <ShieldCheck size={15} className="text-brand-400 shrink-0 mt-0.5" />
@@ -177,10 +174,10 @@ export default function SpaceLeadPage() {
                     <CheckCircle size={28} className="text-green-400" />
                   </div>
                   <p className="text-green-400 font-bold text-lg">{verifiedItem.code}</p>
-                  <p className="text-white font-semibold mt-1">{verifiedItem.userName}</p>
+                  <p className="text-white font-semibold mt-1">{verifiedItem.user_name}</p>
                   <p className="text-sm text-gray-400 mt-0.5">
                     is authorised to use the{" "}
-                    <span className="text-brand-300 font-medium">{verifiedItem.equipmentLabel}</span>
+                    <span className="text-brand-300 font-medium">{verifiedItem.equipment_label}</span>
                   </p>
                   <Badge variant="success" className="mt-3">Code used — now expired</Badge>
                   <div className="mt-4">
@@ -209,6 +206,8 @@ export default function SpaceLeadPage() {
                       Enter equipment access code
                     </label>
                     <input
+                      id="eq-code-input"
+                      name="equipment_code"
                       type="text"
                       value={inputCode}
                       onChange={(e) => setInputCode(e.target.value.toUpperCase())}
@@ -254,16 +253,13 @@ export default function SpaceLeadPage() {
                       <div>
                         <p className="text-xs font-mono font-bold text-yellow-400">{code.code}</p>
                         <div className="flex items-center gap-2 mt-0.5">
-                          <p className="text-xs text-gray-400">{code.userName}</p>
+                          <p className="text-xs text-gray-400">{code.user_name}</p>
                           <span className="text-gray-600">·</span>
-                          <p className="text-xs text-gray-500">{code.equipmentLabel}</p>
+                          <p className="text-xs text-gray-500">{code.equipment_label}</p>
                         </div>
-                        <p className="text-xs text-gray-600 mt-0.5">Generated {timeAgo(code.generatedAt)}</p>
+                        <p className="text-xs text-gray-600 mt-0.5">Generated {timeAgo(code.generated_at)}</p>
                       </div>
-                      <Button
-                        size="sm"
-                        onClick={() => verifyCode(code.code)}
-                      >
+                      <Button size="sm" onClick={() => verifyCode(code.code)}>
                         Verify
                       </Button>
                     </div>
@@ -291,14 +287,14 @@ export default function SpaceLeadPage() {
                       </div>
                       <div className="flex items-center gap-1.5">
                         <User size={11} className="text-gray-500" />
-                        <p className="text-xs text-gray-300">{code.userName}</p>
+                        <p className="text-xs text-gray-300">{code.user_name}</p>
                       </div>
                       <div className="flex items-center gap-1.5">
                         <Cpu size={11} className="text-gray-500" />
-                        <p className="text-xs text-gray-400">{code.equipmentLabel}</p>
+                        <p className="text-xs text-gray-400">{code.equipment_label}</p>
                       </div>
-                      {code.usedAt && (
-                        <p className="text-xs text-gray-600">Verified {timeAgo(code.usedAt)}</p>
+                      {code.used_at && (
+                        <p className="text-xs text-gray-600">Verified {timeAgo(code.used_at)}</p>
                       )}
                     </div>
                   ))}

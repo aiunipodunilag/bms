@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import AdminSidebar from "@/components/layout/AdminSidebar";
 import { Card } from "@/components/ui/Card";
 import Badge from "@/components/ui/Badge";
@@ -35,9 +35,9 @@ interface AdminSpace {
   requiresApproval: boolean;
 }
 
-const ADMIN_SPACES: AdminSpace[] = [
+const BASE_SPACES: AdminSpace[] = [
   {
-    id: "s-001",
+    id: "coworking",
     name: "Co-working Space",
     slug: "coworking",
     capacity: 40,
@@ -49,7 +49,7 @@ const ADMIN_SPACES: AdminSpace[] = [
     requiresApproval: false,
   },
   {
-    id: "s-002",
+    id: "collaboration",
     name: "Collaboration Space",
     slug: "collaboration",
     capacity: 20,
@@ -61,7 +61,7 @@ const ADMIN_SPACES: AdminSpace[] = [
     requiresApproval: false,
   },
   {
-    id: "s-003",
+    id: "boardroom-main",
     name: "Board Room (Main)",
     slug: "boardroom-main",
     capacity: 20,
@@ -73,7 +73,7 @@ const ADMIN_SPACES: AdminSpace[] = [
     requiresApproval: true,
   },
   {
-    id: "s-004",
+    id: "boardroom-mini",
     name: "Board Room (Mini)",
     slug: "boardroom-mini",
     capacity: 8,
@@ -85,7 +85,7 @@ const ADMIN_SPACES: AdminSpace[] = [
     requiresApproval: false,
   },
   {
-    id: "s-005",
+    id: "ai-robotics-lab",
     name: "AI & Robotics Lab",
     slug: "ai-robotics-lab",
     capacity: 15,
@@ -97,7 +97,7 @@ const ADMIN_SPACES: AdminSpace[] = [
     requiresApproval: true,
   },
   {
-    id: "s-006",
+    id: "maker-space",
     name: "Maker Space",
     slug: "maker-space",
     capacity: 15,
@@ -109,7 +109,7 @@ const ADMIN_SPACES: AdminSpace[] = [
     requiresApproval: true,
   },
   {
-    id: "s-007",
+    id: "vr-lab",
     name: "VR Lab",
     slug: "vr-lab",
     capacity: 10,
@@ -121,7 +121,7 @@ const ADMIN_SPACES: AdminSpace[] = [
     requiresApproval: true,
   },
   {
-    id: "s-008",
+    id: "pitch-garage",
     name: "Pitch Garage",
     slug: "pitch-garage",
     capacity: 30,
@@ -133,7 +133,7 @@ const ADMIN_SPACES: AdminSpace[] = [
     requiresApproval: true,
   },
   {
-    id: "s-009",
+    id: "podcast-studio",
     name: "Podcast Studio",
     slug: "podcast-studio",
     capacity: 4,
@@ -145,7 +145,7 @@ const ADMIN_SPACES: AdminSpace[] = [
     requiresApproval: true,
   },
   {
-    id: "s-010",
+    id: "design-studio",
     name: "Design Studio",
     slug: "design-studio",
     capacity: 12,
@@ -157,7 +157,7 @@ const ADMIN_SPACES: AdminSpace[] = [
     requiresApproval: false,
   },
   {
-    id: "s-011",
+    id: "design-lab",
     name: "Design Lab",
     slug: "design-lab",
     capacity: 20,
@@ -169,7 +169,7 @@ const ADMIN_SPACES: AdminSpace[] = [
     requiresApproval: true,
   },
   {
-    id: "s-012",
+    id: "ict-room",
     name: "ICT Room",
     slug: "ict-room",
     capacity: 25,
@@ -183,24 +183,52 @@ const ADMIN_SPACES: AdminSpace[] = [
 ];
 
 const STATUS_CONFIG: Record<SpaceStatus, { label: string; variant: "success" | "danger" | "warning" }> = {
-  active: { label: "Active", variant: "success" },
-  inactive: { label: "Inactive", variant: "danger" },
+  active:      { label: "Active",      variant: "success" },
+  inactive:    { label: "Inactive",    variant: "danger" },
   maintenance: { label: "Maintenance", variant: "warning" },
 };
 
 export default function AdminSpacesPage() {
-  const [spaces, setSpaces] = useState<AdminSpace[]>(ADMIN_SPACES);
+  const [spaces, setSpaces] = useState<AdminSpace[]>(BASE_SPACES);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<{ description: string; capacity: number } | null>(null);
+  const [savingId, setSavingId] = useState<string | null>(null);
 
-  const toggleStatus = (id: string) => {
+  // Load persisted overrides from DB and merge with base data
+  useEffect(() => {
+    fetch("/api/admin/spaces")
+      .then((r) => r.ok ? r.json() : null)
+      .then((data) => {
+        if (!data?.overrides) return;
+        const overrideMap: Record<string, Partial<AdminSpace>> = {};
+        for (const o of data.overrides) {
+          overrideMap[o.space_id] = {
+            ...(o.status && { status: o.status }),
+            ...(o.description && { description: o.description }),
+            ...(o.capacity && { capacity: o.capacity }),
+          };
+        }
+        setSpaces((prev) =>
+          prev.map((s) => overrideMap[s.id] ? { ...s, ...overrideMap[s.id] } : s)
+        );
+      })
+      .catch(() => {});
+  }, []);
+
+  const toggleStatus = useCallback(async (id: string) => {
     setSpaces((prev) =>
-      prev.map((s) =>
-        s.id === id ? { ...s, status: s.status === "active" ? "inactive" : "active" } : s
-      )
+      prev.map((s) => s.id === id ? { ...s, status: s.status === "active" ? "inactive" : "active" } : s)
     );
-  };
+    const space = spaces.find((s) => s.id === id);
+    if (!space) return;
+    const newStatus = space.status === "active" ? "inactive" : "active";
+    await fetch(`/api/admin/spaces/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status: newStatus }),
+    });
+  }, [spaces]);
 
   const startEdit = (space: AdminSpace) => {
     setEditingId(space.id);
@@ -208,13 +236,18 @@ export default function AdminSpacesPage() {
     setExpandedId(space.id);
   };
 
-  const saveEdit = (id: string) => {
+  const saveEdit = async (id: string) => {
     if (!editForm) return;
+    setSavingId(id);
     setSpaces((prev) =>
-      prev.map((s) =>
-        s.id === id ? { ...s, description: editForm.description, capacity: editForm.capacity } : s
-      )
+      prev.map((s) => s.id === id ? { ...s, description: editForm.description, capacity: editForm.capacity } : s)
     );
+    await fetch(`/api/admin/spaces/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ description: editForm.description, capacity: editForm.capacity }),
+    });
+    setSavingId(null);
     setEditingId(null);
     setEditForm(null);
   };
@@ -233,7 +266,6 @@ export default function AdminSpacesPage() {
 
       <div className="flex-1 overflow-auto">
         <main className="max-w-6xl mx-auto px-6 py-8 space-y-6">
-          {/* Header */}
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-2xl font-bold text-gray-900">Space Management</h1>
@@ -243,7 +275,6 @@ export default function AdminSpacesPage() {
             </div>
           </div>
 
-          {/* Info banner */}
           <Card className="bg-blue-50 border-blue-100 py-3">
             <div className="flex items-start gap-3">
               <Info size={15} className="text-blue-500 shrink-0 mt-0.5" />
@@ -253,7 +284,6 @@ export default function AdminSpacesPage() {
             </div>
           </Card>
 
-          {/* Spaces list */}
           <Card padding="none">
             <table className="w-full">
               <thead>
@@ -294,16 +324,13 @@ export default function AdminSpacesPage() {
                           </div>
                         </td>
                         <td className="px-4 py-3.5">
-                          <Badge variant="neutral" size="sm" className="capitalize">
-                            {space.type}
-                          </Badge>
+                          <Badge variant="neutral" size="sm" className="capitalize">{space.type}</Badge>
                         </td>
                         <td className="px-4 py-3.5">
-                          {space.requiresApproval ? (
-                            <Badge variant="warning" size="sm">Required</Badge>
-                          ) : (
-                            <Badge variant="success" size="sm">Auto</Badge>
-                          )}
+                          {space.requiresApproval
+                            ? <Badge variant="warning" size="sm">Required</Badge>
+                            : <Badge variant="success" size="sm">Auto</Badge>
+                          }
                         </td>
                         <td className="px-4 py-3.5">
                           <Badge variant={sc.variant} size="sm">{sc.label}</Badge>
@@ -319,11 +346,7 @@ export default function AdminSpacesPage() {
                               }`}
                               title={space.status === "active" ? "Deactivate space" : "Activate space"}
                             >
-                              {space.status === "active" ? (
-                                <ToggleRight size={18} />
-                              ) : (
-                                <ToggleLeft size={18} />
-                              )}
+                              {space.status === "active" ? <ToggleRight size={18} /> : <ToggleLeft size={18} />}
                             </button>
                             <button
                               onClick={() => startEdit(space)}
@@ -345,7 +368,6 @@ export default function AdminSpacesPage() {
                       {isExpanded && (
                         <tr key={`${space.id}-expanded`} className="bg-gray-50">
                           <td colSpan={6} className="px-5 py-4 space-y-4">
-                            {/* Description */}
                             <div>
                               <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Description</p>
                               {isEditing && editForm ? (
@@ -360,7 +382,6 @@ export default function AdminSpacesPage() {
                               )}
                             </div>
 
-                            {/* Capacity edit */}
                             {isEditing && editForm && (
                               <div>
                                 <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Capacity</p>
@@ -373,24 +394,19 @@ export default function AdminSpacesPage() {
                               </div>
                             )}
 
-                            {/* Equipment */}
                             <div>
                               <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5 flex items-center gap-1.5">
                                 <Cpu size={11} /> Equipment
                               </p>
                               <div className="flex flex-wrap gap-1.5">
                                 {space.equipment.map((eq) => (
-                                  <span
-                                    key={eq}
-                                    className="text-xs bg-white border border-gray-200 text-gray-600 px-2.5 py-1 rounded-full"
-                                  >
+                                  <span key={eq} className="text-xs bg-white border border-gray-200 text-gray-600 px-2.5 py-1 rounded-full">
                                     {eq}
                                   </span>
                                 ))}
                               </div>
                             </div>
 
-                            {/* Who can book */}
                             <div>
                               <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Who Can Book</p>
                               <div className="flex flex-wrap gap-1.5">
@@ -400,7 +416,6 @@ export default function AdminSpacesPage() {
                               </div>
                             </div>
 
-                            {/* Image upload placeholder */}
                             <div>
                               <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5 flex items-center gap-1.5">
                                 <ImageIcon size={11} /> Space Photo
@@ -410,16 +425,13 @@ export default function AdminSpacesPage() {
                                 <p className="text-xs text-gray-400 text-center">
                                   Image upload available when Supabase Storage is connected.
                                 </p>
-                                <Button size="sm" variant="outline" disabled>
-                                  Upload Photo
-                                </Button>
+                                <Button size="sm" variant="outline" disabled>Upload Photo</Button>
                               </div>
                             </div>
 
-                            {/* Action buttons */}
                             {isEditing ? (
                               <div className="flex gap-2">
-                                <Button size="sm" onClick={() => saveEdit(space.id)}>
+                                <Button size="sm" loading={savingId === space.id} onClick={() => saveEdit(space.id)}>
                                   <Save size={13} /> Save Changes
                                 </Button>
                                 <Button size="sm" variant="outline" onClick={cancelEdit}>

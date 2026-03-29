@@ -18,7 +18,7 @@ export async function GET() {
   const adminDb = createAdminClient();
   const { data: admin, error } = await adminDb
     .from("admin_accounts")
-    .select("role, status")
+    .select("role, status, assigned_space_id, assigned_space_name, full_name")
     .eq("id", user.id)
     .single();
 
@@ -26,5 +26,11 @@ export async function GET() {
     return NextResponse.json({ error: "Not an admin account" }, { status: 403 });
   }
 
-  return NextResponse.json({ role: admin.role, status: admin.status });
+  return NextResponse.json({
+    role: admin.role,
+    status: admin.status,
+    assigned_space_id: admin.assigned_space_id,
+    assigned_space_name: admin.assigned_space_name,
+    full_name: admin.full_name,
+  });
 }
