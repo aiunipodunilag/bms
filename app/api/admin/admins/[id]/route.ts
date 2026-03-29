@@ -73,8 +73,8 @@ export async function DELETE(
   } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorised" }, { status: 401 });
 
-  const adminDb2 = createAdminClient();
-  const { data: adminAccount } = await adminDb2
+  const adminDb = createAdminClient();
+  const { data: adminAccount } = await adminDb
     .from("admin_accounts")
     .select("role, status")
     .eq("id", user.id)
@@ -85,7 +85,7 @@ export async function DELETE(
   }
 
   // Soft delete by suspending, not actually deleting
-  const { error } = await adminDb2
+  const { error } = await adminDb
     .from("admin_accounts")
     .update({ status: "suspended" })
     .eq("id", params.id);

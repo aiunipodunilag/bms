@@ -18,7 +18,8 @@ export async function POST(
   } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorised" }, { status: 401 });
 
-  const { data: adminAccount } = await supabase
+  const adminDb = createAdminClient();
+  const { data: adminAccount } = await adminDb
     .from("admin_accounts")
     .select("role, status, assigned_space_id")
     .eq("id", user.id)

@@ -2,10 +2,10 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import Button from "@/components/ui/Button";
-import { Menu, X, Bell, ChevronDown, LogOut, User, Settings } from "lucide-react";
+import { Menu, X, Bell, ChevronDown, LogOut, User } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
 interface NavbarProps {
@@ -23,6 +23,31 @@ export default function Navbar({ user }: NavbarProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [notifOpen, setNotifOpen] = useState(false);
+  const [notifications, setNotifications] = useState<Array<{ id: string; title: string; message: string; read: boolean; created_at: string }>>([]);
+
+  useEffect(() => {
+    if (!user) return;
+    fetch("/api/notifications")
+      .then((r) => r.ok ? r.json() : null)
+      .then((data) => {
+        if (!data?.notifications) return;
+        setNotifications(data.notifications);
+        setUnreadCount(data.notifications.filter((n: { read: boolean }) => !n.read).length);
+      })
+      .catch(() => {});
+  }, [user]);
+
+  const openNotifications = () => {
+    setNotifOpen(true);
+    setProfileOpen(false);
+    if (unreadCount > 0) {
+      fetch("/api/notifications", { method: "PATCH" }).catch(() => {});
+      setUnreadCount(0);
+      setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+    }
+  };
 
   const handleSignOut = async () => {
     setSigningOut(true);
@@ -82,10 +107,51 @@ export default function Navbar({ user }: NavbarProps) {
             {user ? (
               <>
                 {/* Notifications */}
-                <button className="relative p-2 rounded-xl text-gray-500 hover:bg-gray-100 transition-colors">
-                  <Bell size={18} />
-                  <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full" />
-                </button>
+                <div className="relative">
+                  <button
+                    onClick={openNotifications}
+                    className="relative p-2 rounded-xl text-gray-500 hover:bg-gray-100 transition-colors"
+                  >
+                    <Bell size={18} />
+                    {unreadCount > 0 && (
+                      <span className="absolute top-1 right-1 min-w-[16px] h-4 bg-red-500 rounded-full flex items-center justify-center text-white text-[9px] font-bold px-0.5">
+                        {unreadCount > 9 ? "9+" : unreadCount}
+                      </span>
+                    )}
+                  </button>
+
+                  {notifOpen && (
+                    <>
+                      <div className="fixed inset-0 z-40" onClick={() => setNotifOpen(false)} />
+                      <div className="absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-lg border border-gray-200 z-50 overflow-hidden">
+                        <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
+                          <p className="text-sm font-semibold text-gray-900">Notifications</p>
+                          <button onClick={() => setNotifOpen(false)} className="text-gray-400 hover:text-gray-600">
+                            <X size={14} />
+                          </button>
+                        </div>
+                        <div className="max-h-80 overflow-y-auto">
+                          {notifications.length === 0 ? (
+                            <p className="text-xs text-gray-400 text-center py-6">No notifications yet.</p>
+                          ) : (
+                            notifications.map((n) => (
+                              <div key={n.id} className={`px-4 py-3 border-b border-gray-50 ${n.read ? "" : "bg-brand-50/40"}`}>
+                                <p className="text-sm font-medium text-gray-900">{n.title}</p>
+                                <p className="text-xs text-gray-500 mt-0.5 leading-relaxed">{n.message}</p>
+                                <p className="text-xs text-gray-300 mt-1">
+                                  {new Date(n.created_at).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}
+                                </p>
+                              </div>
+                            ))
+                          )}
+                        </div>
+                        <Link href="/dashboard" className="block px-4 py-2.5 text-xs text-center text-brand-600 hover:bg-gray-50 border-t border-gray-100" onClick={() => setNotifOpen(false)}>
+                          View dashboard
+                        </Link>
+                      </div>
+                    </>
+                  )}
+                </div>
 
                 {/* Profile dropdown */}
                 <div className="relative">
