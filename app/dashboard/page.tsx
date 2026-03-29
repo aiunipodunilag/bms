@@ -43,7 +43,9 @@ export default async function DashboardPage() {
     .eq("id", user.id)
     .single();
 
-  if (!profile) redirect("/auth/login");
+  // No profile row — user created an auth account but signup didn't finish.
+  // Sign them out at the page level; they'll land on login cleanly.
+  if (!profile) redirect("/auth/signout");
 
   const tier = profile.tier as UserTier;
   const tierRules = TIER_RULES[tier];
