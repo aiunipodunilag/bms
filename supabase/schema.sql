@@ -1,8 +1,6 @@
 -- ============================================================================
--- AI-UNIPOD UNILAG BMS — Supabase Database Schema
+-- AI-UNIPOD UNILAG BMS — Supabase Database Schema (Idempotent)
 -- Run this in: Supabase Dashboard → SQL Editor
-
-
 -- ============================================================================
 
 -- Enable UUID extension
@@ -161,7 +159,7 @@ create table if not exists public.space_overrides (
 );
 
 -- ============================================================================
--- Row Level Security (RLS)
+-- Row Level Security (RLS) – with idempotent policy creation
 -- ============================================================================
 
 alter table public.profiles              enable row level security;
@@ -173,18 +171,22 @@ alter table public.notifications         enable row level security;
 alter table public.broadcast_messages    enable row level security;
 
 -- ── profiles RLS ─────────────────────────────────────────────────────────────
+drop policy if exists "Users can read own profile" on public.profiles;
 create policy "Users can read own profile"
   on public.profiles for select
   using (auth.uid() = id);
 
+drop policy if exists "Users can insert own profile" on public.profiles;
 create policy "Users can insert own profile"
   on public.profiles for insert
   with check (auth.uid() = id);
 
+drop policy if exists "Users can update own profile" on public.profiles;
 create policy "Users can update own profile"
   on public.profiles for update
   using (auth.uid() = id);
 
+drop policy if exists "Admins can read all profiles" on public.profiles;
 create policy "Admins can read all profiles"
   on public.profiles for select
   using (
@@ -194,6 +196,7 @@ create policy "Admins can read all profiles"
     )
   );
 
+drop policy if exists "Admins can update profiles" on public.profiles;
 create policy "Admins can update profiles"
   on public.profiles for update
   using (
@@ -204,10 +207,12 @@ create policy "Admins can update profiles"
   );
 
 -- ── admin_accounts RLS ───────────────────────────────────────────────────────
+drop policy if exists "Admins can read own account" on public.admin_accounts;
 create policy "Admins can read own account"
   on public.admin_accounts for select
   using (auth.uid() = id);
 
+drop policy if exists "Super admin can read all admin accounts" on public.admin_accounts;
 create policy "Super admin can read all admin accounts"
   on public.admin_accounts for select
   using (
@@ -217,6 +222,7 @@ create policy "Super admin can read all admin accounts"
     )
   );
 
+drop policy if exists "Super admin can insert admin accounts" on public.admin_accounts;
 create policy "Super admin can insert admin accounts"
   on public.admin_accounts for insert
   with check (
@@ -226,6 +232,7 @@ create policy "Super admin can insert admin accounts"
     )
   );
 
+drop policy if exists "Super admin can update admin accounts" on public.admin_accounts;
 create policy "Super admin can update admin accounts"
   on public.admin_accounts for update
   using (
@@ -236,18 +243,22 @@ create policy "Super admin can update admin accounts"
   );
 
 -- ── bookings RLS ─────────────────────────────────────────────────────────────
+drop policy if exists "Users can read own bookings" on public.bookings;
 create policy "Users can read own bookings"
   on public.bookings for select
   using (auth.uid() = user_id);
 
+drop policy if exists "Users can insert own bookings" on public.bookings;
 create policy "Users can insert own bookings"
   on public.bookings for insert
   with check (auth.uid() = user_id);
 
+drop policy if exists "Users can update own bookings (cancel)" on public.bookings;
 create policy "Users can update own bookings (cancel)"
   on public.bookings for update
   using (auth.uid() = user_id);
 
+drop policy if exists "Admins can read all bookings" on public.bookings;
 create policy "Admins can read all bookings"
   on public.bookings for select
   using (
@@ -257,6 +268,7 @@ create policy "Admins can read all bookings"
     )
   );
 
+drop policy if exists "Admins can update bookings" on public.bookings;
 create policy "Admins can update bookings"
   on public.bookings for update
   using (
@@ -267,14 +279,17 @@ create policy "Admins can update bookings"
   );
 
 -- ── resource_requests RLS ────────────────────────────────────────────────────
+drop policy if exists "Users can read own resource requests" on public.resource_requests;
 create policy "Users can read own resource requests"
   on public.resource_requests for select
   using (auth.uid() = user_id);
 
+drop policy if exists "Users can insert resource requests" on public.resource_requests;
 create policy "Users can insert resource requests"
   on public.resource_requests for insert
   with check (auth.uid() = user_id);
 
+drop policy if exists "Admins can read all resource requests" on public.resource_requests;
 create policy "Admins can read all resource requests"
   on public.resource_requests for select
   using (
@@ -284,6 +299,7 @@ create policy "Admins can read all resource requests"
     )
   );
 
+drop policy if exists "Admins can update resource requests" on public.resource_requests;
 create policy "Admins can update resource requests"
   on public.resource_requests for update
   using (
@@ -294,10 +310,12 @@ create policy "Admins can update resource requests"
   );
 
 -- ── equipment_access_codes RLS ───────────────────────────────────────────────
+drop policy if exists "Users can read own equipment codes" on public.equipment_access_codes;
 create policy "Users can read own equipment codes"
   on public.equipment_access_codes for select
   using (auth.uid() = user_id);
 
+drop policy if exists "Admins can read and manage equipment codes" on public.equipment_access_codes;
 create policy "Admins can read and manage equipment codes"
   on public.equipment_access_codes for all
   using (
@@ -308,10 +326,12 @@ create policy "Admins can read and manage equipment codes"
   );
 
 -- ── notifications RLS ────────────────────────────────────────────────────────
+drop policy if exists "Users can read own notifications" on public.notifications;
 create policy "Users can read own notifications"
   on public.notifications for select
   using (auth.uid() = user_id);
 
+drop policy if exists "Users can update own notifications (mark read)" on public.notifications;
 create policy "Users can update own notifications (mark read)"
   on public.notifications for update
   using (auth.uid() = user_id);
@@ -319,12 +339,14 @@ create policy "Users can update own notifications (mark read)"
 -- ── system_settings RLS ──────────────────────────────────────────────────────
 alter table public.system_settings enable row level security;
 
+drop policy if exists "Admins can read system settings" on public.system_settings;
 create policy "Admins can read system settings"
   on public.system_settings for select
   using (
     exists (select 1 from public.admin_accounts where id = auth.uid() and status = 'active')
   );
 
+drop policy if exists "Admins can manage system settings" on public.system_settings;
 create policy "Admins can manage system settings"
   on public.system_settings for all
   using (
@@ -334,12 +356,14 @@ create policy "Admins can manage system settings"
 -- ── space_overrides RLS ───────────────────────────────────────────────────────
 alter table public.space_overrides enable row level security;
 
+drop policy if exists "Admins can read space overrides" on public.space_overrides;
 create policy "Admins can read space overrides"
   on public.space_overrides for select
   using (
     exists (select 1 from public.admin_accounts where id = auth.uid() and status = 'active')
   );
 
+drop policy if exists "Admins can manage space overrides" on public.space_overrides;
 create policy "Admins can manage space overrides"
   on public.space_overrides for all
   using (
@@ -375,14 +399,17 @@ insert into storage.buckets (id, name, public)
   on conflict (id) do nothing;
 
 -- Storage RLS for documents bucket
+drop policy if exists "Users can upload own documents" on storage.objects;
 create policy "Users can upload own documents"
   on storage.objects for insert
   with check (bucket_id = 'documents' and auth.uid()::text = (storage.foldername(name))[1]);
 
+drop policy if exists "Users can read own documents" on storage.objects;
 create policy "Users can read own documents"
   on storage.objects for select
   using (bucket_id = 'documents' and auth.uid()::text = (storage.foldername(name))[1]);
 
+drop policy if exists "Admins can read all documents" on storage.objects;
 create policy "Admins can read all documents"
   on storage.objects for select
   using (
@@ -394,10 +421,12 @@ create policy "Admins can read all documents"
   );
 
 -- Storage RLS for spaces bucket (public read)
+drop policy if exists "Anyone can read space images" on storage.objects;
 create policy "Anyone can read space images"
   on storage.objects for select
   using (bucket_id = 'spaces');
 
+drop policy if exists "Admins can manage space images" on storage.objects;
 create policy "Admins can manage space images"
   on storage.objects for all
   using (
