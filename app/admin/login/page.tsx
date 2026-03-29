@@ -32,16 +32,12 @@ export default function AdminLoginPage() {
 
   // If already logged in as admin, skip login screen
   useEffect(() => {
-    const supabase = createClient();
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      if (!session) return;
-      const { data } = await supabase
-        .from("admin_accounts")
-        .select("role")
-        .eq("id", session.user.id)
-        .single();
-      if (data?.role) window.location.href = ROLE_REDIRECTS[data.role as AdminRole];
-    });
+    fetch("/api/admin/me")
+      .then((r) => r.json())
+      .then(({ role }) => {
+        if (role) window.location.href = ROLE_REDIRECTS[role as AdminRole];
+      })
+      .catch(() => {});
   }, [router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -75,42 +71,29 @@ export default function AdminLoginPage() {
         return;
       }
 
-      console.log("[admin-login] step 3: querying admin_accounts for user", authData.user.id);
-      const { data: adminAccount, error: adminErr } = await supabase
-        .from("admin_accounts")
-        .select("role, status")
-        .eq("id", authData.user.id)
-        .single();
+      console.log("[admin-login] step 3: verifying admin status via API");
+      const meRes = await fetch("/api/admin/me");
+      const meData = await meRes.json();
 
-      console.log("[admin-login] step 4: admin_accounts result", { adminAccount, error: adminErr?.message, code: adminErr?.code });
+      console.log("[admin-login] step 4: admin/me result", meData);
 
-      if (adminErr || !adminAccount) {
+      if (!meRes.ok || !meData.role) {
         await supabase.auth.signOut();
-        const msg = `Access denied \u2014 no admin record found. (DB error: ${adminErr?.message ?? "no row"})`;
-        console.error("[admin-login]", msg);
-        setError("Access denied. No admin account found for this email. Check the DB.");
+        setError("Access denied. No admin account found for this email.");
         setLoading(false);
         return;
       }
 
-      if (adminAccount.status !== "active") {
+      if (meData.status !== "active") {
         await supabase.auth.signOut();
-        const msg = `Account status is "${adminAccount.status}", not active.`;
-        console.error("[admin-login]", msg);
-        setError(`Account not active (status: ${adminAccount.status}). Contact a super admin.`);
+        setError(`Account not active (status: ${meData.status}). Contact a super admin.`);
         setLoading(false);
         return;
       }
 
-      console.log("[admin-login] step 5: success! role =", adminAccount.role, "\u2192 redirecting to", ROLE_REDIRECTS[adminAccount.role as AdminRole]);
+      console.log("[admin-login] step 5: success! role =", meData.role, "\u2192 redirecting to", ROLE_REDIRECTS[meData.role as AdminRole]);
 
-      supabase
-        .from("admin_accounts")
-        .update({ last_login_at: new Date().toISOString() })
-        .eq("id", authData.user.id)
-        .then(() => {});
-
-      window.location.href = ROLE_REDIRECTS[adminAccount.role as AdminRole];
+      window.location.href = ROLE_REDIRECTS[meData.role as AdminRole];
     } catch (err) {
       console.error("[admin-login] unexpected exception:", err);
       setError(`Unexpected error: ${err instanceof Error ? err.message : String(err)}`);

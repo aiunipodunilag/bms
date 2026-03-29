@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import Navbar from "@/components/layout/Navbar";
@@ -30,13 +30,24 @@ const approvalLabels: Record<string, { label: string; color: string }> = {
   admin_only: { label: "Admin-scheduled", color: "text-gray-400" },
 };
 
-// Mock current user tier — replace with session data
-const currentUserTier: UserTier = "regular_student";
-
 export default function SpacesPage() {
   const [search, setSearch] = useState("");
   const [activeCategory, setActiveCategory] = useState("All");
   const [showExternalOnly, setShowExternalOnly] = useState(false);
+  const [currentUserTier, setCurrentUserTier] = useState<UserTier>("regular_student");
+  const [userName, setUserName] = useState("");
+
+  useEffect(() => {
+    fetch("/api/users/me")
+      .then((r) => r.json())
+      .then(({ profile }) => {
+        if (profile) {
+          setUserName(profile.full_name ?? "");
+          setCurrentUserTier((profile.tier as UserTier) ?? "regular_student");
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   const filtered = spaces.filter((s) => {
     const matchesSearch =
@@ -53,7 +64,7 @@ export default function SpacesPage() {
     <div className="min-h-screen bg-gray-50">
       <Navbar
         user={{
-          name: "Tolu Adeyemi",
+          name: userName,
           tier: currentUserTier,
           tierLabel: TIER_LABELS[currentUserTier],
         }}
