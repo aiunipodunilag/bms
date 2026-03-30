@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { sendAccountVerified, sendAccountRejected } from "@/lib/email";
 
 /**
  * PATCH /api/admin/users/[id]
@@ -80,6 +81,20 @@ export async function PATCH(
         title: notifTitle,
         message: notifMsg,
       });
+
+      // Send email
+      const { data: { user: targetUser } } = await adminClient.auth.admin.getUserById(params.id);
+      const userEmail = targetUser?.email ?? data.email;
+      if (userEmail) {
+        const name = data.full_name ?? "there";
+        if (status === "verified") {
+          sendAccountVerified({ to: userEmail, name, tier: data.tier })
+            .catch((e) => console.error("[email] account verified:", e));
+        } else if (status === "rejected") {
+          sendAccountRejected({ to: userEmail, name })
+            .catch((e) => console.error("[email] account rejected:", e));
+        }
+      }
     }
 
     return NextResponse.json({ profile: data });

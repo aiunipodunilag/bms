@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { sendResourceApproved, sendResourceRejected } from "@/lib/email";
 
 /**
  * PATCH /api/admin/resource-requests/[id]
@@ -60,6 +61,22 @@ export async function PATCH(
     title,
     message,
   });
+
+  // Send email
+  const { data: { user: reqUser } } = await adminDb.auth.admin.getUserById(updated.user_id);
+  const userEmail = reqUser?.email;
+  if (userEmail) {
+    const { data: prof } = await adminDb.from("profiles").select("full_name").eq("id", updated.user_id).single();
+    const name = prof?.full_name ?? "there";
+    const resourceLabel = updated.resource_type.replace(/_/g, " ");
+    if (action === "approve") {
+      sendResourceApproved({ to: userEmail, name, resourceType: resourceLabel, preferredDate: updated.preferred_date, adminNote: notes ?? undefined })
+        .catch((e) => console.error("[email] resource approved:", e));
+    } else {
+      sendResourceRejected({ to: userEmail, name, resourceType: resourceLabel, preferredDate: updated.preferred_date, adminNote: notes ?? undefined })
+        .catch((e) => console.error("[email] resource rejected:", e));
+    }
+  }
 
   return NextResponse.json({ request: updated });
 }

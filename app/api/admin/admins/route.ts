@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { sendAdminAccountCreated } from "@/lib/email";
 
 /**
  * GET /api/admin/admins
@@ -108,6 +109,15 @@ export async function POST(request: NextRequest) {
       console.error("[admin/admins POST] insert error:", insertErr);
       return NextResponse.json({ error: "Failed to create admin record" }, { status: 500 });
     }
+
+    // Send credentials email to the new admin
+    sendAdminAccountCreated({
+      to: email,
+      name: fullName,
+      role,
+      tempPassword,
+      assignedSpace: assignedSpaceName ?? undefined,
+    }).catch((e) => console.error("[email] admin created:", e));
 
     return NextResponse.json({ admin: newAdmin }, { status: 201 });
   } catch (err) {

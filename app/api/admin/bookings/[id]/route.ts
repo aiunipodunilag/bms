@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { sendBookingApproved, sendBookingRejected } from "@/lib/email";
 
 /**
  * PATCH /api/admin/bookings/[id]
@@ -66,7 +67,7 @@ export async function PATCH(
       return NextResponse.json({ error: "Failed to update booking" }, { status: 500 });
     }
 
-    // Notify the user
+    // Notify the user in-app
     await adminClient.from("notifications").insert({
       user_id: booking.user_id,
       type: action === "approve" ? "booking_confirmed" : "booking_rejected",
@@ -74,10 +75,23 @@ export async function PATCH(
       message:
         action === "approve"
           ? `Your booking for ${booking.space_name} on ${booking.date} at ${booking.start_time} has been approved. Code: ${booking.bms_code}`
-          : `Your booking for ${booking.space_name} on ${booking.date} was not approved.${
-              adminNote ? ` Reason: ${adminNote}` : ""
-            }`,
+          : `Your booking for ${booking.space_name} on ${booking.date} was not approved.${adminNote ? ` Reason: ${adminNote}` : ""}`,
     });
+
+    // Send email — fetch user email from auth
+    const { data: { user: bookingUser } } = await adminClient.auth.admin.getUserById(booking.user_id);
+    const userEmail = bookingUser?.email;
+    if (userEmail) {
+      const { data: prof } = await adminClient.from("profiles").select("full_name").eq("id", booking.user_id).single();
+      const name = prof?.full_name ?? "there";
+      if (action === "approve") {
+        sendBookingApproved({ to: userEmail, name, bmsCode: booking.bms_code, spaceName: booking.space_name, date: booking.date, startTime: booking.start_time, endTime: booking.end_time })
+          .catch((e) => console.error("[email] booking approved:", e));
+      } else {
+        sendBookingRejected({ to: userEmail, name, spaceName: booking.space_name, date: booking.date, adminNote: adminNote ?? undefined })
+          .catch((e) => console.error("[email] booking rejected:", e));
+      }
+    }
 
     return NextResponse.json({ booking: updated });
   } catch (err) {

@@ -17,6 +17,38 @@ import {
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
+/**
+ * Compress image files to max 1200px / quality 0.8 before upload.
+ * PDF files are returned as-is.
+ */
+async function compressImage(file: File): Promise<File> {
+  if (file.type === "application/pdf" || !file.type.startsWith("image/")) return file;
+  return new Promise((resolve) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      const MAX = 1200;
+      let { width, height } = img;
+      if (width > MAX || height > MAX) {
+        if (width > height) { height = Math.round((height * MAX) / width); width = MAX; }
+        else { width = Math.round((width * MAX) / height); height = MAX; }
+      }
+      const canvas = document.createElement("canvas");
+      canvas.width = width; canvas.height = height;
+      canvas.getContext("2d")!.drawImage(img, 0, 0, width, height);
+      canvas.toBlob(
+        (blob) => {
+          URL.revokeObjectURL(url);
+          resolve(blob ? new File([blob], file.name.replace(/\.[^.]+$/, ".jpg"), { type: "image/jpeg" }) : file);
+        },
+        "image/jpeg", 0.82
+      );
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); resolve(file); };
+    img.src = url;
+  });
+}
+
 type Step = "class_select" | "internal_form" | "external_form" | "success";
 type UserClass = "internal" | "external";
 type InternalType = "regular_student" | "lecturer_staff" | "product_developer";
@@ -95,23 +127,20 @@ export default function SignupPage() {
       return;
     }
 
-    // 2. Upload identity document to Supabase Storage
+    // 2. Compress and upload identity document to Cloudinary
     let documentUrl: string | null = null;
     if (internalForm.documentFile) {
-      const ext = internalForm.documentFile.name.split(".").pop();
-      const filePath = `${authData.user.id}/identity.${ext}`;
-      const { data: uploadData, error: uploadErr } = await supabase.storage
-        .from("documents")
-        .upload(filePath, internalForm.documentFile, { upsert: true });
-
-      if (uploadErr) {
-        console.error("Document upload failed:", uploadErr);
-        // Continue — admin can request document again
+      const compressed = await compressImage(internalForm.documentFile);
+      const fd = new FormData();
+      fd.append("file", compressed);
+      fd.append("folder", "bms-documents");
+      const uploadRes = await fetch("/api/upload", { method: "POST", body: fd });
+      if (uploadRes.ok) {
+        const { url } = await uploadRes.json();
+        documentUrl = url;
       } else {
-        const { data: urlData } = supabase.storage
-          .from("documents")
-          .getPublicUrl(uploadData.path);
-        documentUrl = urlData.publicUrl;
+        console.error("Document upload failed:", await uploadRes.text());
+        // Continue — admin can request document again
       }
     }
 

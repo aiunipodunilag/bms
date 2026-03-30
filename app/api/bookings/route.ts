@@ -4,6 +4,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { getSpaceBySlug } from "@/lib/data/spaces";
 import { TIER_RULES, BOOKING_RULES } from "@/lib/data/tiers";
 import { generateBMSCode } from "@/lib/utils";
+import { sendBookingConfirmation } from "@/lib/email";
 import type { UserTier } from "@/types";
 
 /**
@@ -236,6 +237,21 @@ export async function POST(request: NextRequest) {
         ? `Your booking for ${space.name} on ${date} at ${startTime} has been confirmed. Code: ${bmsCode}`
         : `Your booking for ${space.name} on ${date} is pending admin approval. Reference: ${bmsCode}`,
     });
+
+    // ── Send confirmation email ────────────────────────────────────────────
+    const userEmail = user.email ?? profile.email;
+    if (userEmail) {
+      sendBookingConfirmation({
+        to: userEmail,
+        name: profile.full_name ?? "there",
+        bmsCode,
+        spaceName: space.name,
+        date,
+        startTime,
+        endTime,
+        status: autoApproved ? "confirmed" : "pending",
+      }).catch((e) => console.error("[email] booking confirmation:", e));
+    }
 
     return NextResponse.json({ booking }, { status: 201 });
   } catch (err) {
