@@ -26,6 +26,7 @@ export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const statusFilter = searchParams.get("status");
   const dateFilter = searchParams.get("date");
+  const dateGteFilter = searchParams.get("date_gte");
   const spaceFilter = searchParams.get("spaceId");
   const codeFilter = searchParams.get("code");
 
@@ -51,6 +52,7 @@ export async function GET(request: NextRequest) {
 
   if (statusFilter) query = query.eq("status", statusFilter);
   if (dateFilter) query = query.eq("date", dateFilter);
+  if (dateGteFilter) query = query.gte("date", dateGteFilter);
   if (spaceFilter) query = query.eq("space_id", spaceFilter);
 
   const { data: bookings, error } = await query;

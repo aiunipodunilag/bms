@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { sendBroadcastEmail } from "@/lib/email";
 
 /**
  * POST /api/admin/broadcast
@@ -45,8 +46,8 @@ export async function POST(request: NextRequest) {
       target: target ?? "all",
     });
 
-    // Fetch target users
-    let userQuery = adminDb.from("profiles").select("id").eq("status", "verified");
+    // Fetch target users with email info
+    let userQuery = adminDb.from("profiles").select("id, full_name, email").eq("status", "verified");
 
     if (target === "internal") {
       userQuery = userQuery.eq("class", "internal");
@@ -61,6 +62,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: true, sent: 0 });
     }
 
+    // Insert in-app notifications
     const notifications = targetUsers.map((u) => ({
       user_id: u.id,
       type: "admin_broadcast",
@@ -72,6 +74,36 @@ export async function POST(request: NextRequest) {
     for (let i = 0; i < notifications.length; i += BATCH_SIZE) {
       await adminDb.from("notifications").insert(notifications.slice(i, i + BATCH_SIZE));
     }
+
+    // Backfill missing emails from auth
+    const missingEmailUsers = targetUsers.filter((u) => !u.email);
+    if (missingEmailUsers.length > 0) {
+      const { data: { users: authUsers } } = await adminDb.auth.admin.listUsers({ perPage: 1000 });
+      const authEmailMap: Record<string, string> = {};
+      for (const au of authUsers ?? []) {
+        if (au.email) authEmailMap[au.id] = au.email;
+      }
+      for (const u of missingEmailUsers) {
+        (u as any).email = authEmailMap[u.id] ?? null;
+      }
+    }
+
+    // Send emails (fire-and-forget, don't block response)
+    const adminName = (adminAccount as any).full_name ?? "AI-UNIPOD Admin";
+    const emailPromises = targetUsers
+      .filter((u) => u.email)
+      .map((u) =>
+        sendBroadcastEmail({
+          to: u.email!,
+          name: u.full_name ?? "there",
+          subject,
+          message,
+          adminName,
+        }).catch((e) => console.error("[broadcast email]", u.id, e))
+      );
+
+    // Await all emails but don't fail the request if some bounce
+    await Promise.allSettled(emailPromises);
 
     return NextResponse.json({ success: true, sent: targetUsers.length });
   } catch (err) {

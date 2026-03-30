@@ -85,8 +85,9 @@ export default function AdminSidebar({ role: roleProp }: Props) {
 
   useEffect(() => {
     if (role === "admin" || role === "super_admin") {
+      const today = new Date().toISOString().split("T")[0];
       Promise.all([
-        fetch("/api/admin/bookings?status=pending").then((r) => r.json()),
+        fetch(`/api/admin/bookings?status=pending&date_gte=${today}`).then((r) => r.json()),
         fetch("/api/admin/users?status=pending").then((r) => r.json()),
         fetch("/api/admin/resource-requests?status=pending").then((r) => r.json()),
       ]).then(([bookingsData, usersData, resourceData]) => {

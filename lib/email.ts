@@ -355,7 +355,31 @@ export async function sendResourceRejected(opts: {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 9. Admin account created (sent to new admin with credentials)
+// 9. Admin broadcast email
+// ─────────────────────────────────────────────────────────────────────────────
+export async function sendBroadcastEmail(opts: {
+  to: string;
+  name: string;
+  subject: string;
+  message: string;
+  adminName: string;
+}) {
+  const body = `
+    ${greeting(opts.name)}
+    <p style="color:#64748b;font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:0.8px;margin:0 0 16px;">Message from ${opts.adminName} · AI-UNIPOD Admin</p>
+
+    <div style="background:#f8fafc;border-left:4px solid #7c3aed;border-radius:6px;padding:20px 24px;margin:0 0 24px;">
+      <p style="color:#0f172a;font-size:15px;line-height:1.7;margin:0;">${opts.message.replace(/\n/g, "<br/>")}</p>
+    </div>
+
+    ${alertBox("This is an official notification from AI-UNIPOD BMS administration.")}
+    ${btn(`${APP_URL}/dashboard`, "Go to Dashboard")}
+  `;
+  return resend.emails.send({ from: FROM, to: opts.to, subject: opts.subject, html: layout(opts.subject, body) });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 10. Admin account created (sent to new admin with credentials)
 // ─────────────────────────────────────────────────────────────────────────────
 export async function sendAdminAccountCreated(opts: {
   to: string;
