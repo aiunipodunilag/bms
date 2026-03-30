@@ -6,7 +6,7 @@ import { Card } from "@/components/ui/Card";
 import Badge from "@/components/ui/Badge";
 import Button from "@/components/ui/Button";
 import { TIER_LABELS, TIER_COLORS } from "@/lib/data/tiers";
-import { Search, UserCheck, UserX, ChevronDown } from "lucide-react";
+import { Search, UserCheck, UserX, FileText, X } from "lucide-react";
 import type { UserTier } from "@/types";
 
 interface UserProfile {
@@ -16,6 +16,7 @@ interface UserProfile {
   tier: UserTier;
   status: string;
   matric_number: string | null;
+  document_url: string | null;
   total_bookings: number;
   no_show_count: number;
   created_at: string;
@@ -27,6 +28,7 @@ export default function AdminUsersPage() {
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [docPreview, setDocPreview] = useState<{ url: string; name: string } | null>(null);
 
   const fetchUsers = useCallback(async () => {
     setLoading(true);
@@ -159,6 +161,15 @@ export default function AdminUsersPage() {
                         <div className="flex items-center gap-1">
                           {user.status === "pending" && (
                             <>
+                              {user.document_url && (
+                                <button
+                                  onClick={() => setDocPreview({ url: user.document_url!, name: user.full_name })}
+                                  className="flex items-center gap-1 text-xs text-violet-600 hover:text-violet-800 px-2 py-1 rounded-lg hover:bg-violet-50 transition-colors border border-violet-200"
+                                  title="View identity document"
+                                >
+                                  <FileText size={12} /> Doc
+                                </button>
+                              )}
                               <Button
                                 size="sm"
                                 className="text-xs px-2.5 py-1"
@@ -210,5 +221,57 @@ export default function AdminUsersPage() {
         </main>
       </div>
     </div>
+
+    {/* Document preview modal */}
+    {docPreview && (
+      <div
+        className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
+        onClick={() => setDocPreview(null)}
+      >
+        <div
+          className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] flex flex-col overflow-hidden"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+            <div>
+              <p className="font-semibold text-gray-900 text-sm">Identity Document</p>
+              <p className="text-xs text-gray-400 mt-0.5">{docPreview.name}</p>
+            </div>
+            <div className="flex items-center gap-2">
+              <a
+                href={docPreview.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs text-violet-600 hover:underline px-3 py-1.5 rounded-lg border border-violet-200 hover:bg-violet-50 transition-colors"
+              >
+                Open in new tab
+              </a>
+              <button
+                onClick={() => setDocPreview(null)}
+                className="p-1.5 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <X size={16} />
+              </button>
+            </div>
+          </div>
+          <div className="flex-1 overflow-auto p-4 bg-gray-50 flex items-center justify-center min-h-64">
+            {docPreview.url.includes(".pdf") || docPreview.url.includes("/raw/") ? (
+              <iframe
+                src={docPreview.url}
+                className="w-full h-96 rounded-xl border border-gray-200"
+                title="Identity document"
+              />
+            ) : (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={docPreview.url}
+                alt="Identity document"
+                className="max-w-full max-h-[70vh] rounded-xl object-contain shadow-sm"
+              />
+            )}
+          </div>
+        </div>
+      </div>
+    )}
   );
 }

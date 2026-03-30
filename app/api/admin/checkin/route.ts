@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { sendCheckinConfirmed } from "@/lib/email";
 
 /**
  * POST /api/admin/checkin
@@ -120,6 +121,20 @@ export async function POST(request: NextRequest) {
 
     if (updateErr) {
       return NextResponse.json({ error: "Failed to check in booking" }, { status: 500 });
+    }
+
+    // Send check-in confirmation email
+    const { data: { user: booker } } = await adminClient.auth.admin.getUserById(booking.user_id);
+    const bookerEmail = booker?.email ?? booking.profiles?.email;
+    if (bookerEmail) {
+      sendCheckinConfirmed({
+        to: bookerEmail,
+        name: booking.profiles?.full_name ?? "there",
+        bmsCode: booking.bms_code,
+        spaceName: booking.space_name,
+        startTime: booking.start_time,
+        endTime: booking.end_time,
+      }).catch((e) => console.error("[email] checkin confirmed:", e));
     }
 
     return NextResponse.json({ booking: updated, message: "Check-in successful" });
