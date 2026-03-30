@@ -169,7 +169,7 @@ export default function SuperAdminPage() {
                   <Link
                     key={href}
                     href={href}
-                    className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-100 text-gray-700 hover:text-gray-900 transition-colors text-sm"
+                    className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-[#F8F9FB] text-gray-700 hover:text-gray-900 transition-colors text-sm"
                   >
                     <Icon size={14} className="text-gray-500" />
                     {label}

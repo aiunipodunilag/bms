@@ -234,11 +234,11 @@ export default function SignupPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-brand-950 via-brand-900 to-brand-800 flex items-center justify-center px-4 py-12">
+    <div className="min-h-screen bg-[#F8F9FB] flex items-center justify-center px-4 py-12">
       <div className="w-full max-w-lg">
         <Link
           href="/"
-          className="inline-flex items-center gap-2 text-brand-300 hover:text-white text-sm mb-8 transition-colors"
+          className="inline-flex items-center gap-2 text-gray-400 hover:text-gray-700 text-sm mb-8 transition-colors"
         >
           <ArrowLeft size={15} /> Back to home
         </Link>

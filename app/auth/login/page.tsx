@@ -55,20 +55,39 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-brand-950 via-brand-900 to-brand-800 flex items-center justify-center px-4">
-      <div className="w-full max-w-md">
+    <div className="min-h-screen bg-[#F8F9FB] flex items-center justify-center px-4">
+      {/* Subtle gradient bg */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+        <div className="absolute -top-40 -right-40 w-96 h-96 rounded-full opacity-[0.06]"
+          style={{ background: "radial-gradient(circle, #5B4CF5 0%, transparent 70%)" }} />
+        <div className="absolute -bottom-40 -left-40 w-80 h-80 rounded-full opacity-[0.04]"
+          style={{ background: "radial-gradient(circle, #06b6d4 0%, transparent 70%)" }} />
+      </div>
+
+      <div className="relative w-full max-w-md">
         {/* Back link */}
         <Link
           href="/"
-          className="inline-flex items-center gap-2 text-brand-300 hover:text-white text-sm mb-8 transition-colors"
+          className="inline-flex items-center gap-2 text-gray-400 hover:text-gray-700 text-sm mb-8 transition-colors"
         >
           <ArrowLeft size={15} /> Back to home
         </Link>
 
-        <div className="bg-white rounded-3xl p-8 shadow-2xl">
+        <div className="bg-white rounded-3xl p-8 border border-black/[0.07]"
+          style={{ boxShadow: "0 20px 60px rgba(0,0,0,0.08), 0 8px 24px rgba(0,0,0,0.05)" }}>
           {/* Header */}
           <div className="mb-7">
-            <h1 className="text-2xl font-bold text-gray-900">Welcome back</h1>
+            <div className="flex items-center gap-2.5 mb-5">
+              <div className="w-9 h-9 rounded-xl flex items-center justify-center"
+                style={{ background: "linear-gradient(135deg, #5B4CF5 0%, #7D67EF 100%)", boxShadow: "0 4px 12px rgba(91,76,245,0.25)" }}>
+                <span className="text-white font-bold text-sm">U</span>
+              </div>
+              <div>
+                <p className="font-bold text-gray-900 text-sm" style={{ letterSpacing: "-0.02em" }}>AI-UNIPOD</p>
+                <p className="text-[10px] text-gray-400 font-medium tracking-widest uppercase">BMS</p>
+              </div>
+            </div>
+            <h1 className="text-2xl font-bold text-gray-900" style={{ letterSpacing: "-0.025em" }}>Welcome back</h1>
             <p className="text-gray-500 text-sm mt-1">
               Sign in to your AI-UNIPOD BMS account
             </p>
@@ -87,7 +106,7 @@ export default function LoginPage() {
                 placeholder="you@email.com"
                 value={form.email}
                 onChange={(e) => setForm({ ...form, email: e.target.value })}
-                className="w-full px-4 py-2.5 rounded-xl border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition"
+                className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm bg-gray-50/50 placeholder-gray-400 transition-all focus:bg-white"
               />
             </div>
 
@@ -97,7 +116,7 @@ export default function LoginPage() {
                 <label className="block text-sm font-medium text-gray-700">Password</label>
                 <Link
                   href="/auth/forgot-password"
-                  className="text-xs text-brand-600 hover:underline"
+                  className="text-xs text-brand-600 hover:text-brand-700 hover:underline"
                 >
                   Forgot password?
                 </Link>
@@ -110,12 +129,12 @@ export default function LoginPage() {
                   placeholder="Your password"
                   value={form.password}
                   onChange={(e) => setForm({ ...form, password: e.target.value })}
-                  className="w-full px-4 py-2.5 pr-10 rounded-xl border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition"
+                  className="w-full px-4 py-2.5 pr-10 rounded-xl border border-gray-200 text-sm bg-gray-50/50 placeholder-gray-400 transition-all focus:bg-white"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
                 >
                   {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
@@ -124,7 +143,7 @@ export default function LoginPage() {
 
             {/* Error */}
             {error && (
-              <div className="bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded-xl">
+              <div className="bg-red-50 border border-red-100 text-red-600 text-sm px-4 py-3 rounded-xl">
                 {error}
               </div>
             )}

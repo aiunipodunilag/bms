@@ -335,7 +335,7 @@ export default function SuperAdminAdminsPage() {
                 {admins.map((admin) => {
                   const rc = ROLE_CONFIG[admin.role] ?? { label: admin.role, variant: "neutral" as const };
                   return (
-                    <tr key={admin.id} className="hover:bg-gray-100/40 transition-colors">
+                    <tr key={admin.id} className="hover:bg-[#F8F9FB]/40 transition-colors">
                       <td className="px-5 py-3">
                         <p className="text-sm text-gray-900 font-medium">{admin.full_name}</p>
                         <p className="text-xs text-gray-500">{admin.email}</p>

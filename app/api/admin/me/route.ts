@@ -32,5 +32,6 @@ export async function GET() {
     assigned_space_id: admin.assigned_space_id,
     assigned_space_name: admin.assigned_space_name,
     full_name: admin.full_name,
+    email: user.email ?? null,
   });
 }

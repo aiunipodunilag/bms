@@ -10,9 +10,7 @@ import Button from "@/components/ui/Button";
 import { getPublicSpaces } from "@/lib/data/spaces";
 import { TIER_LABELS } from "@/lib/data/tiers";
 import { Users, ChevronRight, Search, Filter } from "lucide-react";
-import type { UserTier } from "@/types";
-
-const spaces = getPublicSpaces();
+import type { Space, UserTier } from "@/types";
 
 const categories = ["All", "lab", "collaboration", "event", "work", "meeting"];
 
@@ -31,6 +29,7 @@ const approvalLabels: Record<string, { label: string; color: string }> = {
 };
 
 export default function SpacesPage() {
+  const [spaces, setSpaces] = useState<Space[]>(getPublicSpaces());
   const [search, setSearch] = useState("");
   const [activeCategory, setActiveCategory] = useState("All");
   const [showExternalOnly, setShowExternalOnly] = useState(false);
@@ -38,6 +37,12 @@ export default function SpacesPage() {
   const [userName, setUserName] = useState("");
 
   useEffect(() => {
+    // Load spaces with any admin overrides applied
+    fetch("/api/spaces")
+      .then((r) => r.ok ? r.json() : null)
+      .then((data) => { if (data?.spaces) setSpaces(data.spaces); })
+      .catch(() => {});
+
     fetch("/api/users/me")
       .then((r) => r.json())
       .then(({ profile }) => {
@@ -75,7 +80,7 @@ export default function SpacesPage() {
         <div className="mb-8">
           <h1 className="text-2xl font-bold text-gray-900 mb-1">Spaces Directory</h1>
           <p className="text-gray-500 text-sm">
-            {spaces.length} spaces available · Mon–Fri 10:00AM – 5:00PM
+            {filtered.length} of {spaces.length} spaces · Mon–Fri 10:00AM – 5:00PM
           </p>
         </div>
 

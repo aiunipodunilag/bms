@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import {
   LayoutDashboard,
@@ -65,8 +65,9 @@ interface Props {
 
 export default function AdminSidebar({ role: roleProp }: Props) {
   const pathname = usePathname();
-  const router = useRouter();
   const [role, setRole] = useState<AdminRole>(roleProp ?? "admin");
+  const [adminName, setAdminName] = useState<string>("");
+  const [adminEmail, setAdminEmail] = useState<string>("");
   const [pendingCounts, setPendingCounts] = useState<Record<string, number>>({});
   const [signingOut, setSigningOut] = useState(false);
 
@@ -74,7 +75,11 @@ export default function AdminSidebar({ role: roleProp }: Props) {
   useEffect(() => {
     fetch("/api/admin/me")
       .then((r) => r.ok ? r.json() : null)
-      .then((data) => { if (data?.role) setRole(data.role as AdminRole); })
+      .then((data) => {
+        if (data?.role) setRole(data.role as AdminRole);
+        if (data?.full_name) setAdminName(data.full_name);
+        if (data?.email) setAdminEmail(data.email);
+      })
       .catch(() => {});
   }, []);
 
@@ -94,11 +99,12 @@ export default function AdminSidebar({ role: roleProp }: Props) {
     }
   }, [role]);
 
+  // Hard navigate to bust server-side session cache
   const handleSignOut = async () => {
     setSigningOut(true);
     const supabase = createClient();
     await supabase.auth.signOut();
-    router.push("/admin/login");
+    window.location.href = "/admin/login";
   };
 
   const links =
@@ -114,23 +120,34 @@ export default function AdminSidebar({ role: roleProp }: Props) {
     space_lead:   "Space Lead",
   };
 
+  const roleBadgeColor: Record<AdminRole, string> = {
+    super_admin:  "bg-violet-100 text-violet-700",
+    admin:        "bg-brand-50 text-brand-700",
+    receptionist: "bg-cyan-50 text-cyan-700",
+    space_lead:   "bg-emerald-50 text-emerald-700",
+  };
+
   return (
-    <aside className="w-60 min-h-screen bg-white border-r border-gray-200 flex flex-col shrink-0">
+    <aside className="w-60 min-h-screen bg-white border-r border-black/[0.06] flex flex-col shrink-0"
+      style={{ boxShadow: "1px 0 0 rgba(0,0,0,0.04)" }}>
       {/* Logo */}
-      <div className="px-5 py-5 border-b border-gray-200">
+      <div className="px-5 py-5 border-b border-black/[0.06]">
         <Link href={role === "super_admin" ? "/superadmin" : "/admin"} className="flex items-center gap-2.5">
-          <div className="w-7 h-7 rounded-lg bg-violet-600 flex items-center justify-center">
+          <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0"
+            style={{ background: "linear-gradient(135deg, #5B4CF5 0%, #7D67EF 100%)", boxShadow: "0 2px 8px rgba(91,76,245,0.30)" }}>
             <span className="text-white font-bold text-xs">U</span>
           </div>
           <div>
-            <p className="text-gray-900 font-semibold text-sm">AI-UNIPOD</p>
-            <p className="text-gray-400 text-xs">{roleLabel[role]}</p>
+            <p className="text-gray-900 font-bold text-sm" style={{ letterSpacing: "-0.02em" }}>AI-UNIPOD</p>
+            <span className={cn("text-[10px] font-semibold px-1.5 py-0.5 rounded-full", roleBadgeColor[role])}>
+              {roleLabel[role]}
+            </span>
           </div>
         </Link>
       </div>
 
       {/* Nav */}
-      <nav className="flex-1 px-3 py-4 space-y-1">
+      <nav className="flex-1 px-3 py-4 space-y-0.5">
         {links.map(({ href, label, icon: Icon, badge }) => {
           const active = pathname === href || (href !== "/admin" && href !== "/superadmin" && pathname.startsWith(href));
           return (
@@ -138,34 +155,56 @@ export default function AdminSidebar({ role: roleProp }: Props) {
               key={href}
               href={href}
               className={cn(
-                "flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors",
+                "relative flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150",
                 active
-                  ? "bg-violet-600 text-white"
-                  : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+                  ? "bg-brand-50 text-brand-700"
+                  : "text-gray-500 hover:text-gray-900 hover:bg-gray-50"
               )}
             >
+              {/* Active left indicator */}
+              {active && (
+                <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5 rounded-full bg-brand-500" />
+              )}
               <div className="flex items-center gap-3">
-                <Icon size={16} />
+                <Icon size={16} className={active ? "text-brand-600" : "text-gray-400"} />
                 {label}
               </div>
               {(pendingCounts[href] ?? badge ?? 0) > 0 ? (
-                <span className="bg-red-500 text-white text-xs font-bold px-1.5 py-0.5 rounded-full">
+                <span className="bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center">
                   {pendingCounts[href] ?? badge}
                 </span>
               ) : (
-                active && <ChevronRight size={14} className="opacity-60" />
+                active && <ChevronRight size={13} className="text-brand-400 opacity-60" />
               )}
             </Link>
           );
         })}
       </nav>
 
-      {/* Footer */}
-      <div className="px-3 pb-5 border-t border-gray-200 pt-4">
+      {/* Footer — admin identity + sign out */}
+      <div className="px-3 pb-4 border-t border-black/[0.06] pt-3 space-y-1">
+        {(adminName || adminEmail) && (
+          <div className="flex items-center gap-2.5 px-3 py-2.5 mb-1">
+            <div className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 text-white text-xs font-bold"
+              style={{ background: "linear-gradient(135deg, #5B4CF5 0%, #7D67EF 100%)" }}>
+              {(adminName || adminEmail).charAt(0).toUpperCase()}
+            </div>
+            <div className="min-w-0">
+              {adminName && (
+                <p className="text-xs font-semibold text-gray-800 truncate" style={{ letterSpacing: "-0.01em" }}>
+                  {adminName}
+                </p>
+              )}
+              {adminEmail && (
+                <p className="text-[10px] text-gray-400 truncate">{adminEmail}</p>
+              )}
+            </div>
+          </div>
+        )}
         <button
           onClick={handleSignOut}
           disabled={signingOut}
-          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-gray-500 hover:text-gray-900 hover:bg-gray-100 transition-colors disabled:opacity-50"
+          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-gray-400 hover:text-red-600 hover:bg-red-50 transition-all duration-150 disabled:opacity-50"
         >
           <LogOut size={16} />
           {signingOut ? "Signing out…" : "Sign out"}

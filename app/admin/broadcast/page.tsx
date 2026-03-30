@@ -107,7 +107,7 @@ export default function AdminBroadcastPage() {
   };
 
   return (
-    <div className="flex min-h-screen bg-gray-100">
+    <div className="flex min-h-screen bg-[#F8F9FB]">
       <AdminSidebar />
 
       <div className="flex-1 overflow-auto">

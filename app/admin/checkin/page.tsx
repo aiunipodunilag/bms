@@ -150,7 +150,7 @@ export default function AdminCheckinPage() {
   };
 
   return (
-    <div className="flex min-h-screen bg-gray-100">
+    <div className="flex min-h-screen bg-[#F8F9FB]">
       <AdminSidebar />
 
       <div className="flex-1 overflow-auto">
@@ -311,7 +311,7 @@ export default function AdminCheckinPage() {
                               </div>
                               <button
                                 onClick={() => copyCode(i, eq.code)}
-                                className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-brand-600 bg-gray-100 hover:bg-brand-50 px-3 py-1.5 rounded-lg transition-colors shrink-0"
+                                className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-brand-600 bg-[#F8F9FB] hover:bg-brand-50 px-3 py-1.5 rounded-lg transition-colors shrink-0"
                               >
                                 {copiedIndex === i
                                   ? <><CheckCircle size={12} className="text-green-500" /> Copied</>

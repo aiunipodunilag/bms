@@ -93,7 +93,7 @@ export default function AdminResourceRequestsPage() {
   });
 
   return (
-    <div className="flex min-h-screen bg-gray-100">
+    <div className="flex min-h-screen bg-[#F8F9FB]">
       <AdminSidebar />
 
       <div className="flex-1 overflow-auto">
@@ -126,7 +126,7 @@ export default function AdminResourceRequestsPage() {
                     className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
                       statusFilter === s
                         ? "bg-brand-600 text-white"
-                        : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                        : "bg-[#F8F9FB] text-gray-600 hover:bg-gray-200"
                     }`}
                   >
                     {s.charAt(0).toUpperCase() + s.slice(1)}

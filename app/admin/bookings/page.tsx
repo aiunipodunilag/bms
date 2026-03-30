@@ -87,7 +87,7 @@ export default function AdminBookingsPage() {
   const pendingCount = bookings.filter((b) => b.status === "pending").length;
 
   return (
-    <div className="flex min-h-screen bg-gray-100">
+    <div className="flex min-h-screen bg-[#F8F9FB]">
       <AdminSidebar />
 
       <div className="flex-1 overflow-auto">
@@ -220,7 +220,7 @@ export default function AdminBookingsPage() {
                               {booking.justification && (
                                 <button
                                   onClick={() => setExpandedId(isExpanded ? null : booking.id)}
-                                  className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg"
+                                  className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-[#F8F9FB] rounded-lg"
                                 >
                                   <MoreHorizontal size={15} />
                                 </button>

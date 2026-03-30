@@ -131,7 +131,7 @@ export default function AdminDashboard() {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen bg-gray-100">
+      <div className="flex min-h-screen bg-[#F8F9FB]">
         <AdminSidebar />
         <div className="flex-1 flex items-center justify-center">
           <Loader2 className="w-8 h-8 animate-spin text-brand-500" />
@@ -176,7 +176,7 @@ export default function AdminDashboard() {
   ];
 
   return (
-    <div className="flex min-h-screen bg-gray-100">
+    <div className="flex min-h-screen bg-[#F8F9FB]">
       <AdminSidebar />
 
       <div className="flex-1 overflow-auto">
@@ -224,7 +224,7 @@ export default function AdminDashboard() {
                   <XAxis dataKey="day" tick={{ fontSize: 12 }} axisLine={false} tickLine={false} />
                   <YAxis allowDecimals={false} tick={{ fontSize: 12 }} axisLine={false} tickLine={false} />
                   <Tooltip contentStyle={{ borderRadius: "12px", border: "1px solid #e5e7eb", fontSize: 12 }} />
-                  <Bar dataKey="bookings" name="Bookings" fill="#4f5fff" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="bookings" name="Bookings" fill="#5B4CF5" radius={[4, 4, 0, 0]} />
                   <Bar dataKey="noShows" name="No-shows" fill="#fca5a5" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>

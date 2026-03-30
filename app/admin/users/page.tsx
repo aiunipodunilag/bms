@@ -58,7 +58,7 @@ export default function AdminUsersPage() {
   };
 
   return (
-    <div className="flex min-h-screen bg-gray-100">
+    <div className="flex min-h-screen bg-[#F8F9FB]">
       <AdminSidebar />
 
       <div className="flex-1 overflow-auto">
@@ -248,7 +248,7 @@ export default function AdminUsersPage() {
               </a>
               <button
                 onClick={() => setDocPreview(null)}
-                className="p-1.5 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                className="p-1.5 text-gray-400 hover:text-gray-700 hover:bg-[#F8F9FB] rounded-lg transition-colors"
               >
                 <X size={16} />
               </button>

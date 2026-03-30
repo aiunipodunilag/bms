@@ -14,12 +14,12 @@ export default function Badge({
   className,
 }: BadgeProps) {
   const variants = {
-    default: "bg-brand-100 text-brand-700",
-    success: "bg-green-100 text-green-700",
-    warning: "bg-yellow-100 text-yellow-700",
-    danger: "bg-red-100 text-red-700",
-    info: "bg-blue-100 text-blue-700",
-    neutral: "bg-gray-100 text-gray-600",
+    default: "bg-brand-50 text-brand-600 ring-1 ring-brand-100",
+    success: "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-100",
+    warning: "bg-amber-50 text-amber-700 ring-1 ring-amber-100",
+    danger:  "bg-red-50 text-red-600 ring-1 ring-red-100",
+    info:    "bg-sky-50 text-sky-700 ring-1 ring-sky-100",
+    neutral: "bg-gray-100 text-gray-600 ring-1 ring-gray-200",
   };
 
   const sizes = {

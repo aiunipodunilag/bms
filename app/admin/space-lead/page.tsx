@@ -135,7 +135,7 @@ export default function SpaceLeadPage() {
           </div>
           <button
             onClick={loadCodes}
-            className="p-2 text-gray-400 hover:text-gray-900 hover:bg-gray-100 rounded-xl transition-colors"
+            className="p-2 text-gray-400 hover:text-gray-900 hover:bg-[#F8F9FB] rounded-xl transition-colors"
             title="Refresh"
           >
             <RefreshCw size={14} />
@@ -243,7 +243,7 @@ export default function SpaceLeadPage() {
                   {pendingCodes.map((code) => (
                     <div
                       key={code.id}
-                      className="flex items-center justify-between bg-gray-100 rounded-xl px-3 py-2.5"
+                      className="flex items-center justify-between bg-[#F8F9FB] rounded-xl px-3 py-2.5"
                     >
                       <div>
                         <p className="text-xs font-mono font-bold text-yellow-600">{code.code}</p>

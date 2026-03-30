@@ -260,7 +260,7 @@ export default function AdminSpacesPage() {
   const inactiveCount = spaces.filter((s) => s.status !== "active").length;
 
   return (
-    <div className="flex min-h-screen bg-gray-100">
+    <div className="flex min-h-screen bg-[#F8F9FB]">
       <AdminSidebar />
 
       <div className="flex-1 overflow-auto">
@@ -343,14 +343,14 @@ export default function AdminSpacesPage() {
                             />
                             <button
                               onClick={() => startEdit(space)}
-                              className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                              className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-[#F8F9FB] rounded-lg transition-colors"
                               title="Edit space"
                             >
                               <Edit2 size={14} />
                             </button>
                             <button
                               onClick={() => setExpandedId(isExpanded ? null : space.id)}
-                              className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                              className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-[#F8F9FB] rounded-lg transition-colors"
                             >
                               {isExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
                             </button>
