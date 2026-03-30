@@ -6,7 +6,7 @@ import { Card } from "@/components/ui/Card";
 import Badge from "@/components/ui/Badge";
 import Button from "@/components/ui/Button";
 import { TIER_LABELS, TIER_COLORS } from "@/lib/data/tiers";
-import { Search, UserCheck, UserX, FileText, X } from "lucide-react";
+import { Search, UserCheck, UserX, FileText, X, TrendingUp, CheckCircle, XCircle as XCir } from "lucide-react";
 import type { UserTier } from "@/types";
 
 interface UserProfile {
@@ -22,6 +22,17 @@ interface UserProfile {
   created_at: string;
 }
 
+interface TierUpgradeRequest {
+  id: string;
+  user_id: string;
+  current_tier: string;
+  requested_tier: string;
+  reason: string;
+  status: string;
+  created_at: string;
+  profiles?: { full_name: string; email: string };
+}
+
 export default function AdminUsersPage() {
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [loading, setLoading] = useState(true);
@@ -29,6 +40,18 @@ export default function AdminUsersPage() {
   const [filterStatus, setFilterStatus] = useState("all");
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [docPreview, setDocPreview] = useState<{ url: string; name: string } | null>(null);
+  const [upgradeRequests, setUpgradeRequests] = useState<TierUpgradeRequest[]>([]);
+  const [upgradeTab, setUpgradeTab] = useState(false);
+
+  const fetchUpgradeRequests = useCallback(async () => {
+    try {
+      const res = await fetch("/api/admin/tier-upgrade-requests");
+      if (res.ok) {
+        const { requests } = await res.json();
+        setUpgradeRequests(requests ?? []);
+      }
+    } catch { /* table may not exist */ }
+  }, []);
 
   const fetchUsers = useCallback(async () => {
     setLoading(true);
@@ -46,6 +69,8 @@ export default function AdminUsersPage() {
     return () => clearTimeout(t);
   }, [fetchUsers]);
 
+  useEffect(() => { fetchUpgradeRequests(); }, [fetchUpgradeRequests]);
+
   const updateUser = async (id: string, status: string) => {
     setActionLoading(id + status);
     await fetch(`/api/admin/users/${id}`, {
@@ -55,6 +80,17 @@ export default function AdminUsersPage() {
     });
     setActionLoading(null);
     fetchUsers();
+  };
+
+  const handleUpgradeAction = async (id: string, action: "approve" | "reject") => {
+    setActionLoading(id + action);
+    await fetch(`/api/admin/tier-upgrade/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action }),
+    });
+    setActionLoading(null);
+    fetchUpgradeRequests();
   };
 
   return (
@@ -72,8 +108,89 @@ export default function AdminUsersPage() {
               </div>
             </div>
 
-            {/* Filters */}
-            <div className="flex gap-3">
+            {/* Tab switcher */}
+            <div className="flex gap-1 bg-white border border-gray-100 rounded-xl p-1 w-fit">
+              <button
+                onClick={() => setUpgradeTab(false)}
+                className={`px-4 py-1.5 rounded-lg text-xs font-medium transition-colors ${!upgradeTab ? "bg-brand-500 text-white" : "text-gray-500 hover:text-gray-700"}`}
+              >
+                All Users ({users.length})
+              </button>
+              <button
+                onClick={() => setUpgradeTab(true)}
+                className={`px-4 py-1.5 rounded-lg text-xs font-medium transition-colors flex items-center gap-1.5 ${upgradeTab ? "bg-brand-500 text-white" : "text-gray-500 hover:text-gray-700"}`}
+              >
+                <TrendingUp size={12} />
+                Tier Upgrades
+                {upgradeRequests.filter((r) => r.status === "pending").length > 0 && (
+                  <span className="bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">
+                    {upgradeRequests.filter((r) => r.status === "pending").length}
+                  </span>
+                )}
+              </button>
+            </div>
+
+            {/* Tier upgrade requests tab */}
+            {upgradeTab && (
+              <Card padding="none">
+                {upgradeRequests.length === 0 ? (
+                  <div className="text-center py-12 text-gray-400 text-sm">No tier upgrade requests.</div>
+                ) : (
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b border-gray-100">
+                        <th className="text-left text-xs font-semibold text-gray-500 px-5 py-3.5">User</th>
+                        <th className="text-left text-xs font-semibold text-gray-500 px-4 py-3.5">From → To</th>
+                        <th className="text-left text-xs font-semibold text-gray-500 px-4 py-3.5">Reason</th>
+                        <th className="text-left text-xs font-semibold text-gray-500 px-4 py-3.5">Status</th>
+                        <th className="px-4 py-3.5" />
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-50">
+                      {upgradeRequests.map((req) => (
+                        <tr key={req.id} className="hover:bg-gray-50">
+                          <td className="px-5 py-4 text-sm font-medium text-gray-900">
+                            {req.profiles?.full_name ?? req.user_id.slice(0, 8)}
+                            {req.profiles?.email && <p className="text-xs text-gray-400">{req.profiles.email}</p>}
+                          </td>
+                          <td className="px-4 py-4 text-xs text-gray-600">
+                            {TIER_LABELS[req.current_tier as UserTier] ?? req.current_tier}
+                            <span className="mx-1 text-gray-400">→</span>
+                            <span className="font-semibold">{TIER_LABELS[req.requested_tier as UserTier] ?? req.requested_tier}</span>
+                          </td>
+                          <td className="px-4 py-4 text-xs text-gray-500 max-w-[200px]">
+                            <p className="line-clamp-2">{req.reason}</p>
+                          </td>
+                          <td className="px-4 py-4">
+                            <Badge
+                              variant={req.status === "approved" ? "success" : req.status === "rejected" ? "danger" : "warning"}
+                              size="sm"
+                            >
+                              {req.status}
+                            </Badge>
+                          </td>
+                          <td className="px-4 py-4">
+                            {req.status === "pending" && (
+                              <div className="flex items-center gap-1">
+                                <Button size="sm" loading={actionLoading === req.id + "approve"} onClick={() => handleUpgradeAction(req.id, "approve")}>
+                                  <CheckCircle size={12} /> Approve
+                                </Button>
+                                <Button size="sm" variant="danger" loading={actionLoading === req.id + "reject"} onClick={() => handleUpgradeAction(req.id, "reject")}>
+                                  <XCir size={12} />
+                                </Button>
+                              </div>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
+              </Card>
+            )}
+
+            {/* Filters + users table — hidden in upgrade tab */}
+            {!upgradeTab && (<><div className="flex gap-3">
               <div className="relative flex-1">
                 <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
                 <input
@@ -219,7 +336,7 @@ export default function AdminUsersPage() {
                   </tbody>
                 </table>
               )}
-            </Card>
+            </Card></>)}
           </main>
         </div>
       </div>

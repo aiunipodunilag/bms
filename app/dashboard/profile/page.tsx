@@ -18,6 +18,9 @@ import {
   Edit2,
   Save,
   X,
+  TrendingUp,
+  CheckCircle,
+  Trash2,
 } from "lucide-react";
 import type { UserTier } from "@/types";
 
@@ -36,6 +39,13 @@ interface Profile {
   created_at: string;
 }
 
+const UPGRADEABLE_TIERS = [
+  { value: "lecturer_staff",    label: "Lecturer / Staff" },
+  { value: "product_developer", label: "Product Developer" },
+  { value: "startup_team",      label: "Startup Team" },
+  { value: "volunteer",         label: "Volunteer" },
+];
+
 export default function ProfilePage() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
@@ -43,18 +53,58 @@ export default function ProfilePage() {
   const [form, setForm] = useState({ fullName: "", phone: "" });
   const [saving, setSaving] = useState(false);
 
+  // Tier upgrade
+  const [upgradeOpen, setUpgradeOpen] = useState(false);
+  const [upgradeTier, setUpgradeTier] = useState("");
+  const [upgradeReason, setUpgradeReason] = useState("");
+  const [upgradeSubmitting, setUpgradeSubmitting] = useState(false);
+  const [upgradeSuccess, setUpgradeSuccess] = useState(false);
+  const [upgradeError, setUpgradeError] = useState("");
+  const [existingUpgrade, setExistingUpgrade] = useState<{ status: string; requested_tier: string } | null>(null);
+
+  // Delete account
+  const [deleteConfirm, setDeleteConfirm] = useState(false);
+
   useEffect(() => {
-    fetch("/api/users/me")
-      .then((r) => r.json())
-      .then(({ profile: p }) => {
-        if (p) {
-          setProfile(p);
-          setForm({ fullName: p.full_name ?? "", phone: p.phone ?? "" });
-        }
-      })
-      .catch(() => {})
-      .finally(() => setLoading(false));
+    Promise.all([
+      fetch("/api/users/me").then((r) => r.json()),
+      fetch("/api/tier-upgrade").then((r) => r.json()).catch(() => ({ requests: [] })),
+    ]).then(([meData, upgradeData]) => {
+      if (meData.profile) {
+        setProfile(meData.profile);
+        setForm({ fullName: meData.profile.full_name ?? "", phone: meData.profile.phone ?? "" });
+      }
+      const pending = (upgradeData.requests ?? []).find((r: { status: string }) => r.status === "pending" || r.status === "approved");
+      if (pending) setExistingUpgrade(pending);
+    }).catch(() => {}).finally(() => setLoading(false));
   }, []);
+
+  const handleUpgradeSubmit = async () => {
+    if (!upgradeTier || upgradeReason.trim().length < 50) {
+      setUpgradeError("Please select a tier and provide at least 50 characters for your reason.");
+      return;
+    }
+    setUpgradeSubmitting(true);
+    setUpgradeError("");
+    try {
+      const res = await fetch("/api/tier-upgrade", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ requestedTier: upgradeTier, reason: upgradeReason }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setUpgradeError(data.error ?? "Failed to submit request");
+      } else {
+        setUpgradeSuccess(true);
+        setExistingUpgrade({ status: "pending", requested_tier: upgradeTier });
+        setTimeout(() => { setUpgradeOpen(false); setUpgradeSuccess(false); }, 2000);
+      }
+    } catch {
+      setUpgradeError("An error occurred. Please try again.");
+    }
+    setUpgradeSubmitting(false);
+  };
 
   const handleSave = async () => {
     setSaving(true);
@@ -276,18 +326,116 @@ export default function ProfilePage() {
             </div>
           </Card>
 
-          {/* Tier upgrade info */}
-          <Card className="bg-brand-50 border-brand-100">
-            <div className="flex items-start gap-3">
-              <AlertCircle size={16} className="text-brand-500 shrink-0 mt-0.5" />
-              <div>
-                <p className="font-semibold text-brand-800 text-sm mb-1">Want to upgrade your tier?</p>
-                <p className="text-brand-700 text-xs leading-relaxed">
-                  Tier upgrades (Product Developer, Startup Team) are applied for through the
-                  dashboard. Volunteer and Space Lead roles are appointed by admin. Contact the
-                  pod team to learn more.
-                </p>
+          {/* Tier upgrade */}
+          <Card>
+            <div className="flex items-start justify-between gap-3 mb-4">
+              <div className="flex items-center gap-2">
+                <TrendingUp size={16} className="text-brand-500" />
+                <h2 className="font-semibold text-gray-900">Tier Upgrade</h2>
               </div>
+              {existingUpgrade?.status === "pending" ? (
+                <span className="text-xs bg-amber-50 text-amber-700 border border-amber-200 px-2.5 py-1 rounded-full font-medium">
+                  Request Pending
+                </span>
+              ) : existingUpgrade?.status === "approved" ? (
+                <span className="text-xs bg-green-50 text-green-700 border border-green-200 px-2.5 py-1 rounded-full font-medium flex items-center gap-1">
+                  <CheckCircle size={11} /> Approved
+                </span>
+              ) : null}
+            </div>
+
+            {existingUpgrade ? (
+              <p className="text-sm text-gray-500">
+                {existingUpgrade.status === "pending"
+                  ? `Your request to upgrade to ${existingUpgrade.requested_tier.replace(/_/g, " ")} is under admin review.`
+                  : `Your tier was upgraded to ${existingUpgrade.requested_tier.replace(/_/g, " ")}.`}
+              </p>
+            ) : (
+              <>
+                <p className="text-sm text-gray-500 mb-4">
+                  Apply to upgrade your tier to access more spaces and features.
+                  Upgrades are reviewed by an admin within 1–2 business days.
+                </p>
+                {!upgradeOpen ? (
+                  <Button variant="outline" size="sm" onClick={() => setUpgradeOpen(true)}>
+                    <TrendingUp size={14} /> Apply for Upgrade
+                  </Button>
+                ) : (
+                  <div className="space-y-3">
+                    <div>
+                      <label className="text-xs font-medium text-gray-500 block mb-1.5">Requested Tier</label>
+                      <div className="relative">
+                        <select
+                          value={upgradeTier}
+                          onChange={(e) => setUpgradeTier(e.target.value)}
+                          className="w-full px-3 py-2.5 pr-10 rounded-xl border border-gray-300 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-brand-500 appearance-none"
+                        >
+                          <option value="">Select a tier…</option>
+                          {UPGRADEABLE_TIERS.filter((t) => t.value !== profile?.tier).map((t) => (
+                            <option key={t.value} value={t.value}>{t.label}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                    <div>
+                      <label className="text-xs font-medium text-gray-500 block mb-1.5">
+                        Reason / Justification <span className="text-gray-400">({upgradeReason.length}/50 min)</span>
+                      </label>
+                      <textarea
+                        rows={4}
+                        placeholder="Explain why you need this tier upgrade — your role, projects, and how you'll use the hub…"
+                        value={upgradeReason}
+                        onChange={(e) => setUpgradeReason(e.target.value)}
+                        className="w-full px-3 py-2.5 rounded-xl border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 resize-none"
+                      />
+                    </div>
+                    {upgradeError && (
+                      <p className="text-xs text-red-600 flex items-center gap-1"><AlertCircle size={12} />{upgradeError}</p>
+                    )}
+                    {upgradeSuccess && (
+                      <p className="text-xs text-green-600 flex items-center gap-1"><CheckCircle size={12} />Request submitted! Admin will review shortly.</p>
+                    )}
+                    <div className="flex gap-2">
+                      <Button size="sm" loading={upgradeSubmitting} onClick={handleUpgradeSubmit}>Submit Request</Button>
+                      <Button variant="outline" size="sm" onClick={() => { setUpgradeOpen(false); setUpgradeError(""); }}>
+                        <X size={14} />
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
+          </Card>
+
+          {/* Danger zone */}
+          <Card className="border-red-100">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="font-semibold text-gray-900 text-sm mb-0.5 flex items-center gap-1.5">
+                  <Trash2 size={14} className="text-red-400" /> Delete Account
+                </p>
+                <p className="text-xs text-gray-400">Permanently delete your account and all booking data. This cannot be undone.</p>
+              </div>
+              {!deleteConfirm ? (
+                <Button variant="danger" size="sm" onClick={() => setDeleteConfirm(true)}>Delete</Button>
+              ) : (
+                <div className="flex flex-col items-end gap-2">
+                  <p className="text-xs text-red-600 font-medium">Are you sure?</p>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="danger"
+                      size="sm"
+                      onClick={async () => {
+                        await fetch("/api/users/me", { method: "DELETE" }).catch(() => {});
+                        window.location.href = "/auth/login";
+                      }}
+                    >
+                      Yes, delete
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => setDeleteConfirm(false)}>Cancel</Button>
+                  </div>
+                </div>
+              )}
             </div>
           </Card>
         </div>

@@ -72,3 +72,22 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
+
+/**
+ * DELETE /api/users/me
+ * Soft-deletes (suspends) the current user's account.
+ */
+export async function DELETE() {
+  const supabase = createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return NextResponse.json({ error: "Unauthorised" }, { status: 401 });
+
+  const adminDb = createAdminClient();
+  // Soft delete: mark profile as deleted/suspended
+  await adminDb.from("profiles").update({ status: "deleted" }).eq("id", user.id);
+
+  // Sign out
+  await supabase.auth.signOut();
+
+  return NextResponse.json({ success: true });
+}

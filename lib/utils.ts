@@ -22,19 +22,19 @@ export function generateBMSCode(): string {
 
 // ─── Date & Time helpers ──────────────────────────────────────────────────────
 
-/** Returns list of valid booking dates (Mon–Fri, up to 4 days ahead) */
+/** Returns list of valid booking dates (Mon–Fri, today + up to maxAdvanceDays weekdays ahead) */
 export function getBookableDates(): Date[] {
   const dates: Date[] = [];
-  let day = new Date();
+  const today = new Date();
   let count = 0;
 
   while (dates.length < BOOKING_RULES.maxAdvanceDays) {
-    count++;
-    const candidate = addDays(day, count);
+    const candidate = addDays(today, count);
     if (!isWeekend(candidate)) {
       dates.push(candidate);
     }
-    if (count > 20) break; // safety valve
+    count++;
+    if (count > 60) break; // safety valve
   }
 
   return dates;
