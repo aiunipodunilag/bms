@@ -19,7 +19,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { useEffect, useState } from "react";
-import { createClient } from "@/lib/supabase/client";
+
 
 // Full admin nav — shown to super_admin and admin
 const ADMIN_LINKS: NavLink[] = [
@@ -65,11 +65,12 @@ interface Props {
 
 export default function AdminSidebar({ role: roleProp }: Props) {
   const pathname = usePathname();
-  const [role, setRole] = useState<AdminRole>(roleProp ?? "admin");
+  // Default to null so no links are shown until the real role is confirmed.
+  // This prevents a receptionist/space_lead from briefly seeing admin links.
+  const [role, setRole] = useState<AdminRole | null>(roleProp ?? null);
   const [adminName, setAdminName] = useState<string>("");
   const [adminEmail, setAdminEmail] = useState<string>("");
   const [pendingCounts, setPendingCounts] = useState<Record<string, number>>({});
-  const [signingOut, setSigningOut] = useState(false);
 
   // Fetch actual role from session so nav links are always correct
   useEffect(() => {
@@ -100,15 +101,14 @@ export default function AdminSidebar({ role: roleProp }: Props) {
     }
   }, [role]);
 
-  // Hard navigate to bust server-side session cache
-  const handleSignOut = async () => {
-    setSigningOut(true);
-    const supabase = createClient();
-    await supabase.auth.signOut();
-    window.location.href = "/admin/login";
+  // Use the server-side signout route so cookies are cleared properly,
+  // then redirect to admin login. Same fix as the main Navbar.
+  const handleSignOut = () => {
+    window.location.href = "/auth/signout";
   };
 
   const links =
+    role === null           ? [] :
     role === "super_admin"  ? SUPER_ADMIN_LINKS :
     role === "receptionist" ? RECEPTIONIST_LINKS :
     role === "space_lead"   ? SPACE_LEAD_LINKS :
@@ -140,8 +140,8 @@ export default function AdminSidebar({ role: roleProp }: Props) {
           </div>
           <div>
             <p className="text-gray-900 font-bold text-sm" style={{ letterSpacing: "-0.02em" }}>AI-UNIPOD</p>
-            <span className={cn("text-[10px] font-semibold px-1.5 py-0.5 rounded-full", roleBadgeColor[role])}>
-              {roleLabel[role]}
+            <span className={cn("text-[10px] font-semibold px-1.5 py-0.5 rounded-full", role ? roleBadgeColor[role] : "bg-gray-100 text-gray-400")}>
+              {role ? roleLabel[role] : "Loading…"}
             </span>
           </div>
         </Link>
@@ -204,11 +204,10 @@ export default function AdminSidebar({ role: roleProp }: Props) {
         )}
         <button
           onClick={handleSignOut}
-          disabled={signingOut}
-          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-gray-400 hover:text-red-600 hover:bg-red-50 transition-all duration-150 disabled:opacity-50"
+          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-gray-400 hover:text-red-600 hover:bg-red-50 transition-all duration-150"
         >
           <LogOut size={16} />
-          {signingOut ? "Signing out…" : "Sign out"}
+          Sign out
         </button>
       </div>
     </aside>

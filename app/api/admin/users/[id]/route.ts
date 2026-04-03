@@ -29,6 +29,11 @@ export async function PATCH(
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
+  // Only admin and super_admin can modify user accounts
+  if (!["admin", "super_admin"].includes(adminAccount.role)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
   try {
     const body = await request.json();
     const { status, tier } = body;

@@ -23,6 +23,11 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
+  // Only admin and super_admin can view user management
+  if (!["admin", "super_admin"].includes(adminAccount.role)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
   const { searchParams } = new URL(request.url);
   const statusFilter = searchParams.get("status");
   const tierFilter = searchParams.get("tier");
