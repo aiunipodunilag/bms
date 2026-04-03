@@ -55,8 +55,7 @@ const config: Config = {
         "glow-sm":  "0 0 0 3px rgba(91,76,245,0.10)",
         "glow":     "0 0 0 3px rgba(91,76,245,0.12), 0 8px 32px rgba(91,76,245,0.14)",
         "glow-lg":  "0 0 0 4px rgba(91,76,245,0.15), 0 16px 48px rgba(91,76,245,0.18)",
-        // Legacy dark glass shadow (landing page)
-        "glass":    "0 8px 32px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.08)",
+        "glass":    "0 8px 32px rgba(0,0,0,0.08), inset 0 1px 0 rgba(255,255,255,0.60)",
       },
       animation: {
         "scroll-x":    "scroll-x 40s linear infinite",
