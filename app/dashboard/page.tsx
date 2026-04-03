@@ -101,19 +101,6 @@ export default async function DashboardPage() {
       />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Pending verification banner */}
-        {profile.status === "pending" && (
-          <div className="mb-6 bg-amber-50 border border-amber-200 rounded-2xl px-5 py-4 flex items-start gap-3">
-            <AlertCircle size={18} className="text-amber-500 shrink-0 mt-0.5" />
-            <div>
-              <p className="font-semibold text-amber-800 text-sm">Account pending verification</p>
-              <p className="text-amber-700 text-sm mt-0.5">
-                Your identity document is under review. You&apos;ll be able to book once an admin verifies your account — usually within 24 hours.
-              </p>
-            </div>
-          </div>
-        )}
-
         {profile.status === "rejected" && (
           <div className="mb-6 bg-red-50 border border-red-200 rounded-2xl px-5 py-4 flex items-start gap-3">
             <XCircle size={18} className="text-red-500 shrink-0 mt-0.5" />
@@ -134,7 +121,7 @@ export default async function DashboardPage() {
             </h1>
             <p className="text-gray-500 text-sm mt-0.5">Your booking dashboard — AI-UNIPOD UNILAG</p>
           </div>
-          {(profile.status === "verified" || profile.status === "active") && (
+          {profile.status !== "rejected" && (
             <Link href="/spaces">
               <Button size="md">
                 Book a Space <ArrowRight size={16} />
@@ -260,7 +247,7 @@ export default async function DashboardPage() {
                 <div className="text-center py-8 text-gray-400">
                   <Building2 size={36} className="mx-auto mb-3 opacity-40" />
                   <p className="text-sm">No active booking</p>
-                  {(profile.status === "verified" || profile.status === "active") && (
+                  {profile.status !== "rejected" && (
                     <Link href="/spaces">
                       <Button variant="secondary" size="sm" className="mt-3">
                         Book a Space

@@ -168,9 +168,8 @@ export default function SignupPage() {
       return;
     }
 
-    // Sign out immediately — internal users must wait for admin verification
-    await supabase.auth.signOut();
-    setStep("success");
+    // Account is active immediately — redirect straight to dashboard
+    router.push("/dashboard");
     setLoading(false);
   };
 
@@ -264,7 +263,7 @@ export default function SignupPage() {
                 <div>
                   <p className="font-semibold text-gray-900">Yes — I&apos;m a UNILAG student or staff</p>
                   <p className="text-sm text-gray-500 mt-1">
-                    Free access with your matric or staff number. Account pending admin verification.
+                    Free access with your matric or staff number. Start booking immediately after sign-up.
                   </p>
                 </div>
                 <ArrowRight size={18} className="text-gray-400 group-hover:text-brand-500 mt-1 shrink-0 transition-colors" />
@@ -309,7 +308,7 @@ export default function SignupPage() {
             <div className="mb-6">
               <h1 className="text-2xl font-bold text-gray-900">UNILAG Student / Staff</h1>
               <p className="text-sm text-gray-500 mt-1">
-                Fill in your details. Your account will be reviewed by admin before activation.
+                Fill in your details. Your account is activated immediately — no waiting required.
               </p>
             </div>
 

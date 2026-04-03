@@ -187,18 +187,6 @@ export default function BookSpacePage({ params }: { params: { id: string } }) {
               <p className="text-sm text-gray-500">{space.name}</p>
             </Card>
 
-            {/* Account not verified warning */}
-            {profile && profile.status === "pending" && (
-              <Card className="bg-amber-50 border-amber-200">
-                <div className="flex items-start gap-3">
-                  <AlertCircle size={18} className="text-amber-500 shrink-0 mt-0.5" />
-                  <p className="text-sm text-amber-700">
-                    Your account is pending verification. Please wait for admin approval before booking.
-                  </p>
-                </div>
-              </Card>
-            )}
-
             {/* Weekly limit warning */}
             {isAtLimit && (
               <Card className="bg-amber-50 border-amber-200">
@@ -442,10 +430,7 @@ export default function BookSpacePage({ params }: { params: { id: string } }) {
               className="w-full"
               size="lg"
               onClick={() => { if (validateForm()) setStep("confirm"); }}
-              disabled={
-                (needsExtraPayment && !paymentAccepted) ||
-                (profile?.status === "pending")
-              }
+              disabled={needsExtraPayment && !paymentAccepted}
             >
               Review Booking
             </Button>

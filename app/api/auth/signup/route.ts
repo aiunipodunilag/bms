@@ -33,10 +33,9 @@ export async function POST(request: NextRequest) {
 
     const adminClient = createAdminClient();
 
-    // Determine initial status
-    // External users are active immediately (email confirmation handled by Supabase Auth)
-    // Internal users start as pending (need admin document verification)
-    const status = userClass === "external" ? "active" : "pending";
+    // All users are active immediately — no admin verification required for account creation.
+    // Booking approval (for manual-approval spaces) is handled per-booking, not per-account.
+    const status = "active";
 
     const { data, error } = await adminClient
       .from("profiles")
