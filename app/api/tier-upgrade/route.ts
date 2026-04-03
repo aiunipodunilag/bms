@@ -87,7 +87,11 @@ export async function POST(request: NextRequest) {
 
     if (insertErr) {
       console.error("[tier-upgrade POST]", insertErr);
-      return NextResponse.json({ error: "Failed to submit request" }, { status: 500 });
+      const msg =
+        insertErr.code === "42P01"
+          ? "Tier upgrade table not set up yet. Please ask your admin to run the database migration in supabase/migrations/001_tier_upgrade_requests.sql."
+          : "Failed to submit request. Please try again.";
+      return NextResponse.json({ error: msg }, { status: 500 });
     }
 
     // In-app notification (fire and forget)
