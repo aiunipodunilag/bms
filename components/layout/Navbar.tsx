@@ -1,12 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import Button from "@/components/ui/Button";
 import { Menu, X, Bell, ChevronDown, LogOut, User } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
+
 
 interface NavbarProps {
   user?: {
@@ -19,10 +19,8 @@ interface NavbarProps {
 
 export default function Navbar({ user }: NavbarProps) {
   const pathname = usePathname();
-  const router = useRouter();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
-  const [signingOut, setSigningOut] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const [notifOpen, setNotifOpen] = useState(false);
   const [notifications, setNotifications] = useState<Array<{ id: string; title: string; message: string; read: boolean; created_at: string }>>([]);
@@ -49,13 +47,11 @@ export default function Navbar({ user }: NavbarProps) {
     }
   };
 
-  const handleSignOut = async () => {
-    setSigningOut(true);
-    setProfileOpen(false);
-    const supabase = createClient();
-    await supabase.auth.signOut();
-    router.push("/");
-    router.refresh();
+  const handleSignOut = () => {
+    // Use the server-side signout route so cookies are cleared server-side
+    // before the redirect. Client-side signOut() + router.push leaves stale
+    // session cookies in Next.js's server component cache, causing a loop.
+    window.location.href = "/auth/signout";
   };
 
   const navLinks = user
@@ -201,10 +197,9 @@ export default function Navbar({ user }: NavbarProps) {
                         <hr className="my-1 border-gray-100" />
                         <button
                           onClick={handleSignOut}
-                          disabled={signingOut}
-                          className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-500 hover:bg-red-50 disabled:opacity-50 transition-colors"
+                          className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-500 hover:bg-red-50 transition-colors"
                         >
-                          <LogOut size={14} /> {signingOut ? "Signing out..." : "Sign out"}
+                          <LogOut size={14} /> Sign out
                         </button>
                       </div>
                     </>
