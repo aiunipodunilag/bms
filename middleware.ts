@@ -12,6 +12,15 @@ export async function middleware(request: NextRequest) {
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set("x-pathname", request.nextUrl.pathname);
 
+  // CRITICAL: Do NOT refresh the session on the signout route.
+  // If we call getUser() here, Supabase will write fresh session cookies onto
+  // the middleware response BEFORE the signout route handler can clear them,
+  // creating a race where the fresh cookies overwrite the expired ones the
+  // handler sets — causing the sign-in-again loop.
+  if (request.nextUrl.pathname === "/auth/signout") {
+    return NextResponse.next({ request: { headers: requestHeaders } });
+  }
+
   let supabaseResponse = NextResponse.next({
     request: { headers: requestHeaders },
   });
