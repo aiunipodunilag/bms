@@ -6,6 +6,7 @@ import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import Button from "@/components/ui/Button";
 import { Menu, X, Bell, ChevronDown, LogOut, User } from "lucide-react";
+import { createClient } from "@/lib/supabase/client";
 
 
 interface NavbarProps {
@@ -47,10 +48,11 @@ export default function Navbar({ user }: NavbarProps) {
     }
   };
 
-  const handleSignOut = () => {
-    // Use the server-side signout route so cookies are cleared server-side
-    // before the redirect. Client-side signOut() + router.push leaves stale
-    // session cookies in Next.js's server component cache, causing a loop.
+  const handleSignOut = async () => {
+    // Step 1: clear localStorage + revoke refresh token via browser client
+    const supabase = createClient();
+    await supabase.auth.signOut({ scope: "global" });
+    // Step 2: server-side cookie clearing + hard redirect to home
     window.location.href = "/auth/signout";
   };
 

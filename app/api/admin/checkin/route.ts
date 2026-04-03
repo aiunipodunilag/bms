@@ -69,13 +69,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validate check-in is within grace period
-    const bookingDateTime = new Date(`${booking.date}T${booking.start_time}`);
+    // Validate check-in is within grace period.
+    // Booking times are in WAT (UTC+1). Appending +01:00 ensures the Date
+    // object stores the correct UTC equivalent regardless of server timezone.
+    const bookingDateTime = new Date(`${booking.date}T${booking.start_time}:00+01:00`);
     const now = new Date();
     const minutesDiff = (now.getTime() - bookingDateTime.getTime()) / 60000;
     const GRACE_PERIOD = 20;
 
-    if (minutesDiff < -30) {
+    if (minutesDiff < -60) {
       return NextResponse.json(
         { error: "It is too early to check in. Please come back closer to your booking time.", booking },
         { status: 400 }
@@ -103,9 +105,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Calculate session expiry
+    // Calculate session expiry (WAT = UTC+1)
     const [endH, endM] = booking.end_time.split(":").map(Number);
-    const sessionExpiresAt = new Date(`${booking.date}T${String(endH).padStart(2, "0")}:${String(endM).padStart(2, "0")}:00`);
+    const sessionExpiresAt = new Date(`${booking.date}T${String(endH).padStart(2, "0")}:${String(endM).padStart(2, "0")}:00+01:00`);
     const checkedInAt = new Date().toISOString();
 
     const { data: updated, error: updateErr } = await adminClient

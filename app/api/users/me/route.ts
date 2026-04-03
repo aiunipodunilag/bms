@@ -15,18 +15,29 @@ export async function GET() {
   }
 
   const adminDb = createAdminClient();
-  const { data: profile, error } = await adminDb
-    .from("profiles")
-    .select("*")
-    .eq("id", user.id)
-    .single();
+  const [profileResult, totalResult, completedResult] = await Promise.all([
+    adminDb.from("profiles").select("*").eq("id", user.id).single(),
+    adminDb.from("bookings").select("*", { count: "exact", head: true }).eq("user_id", user.id),
+    adminDb.from("bookings").select("*", { count: "exact", head: true }).eq("user_id", user.id).in("status", ["completed", "checked_in"]),
+  ]);
 
-  if (error || !profile) {
+  if (profileResult.error || !profileResult.data) {
     return NextResponse.json({ error: "Profile not found" }, { status: 404 });
   }
 
+  const profile = profileResult.data;
+  const totalBookings = totalResult.count ?? profile.total_bookings ?? 0;
+  const completedBookings = completedResult.count ?? profile.completed_bookings ?? 0;
+
   // Always return auth email (reliable even if not yet in profiles table)
-  return NextResponse.json({ profile: { ...profile, email: profile.email ?? user.email } });
+  return NextResponse.json({
+    profile: {
+      ...profile,
+      email: profile.email ?? user.email,
+      total_bookings: totalBookings,
+      completed_bookings: completedBookings,
+    },
+  });
 }
 
 /**

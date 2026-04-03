@@ -19,6 +19,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { useEffect, useState } from "react";
+import { createClient } from "@/lib/supabase/client";
 
 
 // Full admin nav — shown to super_admin and admin
@@ -101,9 +102,10 @@ export default function AdminSidebar({ role: roleProp }: Props) {
     }
   }, [role]);
 
-  // Use the server-side signout route so cookies are cleared properly,
-  // then redirect to admin login. Same fix as the main Navbar.
-  const handleSignOut = () => {
+  // Step 1: clear localStorage via browser client, step 2: clear server cookies
+  const handleSignOut = async () => {
+    const supabase = createClient();
+    await supabase.auth.signOut({ scope: "global" });
     window.location.href = "/auth/signout";
   };
 

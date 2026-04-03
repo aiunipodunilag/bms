@@ -72,8 +72,31 @@ export default function BookSpacePage({ params }: { params: { id: string } }) {
   const [paymentAccepted, setPaymentAccepted] = useState(false);
   const [selectedEquipment, setSelectedEquipment] = useState<string[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [bookedSlots, setBookedSlots] = useState<Array<{ start_time: string; end_time: string }>>([]);
+  const [availabilityLoading, setAvailabilityLoading] = useState(false);
+
+  useEffect(() => {
+    if (!selectedDate || !space) return;
+    setAvailabilityLoading(true);
+    fetch(`/api/spaces/availability?spaceId=${space.id}&date=${selectedDate}`)
+      .then((r) => r.ok ? r.json() : { bookedSlots: [] })
+      .then((d) => setBookedSlots(d.bookedSlots ?? []))
+      .catch(() => setBookedSlots([]))
+      .finally(() => setAvailabilityLoading(false));
+  }, [selectedDate, space]);
 
   if (!space) return null;
+
+  // Returns true if starting a slot at `time` with current `duration` overlaps any booking
+  const isSlotOccupied = (time: string) => {
+    const slotStart = parseInt(time.split(":")[0]);
+    const slotEnd = slotStart + duration;
+    return bookedSlots.some((b) => {
+      const bStart = parseInt(b.start_time.split(":")[0]);
+      const bEnd = parseInt(b.end_time.split(":")[0]);
+      return slotStart < bEnd && slotEnd > bStart;
+    });
+  };
 
   const tierRules = profile ? TIER_RULES[profile.tier] : null;
   const weeklyLimit =
@@ -263,11 +286,14 @@ export default function BookSpacePage({ params }: { params: { id: string } }) {
                     className="w-full px-3 py-2.5 rounded-xl border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
                   >
                     <option value="">Select time</option>
-                    {timeSlots.map((t) => (
-                      <option key={t} value={t}>
-                        {formatTime(t)}
-                      </option>
-                    ))}
+                    {timeSlots.map((t) => {
+                      const occupied = selectedDate && isSlotOccupied(t);
+                      return (
+                        <option key={t} value={t} disabled={!!occupied}>
+                          {formatTime(t)}{occupied ? " — Full" : ""}
+                        </option>
+                      );
+                    })}
                   </select>
                 </div>
                 <div>
@@ -296,6 +322,30 @@ export default function BookSpacePage({ params }: { params: { id: string } }) {
                 <p className="text-sm text-brand-600 font-medium mt-3">
                   Session: {formatTime(selectedStartTime)} – {formatTime(endTime)}
                 </p>
+              )}
+              {selectedDate && (
+                <div className="mt-3 pt-3 border-t border-gray-100">
+                  {availabilityLoading ? (
+                    <p className="text-xs text-gray-400 flex items-center gap-1.5">
+                      <Loader2 size={11} className="animate-spin" /> Checking availability…
+                    </p>
+                  ) : bookedSlots.length > 0 ? (
+                    <div>
+                      <p className="text-xs font-medium text-gray-500 mb-1.5">Already booked on this date:</p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {bookedSlots.map((b, i) => (
+                          <span key={i} className="text-xs bg-red-50 text-red-600 border border-red-100 px-2 py-1 rounded-lg">
+                            {formatTime(b.start_time)}–{formatTime(b.end_time)}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-xs text-green-600 flex items-center gap-1.5">
+                      <CheckCircle size={11} /> All slots available on this date
+                    </p>
+                  )}
+                </div>
               )}
               {errors.time && <p className="text-xs text-red-500 mt-1">{errors.time}</p>}
             </Card>
