@@ -121,6 +121,10 @@ export default function AdminCheckinPage() {
         body: JSON.stringify({ bookingId: booking.id }),
       });
       const eqData = await eqRes.json();
+      if (!eqRes.ok) {
+        // Check-in succeeded but equipment codes failed — warn but don't block
+        setErrorMsg(`Check-in recorded, but equipment code generation failed: ${eqData.error ?? "Unknown error"}. Please try again or contact support.`);
+      }
       codes = eqData.codes ?? [];
     }
 

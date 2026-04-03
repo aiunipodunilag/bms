@@ -65,12 +65,17 @@ export default function AdminBookingsPage() {
 
   const handleAction = async (id: string, action: "approve" | "reject") => {
     setActionLoading(id + action);
-    await fetch(`/api/admin/bookings/${id}`, {
+    const res = await fetch(`/api/admin/bookings/${id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ action }),
     });
     setActionLoading(null);
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      alert(data.error ?? "Action failed. Please try again.");
+      return;
+    }
     fetchBookings();
   };
 
