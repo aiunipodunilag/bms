@@ -97,7 +97,7 @@ export async function POST(request: NextRequest) {
     // In-app notification (fire and forget)
     adminDb.from("notifications").insert({
       user_id: user.id,
-      type: "booking_pending",
+      type: "booking_confirmed",
       title: "Tier Upgrade Request Submitted",
       message: `Your request to upgrade to ${requestedTier.replace(/_/g, " ")} is under review.`,
     }).then(() => {});

@@ -145,24 +145,11 @@ export async function POST(request: NextRequest) {
       .lt("start_time", endTime)
       .gt("end_time", startTime);
 
-    if (conflicts && conflicts.length > 0) {
-      // Check if the space has remaining capacity
-      const { data: spaceBookings } = await adminDb
-        .from("bookings")
-        .select("id")
-        .eq("space_id", spaceId)
-        .eq("date", date)
-        .in("status", ["pending", "confirmed", "checked_in"])
-        .lt("start_time", endTime)
-        .gt("end_time", startTime);
-
-      const bookedSeats = spaceBookings?.length ?? 0;
-      if (bookedSeats >= space.capacity) {
-        return NextResponse.json(
-          { error: "This time slot is fully booked. Please choose a different time." },
-          { status: 409 }
-        );
-      }
+    if (conflicts && conflicts.length >= space.capacity) {
+      return NextResponse.json(
+        { error: "This time slot is fully booked. Please choose a different time." },
+        { status: 409 }
+      );
     }
 
     // ── Determine approval status ─────────────────────────────────────────

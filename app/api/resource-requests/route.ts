@@ -101,7 +101,7 @@ export async function POST(request: NextRequest) {
     // Notification
     await adminDb.from("notifications").insert({
       user_id: user.id,
-      type: "resource_approved",
+      type: "booking_confirmed",
       title: "Resource Request Submitted",
       message: `Your request for ${resourceType.replace(/_/g, " ")} is under review. Reference: ${bmsCode}`,
     });
