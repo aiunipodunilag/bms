@@ -166,30 +166,32 @@ export default async function DashboardPage() {
             </p>
           </Card>
 
-          <Card>
-            <p className="text-xs text-gray-500 mb-2 font-medium">Account Status</p>
-            <div className="flex items-center gap-1.5">
-              {profile.status === "verified" || profile.status === "active" ? (
-                <>
-                  <CheckCircle size={16} className="text-green-500" />
-                  <span className="text-sm font-semibold text-green-700">Verified</span>
-                </>
-              ) : profile.status === "pending" ? (
-                <>
-                  <AlertCircle size={16} className="text-amber-500" />
-                  <span className="text-sm font-semibold text-amber-700">Pending</span>
-                </>
-              ) : (
-                <>
-                  <XCircle size={16} className="text-red-500" />
-                  <span className="text-sm font-semibold text-red-700">Rejected</span>
-                </>
-              )}
-            </div>
-            <p className="text-xs text-gray-400 mt-1">
-              {profile.class === "internal" ? "UNILAG ID" : "External account"}
-            </p>
-          </Card>
+          <Link href="/dashboard/profile">
+            <Card className="hover:border-brand-200 hover:shadow-md transition-all cursor-pointer group">
+              <p className="text-xs text-gray-500 mb-2 font-medium">Account Status</p>
+              <div className="flex items-center gap-1.5">
+                {profile.status === "verified" || profile.status === "active" ? (
+                  <>
+                    <CheckCircle size={16} className="text-green-500" />
+                    <span className="text-sm font-semibold text-green-700">Verified</span>
+                  </>
+                ) : profile.status === "pending" ? (
+                  <>
+                    <AlertCircle size={16} className="text-amber-500" />
+                    <span className="text-sm font-semibold text-amber-700">Pending</span>
+                  </>
+                ) : (
+                  <>
+                    <XCircle size={16} className="text-red-500" />
+                    <span className="text-sm font-semibold text-red-700">Rejected</span>
+                  </>
+                )}
+              </div>
+              <p className="text-xs text-brand-500 mt-1 group-hover:underline font-medium">
+                View My Profile →
+              </p>
+            </Card>
+          </Link>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -303,9 +305,10 @@ export default async function DashboardPage() {
               <h2 className="font-semibold text-gray-900 mb-4">Quick Actions</h2>
               <div className="space-y-2">
                 {[
-                  { href: "/spaces", label: "Browse All Spaces", icon: Building2 },
-                  { href: "/resource-request", label: "Request a Resource", icon: Zap },
-                  { href: "/bookings", label: "My Bookings", icon: CalendarDays },
+                  { href: "/spaces",           label: "Browse All Spaces",    icon: Building2 },
+                  { href: "/resource-request", label: "Request a Resource",   icon: Zap },
+                  { href: "/bookings",          label: "My Bookings",          icon: CalendarDays },
+                  { href: "/dashboard/profile", label: "My Profile & Settings",icon: CheckCircle },
                 ].map(({ href, label, icon: Icon }) => (
                   <Link key={href} href={href}>
                     <div className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-gray-50 transition-colors cursor-pointer border border-transparent hover:border-gray-200">

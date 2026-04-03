@@ -15,8 +15,6 @@ import {
   BookOpen,
   ShieldCheck,
   AlertCircle,
-  Edit2,
-  Save,
   X,
   TrendingUp,
   CheckCircle,
@@ -49,9 +47,6 @@ const UPGRADEABLE_TIERS = [
 export default function ProfilePage() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
-  const [editing, setEditing] = useState(false);
-  const [form, setForm] = useState({ fullName: "", phone: "" });
-  const [saving, setSaving] = useState(false);
 
   // Tier upgrade
   const [upgradeOpen, setUpgradeOpen] = useState(false);
@@ -70,11 +65,10 @@ export default function ProfilePage() {
       fetch("/api/users/me").then((r) => r.json()),
       fetch("/api/tier-upgrade").then((r) => r.json()).catch(() => ({ requests: [] })),
     ]).then(([meData, upgradeData]) => {
-      if (meData.profile) {
-        setProfile(meData.profile);
-        setForm({ fullName: meData.profile.full_name ?? "", phone: meData.profile.phone ?? "" });
-      }
-      const pending = (upgradeData.requests ?? []).find((r: { status: string }) => r.status === "pending" || r.status === "approved");
+      if (meData.profile) setProfile(meData.profile);
+      const pending = (upgradeData.requests ?? []).find(
+        (r: { status: string }) => r.status === "pending" || r.status === "approved"
+      );
       if (pending) setExistingUpgrade(pending);
     }).catch(() => {}).finally(() => setLoading(false));
   }, []);
@@ -104,26 +98,6 @@ export default function ProfilePage() {
       setUpgradeError("An error occurred. Please try again.");
     }
     setUpgradeSubmitting(false);
-  };
-
-  const handleSave = async () => {
-    setSaving(true);
-    try {
-      const res = await fetch("/api/users/me", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ fullName: form.fullName, phone: form.phone }),
-      });
-      const { profile: updated } = await res.json();
-      if (updated) {
-        setProfile(updated);
-        setForm({ fullName: updated.full_name ?? "", phone: updated.phone ?? "" });
-      }
-    } catch {
-      // silent
-    }
-    setSaving(false);
-    setEditing(false);
   };
 
   if (loading) {
@@ -179,9 +153,7 @@ export default function ProfilePage() {
               <h2 className="text-lg font-bold text-gray-900">{profile.full_name}</h2>
               <p className="text-sm text-gray-500">{profile.email}</p>
               <div className="flex items-center gap-2 mt-2">
-                <span
-                  className={`text-xs font-medium px-2.5 py-1 rounded-full ${TIER_COLORS[profile.tier]}`}
-                >
+                <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${TIER_COLORS[profile.tier]}`}>
                   {TIER_LABELS[profile.tier]}
                 </span>
                 <Badge
@@ -189,12 +161,8 @@ export default function ProfilePage() {
                   size="sm"
                 >
                   {profile.status === "verified" || profile.status === "active" ? (
-                    <span className="flex items-center gap-1">
-                      <ShieldCheck size={11} /> Verified
-                    </span>
-                  ) : (
-                    "Pending"
-                  )}
+                    <span className="flex items-center gap-1"><ShieldCheck size={11} /> Verified</span>
+                  ) : "Pending"}
                 </Badge>
               </div>
             </div>
@@ -203,9 +171,9 @@ export default function ProfilePage() {
           {/* Stats */}
           <div className="grid grid-cols-3 gap-4">
             {[
-              { label: "Total Bookings", value: profile.total_bookings ?? 0 },
-              { label: "Completed", value: profile.completed_bookings ?? 0 },
-              { label: "No-shows", value: profile.no_show_count ?? 0 },
+              { label: "Total Bookings",  value: profile.total_bookings ?? 0 },
+              { label: "Completed",       value: profile.completed_bookings ?? 0 },
+              { label: "No-shows",        value: profile.no_show_count ?? 0 },
             ].map((s) => (
               <Card key={s.label} className="text-center">
                 <p className="text-2xl font-bold text-gray-900">{s.value}</p>
@@ -214,83 +182,47 @@ export default function ProfilePage() {
             ))}
           </div>
 
-          {/* Personal info */}
+          {/* Personal info — read-only */}
           <Card>
-            <div className="flex items-center justify-between mb-5">
-              <h2 className="font-semibold text-gray-900">Personal Information</h2>
-              {!editing ? (
-                <Button variant="outline" size="sm" onClick={() => setEditing(true)}>
-                  <Edit2 size={14} /> Edit
-                </Button>
-              ) : (
-                <div className="flex gap-2">
-                  <Button size="sm" loading={saving} onClick={handleSave}>
-                    <Save size={14} /> Save
-                  </Button>
-                  <Button variant="outline" size="sm" onClick={() => setEditing(false)}>
-                    <X size={14} />
-                  </Button>
-                </div>
-              )}
-            </div>
-
+            <h2 className="font-semibold text-gray-900 mb-5">Personal Information</h2>
             <div className="space-y-4">
-              {/* Full name */}
               <div className="flex items-start gap-3">
-                <User size={16} className="text-gray-400 mt-2.5 shrink-0" />
-                <div className="flex-1">
-                  <p className="text-xs text-gray-400 font-medium mb-1">Full Name</p>
-                  {editing ? (
-                    <input
-                      type="text"
-                      value={form.fullName}
-                      onChange={(e) => setForm({ ...form, fullName: e.target.value })}
-                      className="w-full px-3 py-2 rounded-xl border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
-                    />
-                  ) : (
-                    <p className="text-sm font-medium text-gray-800">{profile.full_name}</p>
-                  )}
+                <User size={16} className="text-gray-400 mt-1 shrink-0" />
+                <div>
+                  <p className="text-xs text-gray-400 font-medium mb-0.5">Full Name</p>
+                  <p className="text-sm font-medium text-gray-800">{profile.full_name}</p>
                 </div>
               </div>
 
-              {/* Email — not editable */}
               <div className="flex items-start gap-3">
                 <Mail size={16} className="text-gray-400 mt-1 shrink-0" />
                 <div>
-                  <p className="text-xs text-gray-400 font-medium mb-1">Email Address</p>
+                  <p className="text-xs text-gray-400 font-medium mb-0.5">Email Address</p>
                   <p className="text-sm font-medium text-gray-800">{profile.email}</p>
-                  <p className="text-xs text-gray-400 mt-0.5">Cannot be changed after signup</p>
                 </div>
               </div>
 
-              {/* Phone */}
               <div className="flex items-start gap-3">
-                <Phone size={16} className="text-gray-400 mt-2.5 shrink-0" />
-                <div className="flex-1">
-                  <p className="text-xs text-gray-400 font-medium mb-1">Phone Number</p>
-                  {editing ? (
-                    <input
-                      type="tel"
-                      value={form.phone}
-                      onChange={(e) => setForm({ ...form, phone: e.target.value })}
-                      className="w-full px-3 py-2 rounded-xl border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
-                    />
-                  ) : (
-                    <p className="text-sm font-medium text-gray-800">{profile.phone ?? "—"}</p>
-                  )}
+                <Phone size={16} className="text-gray-400 mt-1 shrink-0" />
+                <div>
+                  <p className="text-xs text-gray-400 font-medium mb-0.5">Phone Number</p>
+                  <p className="text-sm font-medium text-gray-800">{profile.phone ?? "—"}</p>
                 </div>
               </div>
 
-              {/* Matric number — not editable */}
               {profile.matric_number && (
                 <div className="flex items-start gap-3">
                   <BookOpen size={16} className="text-gray-400 mt-1 shrink-0" />
                   <div>
-                    <p className="text-xs text-gray-400 font-medium mb-1">Matric Number</p>
+                    <p className="text-xs text-gray-400 font-medium mb-0.5">Matric Number</p>
                     <p className="text-sm font-medium text-gray-800">{profile.matric_number}</p>
                   </div>
                 </div>
               )}
+
+              <p className="text-xs text-gray-400 pt-2 border-t border-gray-100">
+                To update your details, please contact an admin at AI-UNIPOD.
+              </p>
             </div>
           </Card>
 
@@ -304,9 +236,7 @@ export default function ProfilePage() {
               </div>
               <div className="flex items-center justify-between py-2 border-b border-gray-100">
                 <span className="text-gray-500">Tier</span>
-                <span
-                  className={`text-xs font-medium px-2.5 py-1 rounded-full ${TIER_COLORS[profile.tier]}`}
-                >
+                <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${TIER_COLORS[profile.tier]}`}>
                   {TIER_LABELS[profile.tier]}
                 </span>
               </div>
@@ -364,22 +294,21 @@ export default function ProfilePage() {
                   <div className="space-y-3">
                     <div>
                       <label className="text-xs font-medium text-gray-500 block mb-1.5">Requested Tier</label>
-                      <div className="relative">
-                        <select
-                          value={upgradeTier}
-                          onChange={(e) => setUpgradeTier(e.target.value)}
-                          className="w-full px-3 py-2.5 pr-10 rounded-xl border border-gray-300 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-brand-500 appearance-none"
-                        >
-                          <option value="">Select a tier…</option>
-                          {UPGRADEABLE_TIERS.filter((t) => t.value !== profile?.tier).map((t) => (
-                            <option key={t.value} value={t.value}>{t.label}</option>
-                          ))}
-                        </select>
-                      </div>
+                      <select
+                        value={upgradeTier}
+                        onChange={(e) => setUpgradeTier(e.target.value)}
+                        className="w-full px-3 py-2.5 rounded-xl border border-gray-300 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-brand-500"
+                      >
+                        <option value="">Select a tier…</option>
+                        {UPGRADEABLE_TIERS.filter((t) => t.value !== profile.tier).map((t) => (
+                          <option key={t.value} value={t.value}>{t.label}</option>
+                        ))}
+                      </select>
                     </div>
                     <div>
                       <label className="text-xs font-medium text-gray-500 block mb-1.5">
-                        Reason / Justification <span className="text-gray-400">({upgradeReason.length}/50 min)</span>
+                        Reason / Justification{" "}
+                        <span className="text-gray-400">({upgradeReason.length}/50 min)</span>
                       </label>
                       <textarea
                         rows={4}
@@ -390,13 +319,19 @@ export default function ProfilePage() {
                       />
                     </div>
                     {upgradeError && (
-                      <p className="text-xs text-red-600 flex items-center gap-1"><AlertCircle size={12} />{upgradeError}</p>
+                      <p className="text-xs text-red-600 flex items-center gap-1">
+                        <AlertCircle size={12} /> {upgradeError}
+                      </p>
                     )}
                     {upgradeSuccess && (
-                      <p className="text-xs text-green-600 flex items-center gap-1"><CheckCircle size={12} />Request submitted! Admin will review shortly.</p>
+                      <p className="text-xs text-green-600 flex items-center gap-1">
+                        <CheckCircle size={12} /> Request submitted! Admin will review shortly.
+                      </p>
                     )}
                     <div className="flex gap-2">
-                      <Button size="sm" loading={upgradeSubmitting} onClick={handleUpgradeSubmit}>Submit Request</Button>
+                      <Button size="sm" loading={upgradeSubmitting} onClick={handleUpgradeSubmit}>
+                        Submit Request
+                      </Button>
                       <Button variant="outline" size="sm" onClick={() => { setUpgradeOpen(false); setUpgradeError(""); }}>
                         <X size={14} />
                       </Button>
@@ -414,7 +349,9 @@ export default function ProfilePage() {
                 <p className="font-semibold text-gray-900 text-sm mb-0.5 flex items-center gap-1.5">
                   <Trash2 size={14} className="text-red-400" /> Delete Account
                 </p>
-                <p className="text-xs text-gray-400">Permanently delete your account and all booking data. This cannot be undone.</p>
+                <p className="text-xs text-gray-400">
+                  Permanently delete your account and all booking data. This cannot be undone.
+                </p>
               </div>
               {!deleteConfirm ? (
                 <Button variant="danger" size="sm" onClick={() => setDeleteConfirm(true)}>Delete</Button>
@@ -427,7 +364,7 @@ export default function ProfilePage() {
                       size="sm"
                       onClick={async () => {
                         await fetch("/api/users/me", { method: "DELETE" }).catch(() => {});
-                        window.location.href = "/auth/login";
+                        window.location.href = "/auth/signout";
                       }}
                     >
                       Yes, delete

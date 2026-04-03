@@ -1,21 +1,45 @@
-import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { NextRequest, NextResponse } from "next/server";
+import { createServerClient } from "@supabase/ssr";
 
 /**
  * GET /auth/signout
- * Signs the user out globally (revokes the refresh token on Supabase's servers)
- * and redirects to the home page.
  *
- * scope: "global" is critical — without it, signOut() only clears the server-side
- * cookie but leaves a valid token in the browser's localStorage. On the next page
- * load, Supabase's browser client finds that localStorage token, exchanges it for
- * a new session, and writes it back to cookies — silently signing the user back in.
- * With scope: "global", the token is revoked server-side so localStorage can't
- * restore it even if the browser still has it cached.
+ * IMPORTANT: we must NOT use createClient() from @/lib/supabase/server here.
+ * That helper uses `cookies()` from `next/headers`, whose setAll() writes
+ * cookie headers onto Next.js's internal response object — NOT onto the
+ * NextResponse.redirect() we return. The browser therefore never receives the
+ * Set-Cookie: expired headers and the session persists in cookies.
+ *
+ * Instead we build the Supabase client directly against the NextRequest and
+ * the redirect NextResponse so that signOut()'s setAll() writes cookie
+ * deletions directly onto the response we return.
+ *
+ * scope:"global" revokes the refresh token server-side so that even if the
+ * browser still has a copy in localStorage, Supabase will reject it on the
+ * next exchange attempt.
  */
-export async function GET() {
-  const supabase = createClient();
-  await supabase.auth.signOut({ scope: "global" });
+export async function GET(request: NextRequest) {
   const home = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
-  return NextResponse.redirect(new URL("/", home));
+  const response = NextResponse.redirect(new URL("/", home));
+
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return request.cookies.getAll();
+        },
+        setAll(cookiesToSet) {
+          // Write cookie deletions onto the redirect response we are returning
+          cookiesToSet.forEach(({ name, value, options }) =>
+            response.cookies.set(name, value, options)
+          );
+        },
+      },
+    }
+  );
+
+  await supabase.auth.signOut({ scope: "global" });
+  return response;
 }
