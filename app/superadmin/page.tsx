@@ -116,7 +116,7 @@ export default function SuperAdminPage() {
               ) : (
                 <table className="w-full">
                   <thead>
-                    <tr className="border-b border-gray-800">
+                    <tr className="border-b border-gray-200">
                       <th className="text-left text-xs font-medium text-gray-500 pb-2.5">Name</th>
                       <th className="text-left text-xs font-medium text-gray-500 pb-2.5">Role</th>
                       <th className="text-left text-xs font-medium text-gray-500 pb-2.5 hidden sm:table-cell">Space</th>
@@ -129,7 +129,7 @@ export default function SuperAdminPage() {
                       return (
                         <tr key={admin.id} className="hover:bg-gray-50">
                           <td className="py-2.5">
-                            <p className="text-sm text-white font-medium">{admin.full_name}</p>
+                            <p className="text-sm text-gray-900 font-medium">{admin.full_name}</p>
                             <p className="text-xs text-gray-500">{admin.email}</p>
                           </td>
                           <td className="py-2.5">

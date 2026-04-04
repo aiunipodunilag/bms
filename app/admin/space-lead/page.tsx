@@ -52,20 +52,25 @@ export default function SpaceLeadPage() {
   const [spaceName, setSpaceName]         = useState("Your Space");
 
   const loadCodes = useCallback(async () => {
-    const [activeRes, usedRes] = await Promise.all([
-      fetch("/api/admin/equipment-codes?status=active"),
-      fetch("/api/admin/equipment-codes?status=used"),
-    ]);
+    try {
+      const [activeRes, usedRes] = await Promise.all([
+        fetch("/api/admin/equipment-codes?status=active"),
+        fetch("/api/admin/equipment-codes?status=used"),
+      ]);
 
-    if (activeRes.ok) {
-      const { codes } = await activeRes.json();
-      setPendingCodes(codes ?? []);
-      if (codes?.[0]?.space_name) setSpaceName(codes[0].space_name);
-    }
-    if (usedRes.ok) {
-      const { codes } = await usedRes.json();
-      setVerifiedCodes(codes ?? []);
-      if (!pendingCodes[0] && codes?.[0]?.space_name) setSpaceName(codes[0].space_name);
+      let hasActive = false;
+      if (activeRes.ok) {
+        const { codes } = await activeRes.json();
+        setPendingCodes(codes ?? []);
+        if (codes?.[0]?.space_name) { setSpaceName(codes[0].space_name); hasActive = true; }
+      }
+      if (usedRes.ok) {
+        const { codes } = await usedRes.json();
+        setVerifiedCodes(codes ?? []);
+        if (!hasActive && codes?.[0]?.space_name) setSpaceName(codes[0].space_name);
+      }
+    } catch {
+      // Network error — silently ignore, user can hit refresh
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 

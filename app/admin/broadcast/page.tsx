@@ -78,7 +78,7 @@ export default function AdminBroadcastPage() {
     const res = await fetch("/api/admin/broadcast", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ subject, message: body, target: audience }),
+      body: JSON.stringify({ subject, message: body, target: audience, channel }),
     });
     const data = await res.json();
 

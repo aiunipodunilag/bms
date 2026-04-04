@@ -30,7 +30,12 @@ export async function GET(request: NextRequest) {
   const spaceFilter = searchParams.get("spaceId");
   const codeFilter = searchParams.get("code");
 
-  // Support lookup by BMS code (for check-in)
+  // Support lookup by BMS code (for check-in desk — receptionists allowed)
+  // Full listing is restricted to admin/super_admin only
+  if (!codeFilter && !["admin", "super_admin"].includes(adminAccount.role)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
   if (codeFilter) {
     const { data: booking, error } = await adminDb
       .from("bookings")

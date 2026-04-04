@@ -38,10 +38,10 @@ interface Profile {
 }
 
 const UPGRADEABLE_TIERS = [
-  { value: "lecturer_staff",    label: "Lecturer / Staff" },
-  { value: "product_developer", label: "Product Developer" },
-  { value: "startup_team",      label: "Startup Team" },
-  { value: "volunteer",         label: "Volunteer" },
+  { value: "lecturer_staff",       label: "Lecturer / Staff" },
+  { value: "product_developer",    label: "Product Developer" },
+  { value: "startup_team",         label: "Startup Team" },
+  { value: "volunteer_space_lead", label: "Volunteer / Space Lead" },
 ];
 
 export default function ProfilePage() {

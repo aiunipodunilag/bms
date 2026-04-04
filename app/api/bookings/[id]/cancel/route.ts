@@ -48,7 +48,7 @@ export async function POST(
     return NextResponse.json({ error: "Failed to cancel booking" }, { status: 500 });
   }
 
-  // Decrement weekly counter for individual bookings
+  // Decrement weekly counter
   if (booking.type === "individual") {
     const { data: profile } = await adminClient
       .from("profiles")
@@ -60,6 +60,19 @@ export async function POST(
       await adminClient
         .from("profiles")
         .update({ weekly_bookings_used: profile.weekly_bookings_used - 1 })
+        .eq("id", user.id);
+    }
+  } else if (booking.type === "group") {
+    const { data: profile } = await adminClient
+      .from("profiles")
+      .select("weekly_group_bookings_led")
+      .eq("id", user.id)
+      .single();
+
+    if (profile && profile.weekly_group_bookings_led > 0) {
+      await adminClient
+        .from("profiles")
+        .update({ weekly_group_bookings_led: profile.weekly_group_bookings_led - 1 })
         .eq("id", user.id);
     }
   }

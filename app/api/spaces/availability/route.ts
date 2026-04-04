@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
   // Fetch confirmed/pending/checked_in bookings for this space+date
   const { data: bookings, error } = await adminDb
     .from("bookings")
-    .select("start_time, end_time, status, group_size")
+    .select("start_time, end_time, status")
     .eq("space_id", spaceId)
     .eq("date", date)
     .in("status", ["confirmed", "pending", "checked_in"]);

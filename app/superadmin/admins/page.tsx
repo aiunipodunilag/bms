@@ -322,7 +322,7 @@ export default function SuperAdminAdminsPage() {
           ) : (
             <table className="w-full">
               <thead>
-                <tr className="border-b border-gray-800">
+                <tr className="border-b border-gray-200">
                   <th className="text-left text-xs font-medium text-gray-500 px-5 py-3">Name</th>
                   <th className="text-left text-xs font-medium text-gray-500 px-4 py-3">Role</th>
                   <th className="text-left text-xs font-medium text-gray-500 px-4 py-3 hidden md:table-cell">Space</th>

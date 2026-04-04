@@ -70,7 +70,7 @@ export default function BookingDetailPage() {
         } else {
           setBooking(bookingData.booking);
         }
-        if (meData.tier) setTier(meData.tier as UserTier);
+        if (meData.profile?.tier) setTier(meData.profile.tier as UserTier);
         setLoading(false);
       }).catch(() => {
         setError("Failed to load booking.");

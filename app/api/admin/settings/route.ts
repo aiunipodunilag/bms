@@ -13,7 +13,7 @@ const DEFAULT_SCHEDULE = {
 };
 
 const DEFAULT_BOOKING_SETTINGS = {
-  maxAdvanceDays: 4,
+  maxAdvanceDays: 14,
   noShowGracePeriodMinutes: 20,
   extraIndividualFeeNGN: 2000,
   externalCoworkingFeeNGN: 3000,
@@ -43,7 +43,7 @@ export async function GET() {
   if (!user) return NextResponse.json({ error: "Unauthorised" }, { status: 401 });
 
   const admin = await requireAdmin(user.id);
-  if (!admin || admin.status !== "active") {
+  if (!admin || admin.status !== "active" || !["admin", "super_admin"].includes(admin.role)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 

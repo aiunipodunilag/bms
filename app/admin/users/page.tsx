@@ -73,23 +73,33 @@ export default function AdminUsersPage() {
 
   const updateUser = async (id: string, status: string) => {
     setActionLoading(id + status);
-    await fetch(`/api/admin/users/${id}`, {
+    const res = await fetch(`/api/admin/users/${id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ status }),
     });
     setActionLoading(null);
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      alert(data.error ?? "Failed to update user. Please try again.");
+      return;
+    }
     fetchUsers();
   };
 
   const handleUpgradeAction = async (id: string, action: "approve" | "reject") => {
     setActionLoading(id + action);
-    await fetch(`/api/admin/tier-upgrade/${id}`, {
+    const res = await fetch(`/api/admin/tier-upgrade/${id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ action }),
     });
     setActionLoading(null);
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      alert(data.error ?? "Failed to process tier upgrade request. Please try again.");
+      return;
+    }
     fetchUpgradeRequests();
   };
 

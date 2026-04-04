@@ -72,14 +72,14 @@ export async function PATCH(
       // Notify user
       adminDb.from("notifications").insert({
         user_id: upgradeReq.user_id,
-        type: "booking_confirmed",
+        type: "tier_upgrade_approved",
         title: "Tier Upgrade Approved!",
         message: `Your account has been upgraded to ${upgradeReq.requested_tier.replace(/_/g, " ")}.`,
       }).then(() => {});
     } else {
       adminDb.from("notifications").insert({
         user_id: upgradeReq.user_id,
-        type: "booking_rejected",
+        type: "tier_upgrade_rejected",
         title: "Tier Upgrade Request",
         message: adminNote
           ? `Your tier upgrade request was not approved: ${adminNote}`

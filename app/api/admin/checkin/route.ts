@@ -42,7 +42,7 @@ export async function POST(request: NextRequest) {
     // Look up the booking
     const { data: booking, error: fetchErr } = await adminClient
       .from("bookings")
-      .select("*, profiles:user_id(full_name, email, tier)")
+      .select("*, profiles:user_id(full_name, email, tier, no_show_count)")
       .eq("bms_code", bmsCode.trim().toUpperCase())
       .single();
 

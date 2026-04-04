@@ -31,7 +31,10 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const { subject, message, target } = await request.json();
+    const { subject, message, target, channel } = await request.json();
+    // channel: "in_app" | "email" | "both" (default "both")
+    const sendInApp = channel !== "email";
+    const sendEmail  = channel !== "in_app";
 
     if (!subject || !message) {
       return NextResponse.json({ error: "Subject and message are required" }, { status: 400 });
@@ -46,8 +49,12 @@ export async function POST(request: NextRequest) {
       target: target ?? "all",
     });
 
-    // Fetch target users with email info
-    let userQuery = adminDb.from("profiles").select("id, full_name, email").eq("status", "verified");
+    // Fetch target users — include both "active" and "verified" statuses
+    // (users created after the verification removal have status="active")
+    let userQuery = adminDb
+      .from("profiles")
+      .select("id, full_name, email")
+      .in("status", ["active", "verified"]);
 
     if (target === "internal") {
       userQuery = userQuery.eq("class", "internal");
@@ -62,48 +69,49 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: true, sent: 0 });
     }
 
-    // Insert in-app notifications
-    const notifications = targetUsers.map((u) => ({
-      user_id: u.id,
-      type: "admin_broadcast",
-      title: subject,
-      message,
-    }));
-
-    const BATCH_SIZE = 500;
-    for (let i = 0; i < notifications.length; i += BATCH_SIZE) {
-      await adminDb.from("notifications").insert(notifications.slice(i, i + BATCH_SIZE));
-    }
-
-    // Backfill missing emails from auth
-    const missingEmailUsers = targetUsers.filter((u) => !u.email);
-    if (missingEmailUsers.length > 0) {
-      const { data: { users: authUsers } } = await adminDb.auth.admin.listUsers({ perPage: 1000 });
-      const authEmailMap: Record<string, string> = {};
-      for (const au of authUsers ?? []) {
-        if (au.email) authEmailMap[au.id] = au.email;
-      }
-      for (const u of missingEmailUsers) {
-        (u as any).email = authEmailMap[u.id] ?? null;
+    // Insert in-app notifications (skip if channel is email-only)
+    if (sendInApp) {
+      const notifications = targetUsers.map((u) => ({
+        user_id: u.id,
+        type: "admin_broadcast",
+        title: subject,
+        message,
+      }));
+      const BATCH_SIZE = 500;
+      for (let i = 0; i < notifications.length; i += BATCH_SIZE) {
+        await adminDb.from("notifications").insert(notifications.slice(i, i + BATCH_SIZE));
       }
     }
 
-    // Send emails (fire-and-forget, don't block response)
-    const adminName = (adminAccount as any).full_name ?? "AI-UNIPOD Admin";
-    const emailPromises = targetUsers
-      .filter((u) => u.email)
-      .map((u) =>
-        sendBroadcastEmail({
-          to: u.email!,
-          name: u.full_name ?? "there",
-          subject,
-          message,
-          adminName,
-        }).catch((e) => console.error("[broadcast email]", u.id, e))
-      );
+    // Send emails (skip if channel is in-app only)
+    if (sendEmail) {
+      // Backfill missing emails from auth
+      const missingEmailUsers = targetUsers.filter((u) => !u.email);
+      if (missingEmailUsers.length > 0) {
+        const { data: { users: authUsers } } = await adminDb.auth.admin.listUsers({ perPage: 1000 });
+        const authEmailMap: Record<string, string> = {};
+        for (const au of authUsers ?? []) {
+          if (au.email) authEmailMap[au.id] = au.email;
+        }
+        for (const u of missingEmailUsers) {
+          (u as any).email = authEmailMap[u.id] ?? null;
+        }
+      }
 
-    // Await all emails but don't fail the request if some bounce
-    await Promise.allSettled(emailPromises);
+      const adminName = adminAccount.full_name ?? "AI-UNIPOD Admin";
+      const emailPromises = targetUsers
+        .filter((u) => u.email)
+        .map((u) =>
+          sendBroadcastEmail({
+            to: u.email!,
+            name: u.full_name ?? "there",
+            subject,
+            message,
+            adminName,
+          }).catch((e) => console.error("[broadcast email]", u.id, e))
+        );
+      await Promise.allSettled(emailPromises);
+    }
 
     return NextResponse.json({ success: true, sent: targetUsers.length });
   } catch (err) {
