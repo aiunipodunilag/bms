@@ -245,10 +245,13 @@ export async function sendCheckinConfirmed(opts: {
 export async function sendAccountVerified(opts: { to: string; name: string; tier: string }) {
   const subject = "Your AI-UNIPOD Account is Verified";
   const tierLabels: Record<string, string> = {
-    regular_student: "Regular Student",
-    lecturer_staff: "Lecturer / Staff",
-    product_developer: "Product Developer",
-    external_user: "External User",
+    regular_student:      "Regular Student",
+    lecturer_staff:       "Lecturer / Staff",
+    product_developer:    "Product Developer",
+    volunteer_space_lead: "Volunteer / Space Lead",
+    startup_team:         "Startup Team",
+    partner_intern:       "Partner / Intern",
+    external:             "External User",
   };
   const body = `
     ${greeting(opts.name)}

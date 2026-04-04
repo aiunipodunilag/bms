@@ -45,7 +45,7 @@ const DEFAULT_SCHEDULE: WeekSchedule = {
 };
 
 const DEFAULT_BOOKING_SETTINGS: BookingSettings = {
-  maxAdvanceDays: 4,
+  maxAdvanceDays: 14,
   noShowGracePeriodMinutes: 20,
   extraIndividualFeeNGN: 2000,
   externalCoworkingFeeNGN: 3000,

@@ -231,6 +231,7 @@ export interface TierBookingRules {
 
 export type NotificationType =
   | "booking_confirmed"
+  | "booking_pending"
   | "booking_rejected"
   | "booking_cancelled"
   | "no_show_warning"
@@ -238,7 +239,9 @@ export type NotificationType =
   | "account_rejected"
   | "resource_approved"
   | "group_membership"
-  | "admin_broadcast";
+  | "admin_broadcast"
+  | "tier_upgrade_approved"
+  | "tier_upgrade_rejected";
 
 export interface Notification {
   id: string;
