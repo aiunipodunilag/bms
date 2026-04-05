@@ -31,6 +31,33 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Verify the userId matches the currently authenticated session.
+    // This prevents one user from overwriting another user's profile.
+    const supabase = createClient();
+    const { data: { user: authUser } } = await supabase.auth.getUser();
+    if (!authUser || authUser.id !== userId) {
+      return NextResponse.json(
+        { error: "Unauthorized: userId does not match authenticated session" },
+        { status: 403 }
+      );
+    }
+
+    // Allowlist tier values — prevent clients from self-assigning privileged tiers.
+    // The tier is mostly determined server-side from userClass, but we accept it from
+    // the client for the external flow (external users always get "external" tier).
+    const SIGNUP_ALLOWED_TIERS = [
+      "regular_student",
+      "lecturer_staff",
+      "product_developer",
+      "external",
+    ];
+    const safeTier =
+      tier && SIGNUP_ALLOWED_TIERS.includes(tier)
+        ? tier
+        : userClass === "external"
+        ? "external"
+        : "regular_student";
+
     const adminClient = createAdminClient();
 
     // All users are active immediately — no admin verification required for account creation.
@@ -45,7 +72,7 @@ export async function POST(request: NextRequest) {
         email: email ?? null,
         phone: phone ?? null,
         class: userClass,
-        tier: tier ?? (userClass === "external" ? "external" : "regular_student"),
+        tier: safeTier,
         status,
         matric_number: matricNumber ?? null,
         staff_number: staffNumber ?? null,
@@ -70,3 +97,4 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
+

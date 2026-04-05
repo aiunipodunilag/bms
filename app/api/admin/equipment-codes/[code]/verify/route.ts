@@ -33,12 +33,17 @@ export async function POST(
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
+  const code = params.code?.trim().toUpperCase();
+  if (!code || !/^EQ-\d{4}-[A-Z0-9]{5}$/.test(code)) {
+    return NextResponse.json({ error: "Invalid equipment code format" }, { status: 400 });
+  }
+
   const adminClient = createAdminClient();
 
   const { data: eqCode, error: fetchErr } = await adminClient
     .from("equipment_access_codes")
     .select("*")
-    .eq("code", params.code.trim().toUpperCase())
+    .eq("code", code)
     .single();
 
   if (fetchErr || !eqCode) {

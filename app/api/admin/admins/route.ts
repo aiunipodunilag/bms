@@ -71,6 +71,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Validate role against allowlist — super_admin must be set directly in the DB
+    const ALLOWED_ROLES = ["admin", "receptionist", "space_lead"];
+    if (!ALLOWED_ROLES.includes(role)) {
+      return NextResponse.json(
+        { error: `Invalid role. Allowed values: ${ALLOWED_ROLES.join(", ")}` },
+        { status: 400 }
+      );
+    }
+
     // Create the auth user
     const { data: authData, error: authErr } = await adminDb.auth.admin.createUser({
       email,

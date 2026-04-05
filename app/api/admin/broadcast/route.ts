@@ -138,7 +138,7 @@ export async function GET() {
     .eq("id", user.id)
     .single();
 
-  if (!adminAccount || adminAccount.status !== "active") {
+  if (!adminAccount || adminAccount.status !== "active" || !["admin", "super_admin"].includes(adminAccount.role)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 

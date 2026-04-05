@@ -422,3 +422,78 @@ export async function sendAdminAccountCreated(opts: {
   `;
   return resend.emails.send({ from: FROM, to: opts.to, subject, html: layout(subject, body) });
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 11. Tier upgrade approved
+// ─────────────────────────────────────────────────────────────────────────────
+export async function sendTierUpgradeApproved(opts: {
+  to: string;
+  name: string;
+  newTier: string;
+  adminNote?: string;
+}) {
+  const tierLabels: Record<string, string> = {
+    regular_student:      "Regular Student",
+    lecturer_staff:       "Lecturer / Staff",
+    product_developer:    "Product Developer",
+    volunteer_space_lead: "Volunteer / Space Lead",
+    startup_team:         "Startup Team",
+    partner_intern:       "Partner / Intern",
+    external:             "External User",
+  };
+  const tierLabel = tierLabels[opts.newTier] ?? opts.newTier.replace(/_/g, " ");
+  const subject = "Tier Upgrade Approved — AI-UNIPOD BMS";
+  const body = `
+    ${greeting(opts.name)}
+    <p style="color:#475569;font-size:15px;margin:0 0 24px;">
+      Great news! Your tier upgrade request has been <strong style="color:#16a34a;">approved</strong>. Your account has been updated.
+    </p>
+
+    <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:20px;margin:20px 0;text-align:center;">
+      <div style="width:48px;height:48px;background:#dcfce7;border-radius:50%;margin:0 auto 12px;display:flex;align-items:center;justify-content:center;">
+        <span style="font-size:24px;">&#x1F389;</span>
+      </div>
+      <p style="color:#166534;font-weight:700;font-size:16px;margin:0 0 4px;">Tier Upgraded</p>
+      <p style="color:#4ade80;font-size:13px;margin:0;">New tier: <strong>${tierLabel}</strong></p>
+    </div>
+
+    ${opts.adminNote
+      ? `<div style="background:#fff7ed;border-left:4px solid #fb923c;border-radius:6px;padding:14px 18px;margin:20px 0;">
+          <p style="color:#9a3412;font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;margin:0 0 6px;">Note from admin</p>
+          <p style="color:#7c2d12;font-size:13px;margin:0;">${opts.adminNote}</p>
+         </div>`
+      : ""}
+
+    <p style="color:#475569;font-size:13px;">You now have access to more spaces and resources. Sign in to explore what is available for your new tier.</p>
+    ${btn(`${APP_URL}/dashboard`, "Go to Dashboard")}
+  `;
+  return resend.emails.send({ from: FROM, to: opts.to, subject, html: layout(subject, body) });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 12. Tier upgrade rejected
+// ─────────────────────────────────────────────────────────────────────────────
+export async function sendTierUpgradeRejected(opts: {
+  to: string;
+  name: string;
+  adminNote?: string;
+}) {
+  const subject = "Tier Upgrade Request — AI-UNIPOD BMS";
+  const body = `
+    ${greeting(opts.name)}
+    <p style="color:#475569;font-size:15px;margin:0 0 24px;">
+      Thank you for submitting a tier upgrade request. After review, we were unable to approve the upgrade at this time.
+    </p>
+
+    ${opts.adminNote
+      ? `<div style="background:#fff7ed;border-left:4px solid #fb923c;border-radius:6px;padding:14px 18px;margin:20px 0;">
+          <p style="color:#9a3412;font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;margin:0 0 6px;">Reason</p>
+          <p style="color:#7c2d12;font-size:13px;margin:0;">${opts.adminNote}</p>
+         </div>`
+      : alertBox("No specific reason was provided. You can contact reception for more details.")}
+
+    <p style="color:#475569;font-size:13px;">If your circumstances change, you are welcome to submit a new request from your profile page.</p>
+    ${btn(`${APP_URL}/dashboard/profile`, "Go to Profile")}
+  `;
+  return resend.emails.send({ from: FROM, to: opts.to, subject, html: layout(subject, body) });
+}

@@ -48,7 +48,7 @@ export async function PATCH(
 
 /**
  * GET /api/admin/spaces/[id]
- * Returns the override for a specific space.
+ * Returns the override for a specific space. Admin/super_admin only.
  */
 export async function GET(
   _request: NextRequest,
@@ -59,6 +59,16 @@ export async function GET(
   if (!user) return NextResponse.json({ error: "Unauthorised" }, { status: 401 });
 
   const adminDb = createAdminClient();
+  const { data: adminAccount } = await adminDb
+    .from("admin_accounts")
+    .select("role, status")
+    .eq("id", user.id)
+    .single();
+
+  if (!adminAccount || adminAccount.status !== "active" || !["admin", "super_admin"].includes(adminAccount.role)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
   const { data } = await adminDb
     .from("space_overrides")
     .select("*")

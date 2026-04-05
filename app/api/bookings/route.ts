@@ -77,6 +77,34 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Validate time ordering
+    if (startTime >= endTime) {
+      return NextResponse.json(
+        { error: "End time must be after start time" },
+        { status: 400 }
+      );
+    }
+
+    // Prevent past-date bookings
+    const today = new Date().toISOString().split("T")[0];
+    if (date < today) {
+      return NextResponse.json(
+        { error: "Cannot book for past dates" },
+        { status: 400 }
+      );
+    }
+
+    // Enforce max advance booking window
+    const maxDate = new Date();
+    maxDate.setDate(maxDate.getDate() + BOOKING_RULES.maxAdvanceDays);
+    const maxDateStr = maxDate.toISOString().split("T")[0];
+    if (date > maxDateStr) {
+      return NextResponse.json(
+        { error: `Bookings can only be made up to ${BOOKING_RULES.maxAdvanceDays} days in advance` },
+        { status: 400 }
+      );
+    }
+
     const adminDb = createAdminClient();
 
     // Load user profile
