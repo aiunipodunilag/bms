@@ -172,6 +172,8 @@ export default function SpacesPage() {
                             ? "bg-green-100 text-green-700"
                             : space.availability === "full"
                             ? "bg-red-100 text-red-700"
+                            : space.availability === "closed"
+                            ? "bg-gray-100 text-gray-500"
                             : "bg-yellow-100 text-yellow-700"
                         }`}
                       >
@@ -181,6 +183,8 @@ export default function SpacesPage() {
                             : "Available"
                           : space.availability === "full"
                           ? "Full"
+                          : space.availability === "closed"
+                          ? "Unavailable"
                           : "Admin Scheduled"}
                       </span>
                     </div>
