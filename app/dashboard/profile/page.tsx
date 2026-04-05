@@ -144,10 +144,8 @@ export default function ProfilePage() {
         <div className="space-y-5">
           {/* Avatar + tier */}
           <Card className="flex items-center gap-5">
-            <div className="w-16 h-16 rounded-2xl bg-brand-100 flex items-center justify-center shrink-0">
-              <span className="text-brand-700 text-2xl font-bold">
-                {profile.full_name?.charAt(0) ?? "?"}
-              </span>
+            <div className="w-16 h-16 rounded-2xl bg-brand-50 flex items-center justify-center shrink-0">
+              <User size={32} className="text-brand-600" />
             </div>
             <div className="flex-1">
               <h2 className="text-lg font-bold text-gray-900">{profile.full_name}</h2>
@@ -308,7 +306,7 @@ export default function ProfilePage() {
                     <div>
                       <label className="text-xs font-medium text-gray-500 block mb-1.5">
                         Reason / Justification{" "}
-                        <span className="text-gray-400">({upgradeReason.length}/50 min)</span>
+                        <span className="text-gray-400">({upgradeReason.length} / 50 characters min)</span>
                       </label>
                       <textarea
                         rows={4}

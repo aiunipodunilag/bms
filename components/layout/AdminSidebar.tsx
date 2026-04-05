@@ -16,6 +16,7 @@ import {
   ShieldCheck,
   UserCog,
   Package,
+  Zap,
   type LucideIcon,
 } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -136,10 +137,7 @@ export default function AdminSidebar({ role: roleProp }: Props) {
       {/* Logo */}
       <div className="px-5 py-5 border-b border-black/[0.06]">
         <Link href={role === "super_admin" ? "/superadmin" : "/admin"} className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0"
-            style={{ background: "linear-gradient(135deg, #5B4CF5 0%, #7D67EF 100%)", boxShadow: "0 2px 8px rgba(91,76,245,0.30)" }}>
-            <span className="text-white font-bold text-xs">U</span>
-          </div>
+          <Zap size={20} className="text-brand-600 shrink-0" />
           <div>
             <p className="text-gray-900 font-bold text-sm" style={{ letterSpacing: "-0.02em" }}>AI-UNIPOD</p>
             <span className={cn("text-[10px] font-semibold px-1.5 py-0.5 rounded-full", role ? roleBadgeColor[role] : "bg-gray-100 text-gray-400")}>
@@ -188,9 +186,8 @@ export default function AdminSidebar({ role: roleProp }: Props) {
       <div className="px-3 pb-4 border-t border-black/[0.06] pt-3 space-y-1">
         {(adminName || adminEmail) && (
           <div className="flex items-center gap-2.5 px-3 py-2.5 mb-1">
-            <div className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 text-white text-xs font-bold"
-              style={{ background: "linear-gradient(135deg, #5B4CF5 0%, #7D67EF 100%)" }}>
-              {(adminName || adminEmail).charAt(0).toUpperCase()}
+            <div className="w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center shrink-0">
+              <Users size={13} className="text-gray-500" />
             </div>
             <div className="min-w-0">
               {adminName && (

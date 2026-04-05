@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import Button from "@/components/ui/Button";
-import { Menu, X, Bell, ChevronDown, LogOut, User } from "lucide-react";
+import { Menu, X, Bell, ChevronDown, LogOut, User, Zap } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
 
@@ -75,11 +75,8 @@ export default function Navbar({ user }: NavbarProps) {
       <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <Link href={user ? "/dashboard" : "/"} className="flex items-center gap-2.5">
-            <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
-              style={{ background: "linear-gradient(135deg, #5B4CF5 0%, #7D67EF 100%)" }}>
-              <span className="text-white font-bold text-xs">U</span>
-            </div>
+          <Link href={user ? "/dashboard" : "/"} className="flex items-center gap-2">
+            <Zap size={18} className="text-brand-600 shrink-0" />
             <div className="hidden sm:block">
               <span className="font-bold text-gray-900 text-sm tracking-tight" style={{ letterSpacing: "-0.02em" }}>
                 AI-UNIPOD
@@ -169,11 +166,8 @@ export default function Navbar({ user }: NavbarProps) {
                     onClick={() => setProfileOpen(!profileOpen)}
                     className="flex items-center gap-2 pl-2 pr-3 py-1.5 rounded-xl hover:bg-gray-100 transition-all duration-150"
                   >
-                    <div className="w-7 h-7 rounded-full flex items-center justify-center shrink-0"
-                      style={{ background: "linear-gradient(135deg, #5B4CF5 0%, #7D67EF 100%)" }}>
-                      <span className="text-white text-xs font-bold">
-                        {user.name.charAt(0).toUpperCase()}
-                      </span>
+                    <div className="w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center shrink-0">
+                      <User size={14} className="text-gray-500" />
                     </div>
                     <div className="hidden sm:block text-left">
                       <p className="text-xs font-semibold text-gray-900 leading-tight" style={{ letterSpacing: "-0.01em" }}>

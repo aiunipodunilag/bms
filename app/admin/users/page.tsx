@@ -248,16 +248,9 @@ export default function AdminUsersPage() {
                         {users.map((user) => (
                           <tr key={user.id} className="hover:bg-gray-50 transition-colors">
                             <td className="px-5 py-4">
-                              <div className="flex items-center gap-3">
-                                <div className="w-8 h-8 rounded-full bg-brand-100 flex items-center justify-center shrink-0">
-                                  <span className="text-brand-700 text-xs font-bold">
-                                    {user.full_name?.charAt(0) ?? "?"}
-                                  </span>
-                                </div>
-                                <div>
-                                  <p className="text-sm font-medium text-gray-900">{user.full_name}</p>
-                                  <p className="text-xs text-gray-400">{user.email}</p>
-                                </div>
+                              <div>
+                                <p className="text-sm font-medium text-gray-900">{user.full_name}</p>
+                                <p className="text-xs text-gray-400">{user.email}</p>
                               </div>
                             </td>
                             <td className="px-4 py-4">
