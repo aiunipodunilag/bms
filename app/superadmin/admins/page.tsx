@@ -134,20 +134,30 @@ export default function SuperAdminAdminsPage() {
   const toggleStatus = async (admin: AdminAccount) => {
     const newStatus = admin.status === "active" ? "suspended" : "active";
     setActionLoading(admin.id + "toggle");
-    await fetch(`/api/admin/admins/${admin.id}`, {
+    const res = await fetch(`/api/admin/admins/${admin.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ status: newStatus }),
     });
     setActionLoading(null);
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      alert(data.error ?? "Failed to update admin status. Please try again.");
+      return;
+    }
     fetchAdmins();
   };
 
   const removeAdmin = async (id: string) => {
     if (!confirm("Are you sure you want to remove this admin?")) return;
     setActionLoading(id + "delete");
-    await fetch(`/api/admin/admins/${id}`, { method: "DELETE" });
+    const res = await fetch(`/api/admin/admins/${id}`, { method: "DELETE" });
     setActionLoading(null);
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      alert(data.error ?? "Failed to remove admin. Please try again.");
+      return;
+    }
     fetchAdmins();
   };
 
