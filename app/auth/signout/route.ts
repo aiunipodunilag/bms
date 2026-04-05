@@ -21,8 +21,9 @@ import { createServerClient } from "@supabase/ssr";
  * so it cannot race ahead and write fresh session cookies before we clear them.
  */
 export async function GET(request: NextRequest) {
-  const home = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
-  const response = NextResponse.redirect(new URL("/", home));
+  // Use request.url as base so the redirect always goes to the correct host,
+  // regardless of whether NEXT_PUBLIC_APP_URL is set.
+  const response = NextResponse.redirect(new URL("/", request.url));
 
   // Brute-force: delete every Supabase auth cookie by name
   const cookieDeleteOptions = {

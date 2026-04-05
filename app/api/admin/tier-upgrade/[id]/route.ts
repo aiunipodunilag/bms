@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { sendTierUpgradeApproved, sendTierUpgradeRejected } from "@/lib/email";
 
 /**
  * PATCH /api/admin/tier-upgrade/[id]
@@ -62,6 +63,12 @@ export async function PATCH(
       return NextResponse.json({ error: "Failed to update request" }, { status: 500 });
     }
 
+    // Fetch user email + name for notifications
+    const { data: { user: reqUser } } = await adminDb.auth.admin.getUserById(upgradeReq.user_id);
+    const userEmail = reqUser?.email;
+    const { data: prof } = await adminDb.from("profiles").select("full_name").eq("id", upgradeReq.user_id).single();
+    const userName = prof?.full_name ?? "there";
+
     if (action === "approve") {
       // Update user's tier
       await adminDb
@@ -69,14 +76,25 @@ export async function PATCH(
         .update({ tier: upgradeReq.requested_tier })
         .eq("id", upgradeReq.user_id);
 
-      // Notify user
+      // Notify user in-app
       adminDb.from("notifications").insert({
         user_id: upgradeReq.user_id,
         type: "tier_upgrade_approved",
         title: "Tier Upgrade Approved!",
         message: `Your account has been upgraded to ${upgradeReq.requested_tier.replace(/_/g, " ")}.`,
       }).then(() => {});
+
+      // Send email
+      if (userEmail) {
+        sendTierUpgradeApproved({
+          to: userEmail,
+          name: userName,
+          newTier: upgradeReq.requested_tier,
+          adminNote: adminNote ?? undefined,
+        }).catch((e) => console.error("[email] tier upgrade approved:", e));
+      }
     } else {
+      // Notify user in-app
       adminDb.from("notifications").insert({
         user_id: upgradeReq.user_id,
         type: "tier_upgrade_rejected",
@@ -85,6 +103,15 @@ export async function PATCH(
           ? `Your tier upgrade request was not approved: ${adminNote}`
           : "Your tier upgrade request was not approved at this time.",
       }).then(() => {});
+
+      // Send email
+      if (userEmail) {
+        sendTierUpgradeRejected({
+          to: userEmail,
+          name: userName,
+          adminNote: adminNote ?? undefined,
+        }).catch((e) => console.error("[email] tier upgrade rejected:", e));
+      }
     }
 
     return NextResponse.json({ success: true });

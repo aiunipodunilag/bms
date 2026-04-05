@@ -87,17 +87,13 @@ export async function POST(request: NextRequest) {
 
     if (insertErr) {
       console.error("[tier-upgrade POST]", insertErr);
-      const msg =
-        insertErr.code === "42P01"
-          ? "Tier upgrade table not set up yet. Please ask your admin to run the database migration in supabase/migrations/001_tier_upgrade_requests.sql."
-          : "Failed to submit request. Please try again.";
-      return NextResponse.json({ error: msg }, { status: 500 });
+      return NextResponse.json({ error: "Failed to submit request. Please try again." }, { status: 500 });
     }
 
     // In-app notification (fire and forget)
     adminDb.from("notifications").insert({
       user_id: user.id,
-      type: "booking_confirmed",
+      type: "account_verified",
       title: "Tier Upgrade Request Submitted",
       message: `Your request to upgrade to ${requestedTier.replace(/_/g, " ")} is under review.`,
     }).then(() => {});

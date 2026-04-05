@@ -54,8 +54,10 @@ const BASE_SPACES: AdminSpace[] = SPACES.map((s) => ({
   type: s.bookingType as "individual" | "group" | "both",
   status: "active" as SpaceStatus,
   equipment: s.equipment,
-  whoCanBook: s.whoCanBook.length === 7
-    ? ["All tiers"]
+  whoCanBook: s.whoCanBook.length >= 7
+    ? ["All tiers (incl. External)"]
+    : s.whoCanBook.length === 6
+    ? ["All internal members"]
     : s.whoCanBook.map((t) => TIER_LABEL_MAP[t] ?? t),
   description: s.description,
   requiresApproval: s.approvalType === "manual",

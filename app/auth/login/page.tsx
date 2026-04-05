@@ -10,13 +10,16 @@ import { createClient } from "@/lib/supabase/client";
 export default function LoginPage() {
   const router = useRouter();
 
-  // If already logged in, skip login screen
+  // If already logged in, skip login screen.
+  // Use getUser() (server-verified) instead of getSession() (reads stale localStorage)
+  // to prevent the sign-out loop: stale localStorage token → redirect to /dashboard →
+  // server sees no cookie → redirect back to /auth/login → infinite loop.
   useEffect(() => {
     const supabase = createClient();
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) window.location.href = "/dashboard";
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (user) window.location.href = "/dashboard";
     });
-  }, [router]);
+  }, []);
 
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);

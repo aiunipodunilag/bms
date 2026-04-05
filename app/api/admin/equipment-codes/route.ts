@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { SPACE_EQUIPMENT_MAP } from "@/lib/data/spaces";
+import { randomBytes } from "crypto";
 
 /**
  * GET /api/admin/equipment-codes?status=active|used
@@ -33,7 +34,10 @@ export async function GET(request: NextRequest) {
     .order("generated_at", { ascending: false });
 
   // Space leads only see codes for their assigned space
-  if (adminAccount.role === "space_lead" && adminAccount.assigned_space_id) {
+  if (adminAccount.role === "space_lead") {
+    if (!adminAccount.assigned_space_id) {
+      return NextResponse.json({ error: "No space assigned to your account" }, { status: 403 });
+    }
     query = query.eq("space_id", adminAccount.assigned_space_id);
   }
 
@@ -54,9 +58,10 @@ export async function GET(request: NextRequest) {
 
 function generateEquipmentCode(): string {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  const bytes = randomBytes(5);
   let code = "";
   for (let i = 0; i < 5; i++) {
-    code += chars[Math.floor(Math.random() * chars.length)];
+    code += chars[bytes[i] % chars.length];
   }
   return `EQ-${new Date().getFullYear()}-${code}`;
 }
