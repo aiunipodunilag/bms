@@ -45,23 +45,26 @@ const TIER_LABEL_MAP: Record<string, string> = {
   external:             "External",
 };
 
-// Derive admin space list from the single source of truth in lib/data/spaces.ts
-const BASE_SPACES: AdminSpace[] = SPACES.map((s) => ({
-  id: s.id,
-  name: s.name,
-  slug: s.slug,
-  capacity: s.capacity,
-  type: s.bookingType as "individual" | "group" | "both",
-  status: "active" as SpaceStatus,
-  equipment: s.equipment,
-  whoCanBook: s.whoCanBook.length >= 7
-    ? ["All tiers (incl. External)"]
-    : s.whoCanBook.length === 6
-    ? ["All internal members"]
-    : s.whoCanBook.map((t) => TIER_LABEL_MAP[t] ?? t),
-  description: s.description,
-  requiresApproval: s.approvalType === "manual",
-}));
+// Derive admin space list from the single source of truth in lib/data/spaces.ts.
+// Exclude admin_only/admin_scheduled spaces — those are not user-bookable.
+const BASE_SPACES: AdminSpace[] = SPACES
+  .filter((s) => s.approvalType !== "admin_only" && s.bookingType !== "admin_scheduled")
+  .map((s) => ({
+    id: s.id,
+    name: s.name,
+    slug: s.slug,
+    capacity: s.capacity,
+    type: s.bookingType as "individual" | "group" | "both",
+    status: "active" as SpaceStatus,
+    equipment: s.equipment,
+    whoCanBook: s.whoCanBook.length >= 7
+      ? ["All tiers (incl. External)"]
+      : s.whoCanBook.length === 6
+      ? ["All internal members"]
+      : s.whoCanBook.map((t) => TIER_LABEL_MAP[t] ?? t),
+    description: s.description,
+    requiresApproval: s.approvalType === "manual",
+  }));
 
 const STATUS_CONFIG: Record<SpaceStatus, { label: string; variant: "success" | "danger" | "warning" }> = {
   active:      { label: "Active",      variant: "success" },

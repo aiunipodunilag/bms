@@ -5,7 +5,8 @@ import { usePathname } from "next/navigation";
 import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import Button from "@/components/ui/Button";
-import { Menu, X, Bell, ChevronDown, LogOut, User, Zap } from "lucide-react";
+import { Menu, X, Bell, ChevronDown, LogOut, User } from "lucide-react";
+import Image from "next/image";
 import { createClient } from "@/lib/supabase/client";
 
 
@@ -75,19 +76,15 @@ export default function Navbar({ user }: NavbarProps) {
       <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <Link href={user ? "/dashboard" : "/"} className="flex items-center gap-2">
-            <Zap size={18} className="text-brand-600 shrink-0" />
-            <div className="hidden sm:block">
-              <span className="font-bold text-gray-900 text-sm tracking-tight" style={{ letterSpacing: "-0.02em" }}>
-                AI-UNIPOD
-              </span>
-              <span className="block text-[10px] text-gray-400 font-medium tracking-widest uppercase -mt-0.5">
-                BMS
-              </span>
-            </div>
-            <span className="sm:hidden font-bold text-gray-900 text-sm" style={{ letterSpacing: "-0.02em" }}>
-              AI-UNIPOD
-            </span>
+          <Link href={user ? "/dashboard" : "/"} className="flex items-center shrink-0">
+            <Image
+              src="/logo.svg"
+              alt="UniPod"
+              height={38}
+              width={152}
+              className="object-contain"
+              priority
+            />
           </Link>
 
           {/* Desktop nav */}

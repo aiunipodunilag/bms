@@ -40,7 +40,7 @@ export async function GET() {
         // Map admin status to space availability
         availability:
           override.status === "inactive" || override.status === "maintenance"
-            ? "admin_only" as const
+            ? "closed" as const
             : space.availability,
         // If inactive, mark as not publicly listed so it's hidden
         isPubliclyListed:

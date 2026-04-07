@@ -16,9 +16,9 @@ import {
   ShieldCheck,
   UserCog,
   Package,
-  Zap,
   type LucideIcon,
 } from "lucide-react";
+import Image from "next/image";
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 
@@ -135,15 +135,19 @@ export default function AdminSidebar({ role: roleProp }: Props) {
     <aside className="w-60 min-h-screen bg-white border-r border-black/[0.06] flex flex-col shrink-0"
       style={{ boxShadow: "1px 0 0 rgba(0,0,0,0.04)" }}>
       {/* Logo */}
-      <div className="px-5 py-5 border-b border-black/[0.06]">
-        <Link href={role === "super_admin" ? "/superadmin" : "/admin"} className="flex items-center gap-2.5">
-          <Zap size={20} className="text-brand-600 shrink-0" />
-          <div>
-            <p className="text-gray-900 font-bold text-sm" style={{ letterSpacing: "-0.02em" }}>AI-UNIPOD</p>
-            <span className={cn("text-[10px] font-semibold px-1.5 py-0.5 rounded-full", role ? roleBadgeColor[role] : "bg-gray-100 text-gray-400")}>
-              {role ? roleLabel[role] : "Loading…"}
-            </span>
-          </div>
+      <div className="px-5 py-4 border-b border-black/[0.06]">
+        <Link href={role === "super_admin" ? "/superadmin" : "/admin"} className="flex flex-col gap-2">
+          <Image
+            src="/logo.svg"
+            alt="UniPod"
+            height={34}
+            width={136}
+            className="object-contain"
+            priority
+          />
+          <span className={cn("text-[10px] font-semibold px-1.5 py-0.5 rounded-full w-fit", role ? roleBadgeColor[role] : "bg-gray-100 text-gray-400")}>
+            {role ? roleLabel[role] : "Loading…"}
+          </span>
         </Link>
       </div>
 

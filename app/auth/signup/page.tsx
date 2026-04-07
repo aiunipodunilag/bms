@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import Button from "@/components/ui/Button";
 import {
@@ -241,6 +242,11 @@ export default function SignupPage() {
         >
           <ArrowLeft size={15} /> Back to home
         </Link>
+
+        {/* Logo */}
+        <div className="flex justify-center mb-6">
+          <Image src="/logo.svg" alt="UniPod" height={52} width={208} className="object-contain" priority />
+        </div>
 
         {/* ── STEP 1: Class Selection ──────────────────────────────────── */}
         {step === "class_select" && (

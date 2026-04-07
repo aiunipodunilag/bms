@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { ShieldCheck, Eye, EyeOff, Lock, Mail, AlertCircle } from "lucide-react";
+import { Eye, EyeOff, Lock, Mail, AlertCircle } from "lucide-react";
+import Image from "next/image";
 import Button from "@/components/ui/Button";
 import { createClient } from "@/lib/supabase/client";
 import type { AdminRole } from "@/types";
@@ -112,12 +113,10 @@ export default function AdminLoginPage() {
       <div className="relative w-full max-w-sm">
         {/* Logo / brand */}
         <div className="text-center mb-8">
-          <div className="w-12 h-12 rounded-2xl flex items-center justify-center mx-auto mb-4"
-            style={{ background: "linear-gradient(135deg, #5B4CF5 0%, #7D67EF 100%)", boxShadow: "0 8px 24px rgba(91,76,245,0.28)" }}>
-            <ShieldCheck size={22} className="text-white" />
+          <div className="flex justify-center mb-5">
+            <Image src="/logo.svg" alt="UniPod" height={56} width={224} className="object-contain" priority />
           </div>
-          <h1 className="text-xl font-bold text-gray-900" style={{ letterSpacing: "-0.025em" }}>UNIPOD Admin Portal</h1>
-          <p className="text-sm text-gray-400 mt-1">Sign in with your admin credentials</p>
+          <p className="text-sm text-gray-400">Admin Portal — Sign in with your credentials</p>
         </div>
 
         {/* Card */}
