@@ -516,17 +516,8 @@ export default function LandingPage() {
       ───────────────────────────────────────────────────────────────────────── */}
       <footer className="border-t border-gray-100 bg-white py-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
-              style={{ background: "linear-gradient(135deg, #5B4CF5, #06B6D4)" }}>
-              <span className="text-white font-display font-bold text-xs">U</span>
-            </div>
-            <div>
-              <span className="font-display font-bold text-sm text-gray-900 tracking-tight" style={{ letterSpacing: "-0.02em" }}>
-                AI-UNIPOD
-              </span>
-              <span className="text-[10px] text-gray-400 font-medium tracking-widest uppercase ml-1.5">BMS</span>
-            </div>
+          <div className="flex items-center">
+            <Image src="/logo.svg" alt="UniPod" height={30} width={120} className="object-contain" />
           </div>
           <p className="text-xs text-gray-400">
             © {new Date().getFullYear()} AI-UNIPOD UNILAG. Booking Management System.

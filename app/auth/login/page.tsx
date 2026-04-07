@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import Button from "@/components/ui/Button";
 import { Eye, EyeOff, ArrowLeft } from "lucide-react";
@@ -80,15 +81,8 @@ export default function LoginPage() {
           style={{ boxShadow: "0 20px 60px rgba(0,0,0,0.08), 0 8px 24px rgba(0,0,0,0.05)" }}>
           {/* Header */}
           <div className="mb-7">
-            <div className="flex items-center gap-2.5 mb-5">
-              <div className="w-9 h-9 rounded-xl flex items-center justify-center"
-                style={{ background: "linear-gradient(135deg, #5B4CF5 0%, #7D67EF 100%)", boxShadow: "0 4px 12px rgba(91,76,245,0.25)" }}>
-                <span className="text-white font-bold text-sm">U</span>
-              </div>
-              <div>
-                <p className="font-bold text-gray-900 text-sm" style={{ letterSpacing: "-0.02em" }}>AI-UNIPOD</p>
-                <p className="text-[10px] text-gray-400 font-medium tracking-widest uppercase">BMS</p>
-              </div>
+            <div className="flex justify-center mb-6">
+              <Image src="/logo.svg" alt="UniPod" height={56} width={224} className="object-contain" priority />
             </div>
             <h1 className="text-2xl font-bold text-gray-900" style={{ letterSpacing: "-0.025em" }}>Welcome back</h1>
             <p className="text-gray-500 text-sm mt-1">
